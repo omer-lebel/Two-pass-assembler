@@ -15,9 +15,9 @@
 #include <string.h>
 
 
-// todo const??
+/* todo const?? */
 
-// Function pointer types for linked list operations
+/* Function pointer types for linked list operations */
 
 /**
  * pointer to function that init the data field when creating a new node.
@@ -122,4 +122,4 @@ void printList (LinkedList *linked_list, FILE *fp);
  */
 void freeList (LinkedList *linked_list);
 
-#endif //_LINKEDLIST_H_
+#endif /* _LINKEDLIST_H_ */

@@ -1,78 +1,55 @@
+//
+// Created by OMER on 1/10/2024.
+//
+
 #include <stdio.h>
-#include <unistd.h>
-
-#include "input.h"
 #include "preAssembler.h"
-
-int diff (char *path)
-{
-  fflush (stdout);
-  char command[100];
-
-  // Construct the diff command
-  sprintf (command, "diff %s/output %s/res", path, path);
-  int result = system (command);
-  //0- identical, 256 - different, other-error
-  return (result == 0 ? 0 : 1);
-}
-
-int test1_isSavedWord ()
-{
-  if (isSavedWord ("mov") == TRUE
-      && isSavedWord ("r7") == TRUE
-      && isSavedWord (".entry") == TRUE
-      && isSavedWord ("dsa") == FALSE
-      && isSavedWord ("omer8118") == FALSE) {
-    return TRUE;
-  }
-  return FALSE;
-}
-
-int test2_remove_comment (char *path)
-{
-  char fileName[100];
-
-  sprintf (fileName, "%s/input", path);
-  FILE *input = fopen (fileName, "r");
-  if (!input) {
-    return FALSE;
-  }
-  sprintf (fileName, "%s/output", path);
-  FILE *res = fopen (fileName, "w");
-  if (!res) {
-    return FALSE;
-  }
-  preAssembler (input, res);
-  fclose (res);
-  return (diff (path) == 0);
-}
 
 int main (int argc, char *argv[])
 {
-       int x    ,    y    ;
-  FILE *input = fopen (argv[1], "r");
-  FILE *output = fopen ("output", "w");
-  if (!input || !output)
-  {
-    printf ("ERROR while opening file");
+  FILE *txt_file, *as_file;
+  char pre_output[100];
+  int res;
+
+  if (argc <= 1){
+    printf ("must give at least one file to process\n");
     return EXIT_FAILURE;
   }
-  preAssembler (input, output);
-  fclose (input);
-  fclose (output);
+
+  txt_file = fopen (argv[1], "r");
+  if (!txt_file) {
+    printf ("error while opening input file\n");
+    return EXIT_FAILURE;
+  }
+
+  strcpy (pre_output, argv[1]);
+  strcat (pre_output, ".as");
+  as_file = fopen (pre_output, "w");
+  if (!as_file) {
+    printf ("error while opening %s.as file\n",argv[1]);
+    return EXIT_FAILURE;
+  }
+
+  res = preAssembler (txt_file, as_file);
 
 
-/*
-  int res;
-  printf ("\ntest 1: isSavedWord ----- ");
-  res = test1_isSavedWord ();
-  printf (res ? "PASS\n" : "ERROR\n");
+  /*
+   * first path:
+   * 1) create symbols table: | label | address | type | external? |
+   * 2) create data segment, compute its size DC (from 100)
+   * 3) create partial text segment, compute its size IC (from 0)
+   * 4) create external table: | label | line that appears in program
+   * 5.1) create entry table - text: | label | address
+   * 5.2) create entry table - data: | label | address
+   * 6) update address of data in the data segment (data is after text)
+   *
+   * second path:
+   * 1) updating address of unknown labels in text segment and in entry tables
+   * 2) print entry tables
+   * 3) convert text and data segment to 4 base and print it
+   */
+  fclose (txt_file);
+  fclose (as_file);
 
-  printf ("\ntest 2: remove_comment --- ");
-  res = test2_remove_comment("./Testing/test2_comments");
-  printf (res ? "PASS\n" : "ERROR\n");*/
-
-
-
-  return 0;
+  return res;
 }

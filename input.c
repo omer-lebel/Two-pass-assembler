@@ -1,10 +1,10 @@
-//
-// Created by OMER on 1/1/2024.
-//
+/*
+ Created by OMER on 1/1/2024.
+*/
+
 
 #include "input.h"
 #include <ctype.h>
-#include <stdlib.h>
 #include <string.h>
 
 /*

@@ -1,0 +1,15 @@
+test number 2:
+1 line
+2 a comment:
+;comment
+3 line
+4 an mcr with comment def
+mcr a
+    content1
+    ;comment
+    content2
+endmcr
+5 line
+6 call for mcr:
+a
+9 end
