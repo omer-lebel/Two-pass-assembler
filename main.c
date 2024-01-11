@@ -23,7 +23,7 @@ int main (int argc, char *argv[])
   }
 
   strcpy (pre_output, argv[1]);
-  strcat (pre_output, ".as");
+  strcat (pre_output, ".am");
   as_file = fopen (pre_output, "w");
   if (!as_file) {
     printf ("error while opening %s.as file\n",argv[1]);

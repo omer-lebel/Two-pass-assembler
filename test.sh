@@ -10,7 +10,7 @@ run_test() {
 
     cd "./$test_name" || exit
     ../../preAssembler input
-    diff_output=$(diff --strip-trailing-cr input.as expected.as)
+    diff_output=$(diff --strip-trailing-cr input.am expected.am)
 
     if [ $? -eq 0 ]; then
         echo "$test_name: pass"
@@ -56,7 +56,7 @@ echo "---------------- test 3 ----------------"
 run_test "test3_emptyLine"
 
 
-cd ./test4-5_validMcr || exit
+cd ./test4-6_validMcr || exit
 echo "---------------- test 4 ----------------"
 
 error_test "test4_mcr_noName"
@@ -64,10 +64,12 @@ error_test "test4_mcr_noName"
 echo "---------------- test 5 ----------------"
 error_test "test5_mcr_savedWord"
 
+echo "---------------- test 6 ----------------"
+error_test "test6_mcr_dupName"
+
 cd ..
 
 
 
-
 percentage_passed=$((passed_tests * 100 / total_tests))
-echo "passed $percentage_passed% tests"
+echo "passed $percentage_passed% tests ($passed_tests/$total_tests)"
