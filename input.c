@@ -44,7 +44,7 @@ int isValidName(char *s)
   return TRUE;
 }
 
-char *getToken (char *line, char *token)
+char *newToken (char *line, char *token)
 {
   int i = 0;
 
@@ -54,11 +54,10 @@ char *getToken (char *line, char *token)
   /* special case for a word consisting of a comma */
   if (*line == ',') {
     token[i] = ',';
-    i++;
-    line++;
+    i++; line++;
   }
-  else { /* coping word */
-    for (; *line && !isspace(*line) && *line != ','; i++, line++) {
+  else{ /* coping word */
+    for (; *line && !isspace(*line) && *line != ','; i++,line++) {
       token[i] = *line;
     }
   }

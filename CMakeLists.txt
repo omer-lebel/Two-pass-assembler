@@ -13,7 +13,7 @@ set(CMAKE_C_STANDARD 90)
 add_executable(project___mama14
         linkedList.c linkedList.h
         input.c input.h
-        preAssembler.c preAssembler.h
+#        preAssembler.c preAssembler.h
         passOne.c passOne.h
         main.c)
 

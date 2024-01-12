@@ -11,13 +11,21 @@
 
 #define SAVED_WORD_NUM (8 + 5 + 16)
 /* 8- register, 5-direction, 16-instruction */
-enum
+typedef enum bool
 {
-    FALSE = 0, TRUE
-};
+    FALSE = 0, TRUE = 1
+}bool;
 
-
-char *getToken (char *line, char *token);
+/**
+ * Extracts a token from the input string, skipping leading whitespaces.
+ * A comma is treated both as a token and a delimiter.
+ *
+ * @param str The input string.
+ * @param token The buffer to store the extracted token.
+ * @return Pointer to the next char after the extracted token or NULL if
+ * reach end of string.
+ */
+char *newToken (char *line, char *token);
 
 int isSavedWord(const char *s);
 
