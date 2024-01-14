@@ -28,6 +28,8 @@ char *text_seg = NULL;
 size_t DC = 0, IC = 100, line_num = 1;
 Line curLine;
 
+DS_Word *data_seg; //todo check about size
+
 //todo add file name and the whole line
 void raiseError(char* cause, char* msg){
   printf("file:%-2lu ",line_num);
@@ -299,7 +301,7 @@ int passOne (FILE *input)
 
   curLine.prefix = prefix;
   curLine.token = token;
-  curLine.prefix = (char *) &postfix;*/
+  curLine.postfix = (char **) &postfix;*/
 
 
   char line[MAX_LINE_SIZE], line_copy[MAX_LINE_SIZE];

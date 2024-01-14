@@ -16,6 +16,8 @@
 #define CYN   "\x1B[36m"
 #define WHT   "\x1B[37m"
 #define RESET "\x1B[0m"
+#define BOLD  "\e[1m"
+#define REG   "\e[m"
 
 
 /*
@@ -56,6 +58,35 @@ int isValidName(char *s)
 }
 
 
+char *newToken (char *line, char *token)
+{
+  int i = 0;
+
+  /* skip empty chars */
+  while (isspace(*line)) { line++; }
+
+  /* special case for a word consisting of a comma */
+  if (*line == ',') {
+    token[i] = ',';
+    i++;
+    line++;
+  }
+  else { /* coping word */
+    for (; *line && !isspace(*line) && *line != ','; i++, line++) {
+      token[i] = *line;
+    }
+  }
+  /* null terminate */
+  /* null terminate */
+  token[i] = '\0';
+
+  if (i == 0) { /* empty word */
+    return NULL;
+  }
+  return line;
+}
+
+
 void lineTok (Line *line)
 {
   size_t j, i = 0;
@@ -91,8 +122,11 @@ void lineTok (Line *line)
 
 void r_error(Line* line, size_t line_num, char *msg, int type){
   printf("file:%-2lu " RED "error: ",line_num);
-  printf(RESET"'"  YEL"%s" RESET"' %s\n", line->token, msg);
+  printf(RESET"'"  BOLD"%s" REG"' %s\n", line->token, msg);
 
-  printf ("\t%-2lu | %s" RED "%s" RESET "%s\n",line_num, line->prefix,
+  printf (" %-2lu | %s" RED "%s" RESET "%s\n",line_num, line->prefix,
           line->token, *line->postfix);
+
+  printf(" %-2s | %*s", " ", (int)strlen (line->prefix), " ");
+  printf(RED "^" "%.*s" RESET, (int)strlen (line->token) - 1, "~~~~~~~~~~~~");
 }

@@ -23,18 +23,18 @@ int main (int argc, char *argv[])
   Line curLine;
   char prefix[MAX_LINE_SIZE] = "";
   char token[MAX_LINE_SIZE] = "";
-  char postfix[MAX_LINE_SIZE] = " LABEL:     .data 1,x,2";
-
-  lineTok (&curLine);
-  lineTok (&curLine);
-  lineTok (&curLine);
-  lineTok (&curLine);
-  lineTok (&curLine);
+  char postfix[MAX_LINE_SIZE] = " LABEL:     .data 1,xxx,2";
+  char *p = postfix;
 
   curLine.prefix = prefix;
   curLine.token = token;
-  curLine.prefix = (char *) &postfix;
+  curLine.postfix = &p;
 
+  lineTok (&curLine);
+  lineTok (&curLine);
+  lineTok (&curLine);
+  lineTok (&curLine);
+  lineTok (&curLine);
 
   r_error(&curLine, 4, "undeclared (first use in this directive)", 1);
 

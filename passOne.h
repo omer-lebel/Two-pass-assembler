@@ -18,8 +18,6 @@ typedef struct DS_Word{
     int val;
 } DS_Word;
 
-DS_Word *data_seg; //todo check about size
-
 
 typedef enum symbol_type
 {
