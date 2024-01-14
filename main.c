@@ -19,26 +19,42 @@
 
 int main (int argc, char *argv[])
 {
-  int num = -1;
-  char input[] = "    \t-6";
-  sscanf(input, " -%d", &num);
-  printf ("%d", num);
 
-  FILE *txt_file, *as_file;
-  char pre_output[100];
-  int res;
+  Line curLine;
+  char prefix[MAX_LINE_SIZE] = "";
+  char token[MAX_LINE_SIZE] = "";
+  char postfix[MAX_LINE_SIZE] = " LABEL:     .data 1,x,2";
 
-  if (argc <= 1){
-    printf ("must give at least one file to process\n");
-    return EXIT_FAILURE;
-  }
+  lineTok (&curLine);
+  lineTok (&curLine);
+  lineTok (&curLine);
+  lineTok (&curLine);
+  lineTok (&curLine);
 
-  txt_file = fopen (argv[1], "r");
-  if (!txt_file) {
-    printf ("error while opening input file\n");
-    return EXIT_FAILURE;
-  }
-  passOne(txt_file);
+  curLine.prefix = prefix;
+  curLine.token = token;
+  curLine.prefix = (char *) &postfix;
+
+
+  r_error(&curLine, 4, "undeclared (first use in this directive)", 1);
+
+
+
+//  FILE *txt_file, *as_file;
+//  char pre_output[100];
+//  int res;
+//
+//  if (argc <= 1){
+//    printf ("must give at least one file to process\n");
+//    return EXIT_FAILURE;
+//  }
+//
+//  txt_file = fopen (argv[1], "r");
+//  if (!txt_file) {
+//    printf ("error while opening input file\n");
+//    return EXIT_FAILURE;
+//  }
+//  passOne(txt_file);
 
 /*  pre
  strcpy (pre_output, argv[1]);
@@ -52,7 +68,7 @@ int main (int argc, char *argv[])
   res = preAssembler (txt_file, as_file);
   */
 
-  fclose (txt_file);
+//  fclose (txt_file);
 //  fclose (as_file);
 
 

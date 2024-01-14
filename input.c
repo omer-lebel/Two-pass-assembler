@@ -6,6 +6,17 @@
 #include "input.h"
 #include <ctype.h>
 #include <string.h>
+#include <stdio.h>
+
+#define RED   "\x1B[31m"
+#define GRN   "\x1B[32m"
+#define YEL   "\x1B[33m"
+#define BLU   "\x1B[34m"
+#define MAG   "\x1B[35m"
+#define CYN   "\x1B[36m"
+#define WHT   "\x1B[37m"
+#define RESET "\x1B[0m"
+
 
 /*
 char* registers[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"};
@@ -44,28 +55,44 @@ int isValidName(char *s)
   return TRUE;
 }
 
-char *newToken (char *line, char *token)
+
+void lineTok (Line *line)
 {
-  int i = 0;
+  size_t j, i = 0;
+  char *p = *(line->postfix);
 
-  /* skip empty chars */
-  while (isspace(*line)) { line++; }
+  // Concatenate prefix and token
+  strcat(line->prefix, line->token);
+  j = strlen (line->prefix);
 
+  // skip empty characters in postfix and write them in prefix
+  for (; isspace(*p); j++, p++){
+    line->prefix[j] = *p;
+  }
+  line->prefix[j] = '\0';
+
+  // find next token and update postfix:
   /* special case for a word consisting of a comma */
-  if (*line == ',') {
-    token[i] = ',';
-    i++; line++;
+  if (*p == ',') {
+    line->token[i] = ',';
+    i++; p++;
   }
   else{ /* coping word */
-    for (; *line && !isspace(*line) && *line != ','; i++,line++) {
-      token[i] = *line;
+    for (; *p!= '\0' && !isspace(*p) && *p != ',';
+           i++, p++) {
+      line->token[i] = *p;
     }
   }
-  /* null terminate */
-  token[i] = '\0';
+  /* null terminate the token */
+  line->token[i] = '\0';
+  *line->postfix = p;
+}
 
-  if (i == 0) { /* empty word */
-    return NULL;
-  }
-  return line;
+
+void r_error(Line* line, size_t line_num, char *msg, int type){
+  printf("file:%-2lu " RED "error: ",line_num);
+  printf(RESET"'"  YEL"%s" RESET"' %s\n", line->token, msg);
+
+  printf ("\t%-2lu | %s" RED "%s" RESET "%s\n",line_num, line->prefix,
+          line->token, *line->postfix);
 }

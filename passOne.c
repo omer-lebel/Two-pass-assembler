@@ -7,25 +7,9 @@
 #include <ctype.h>
 #include "input.h"
 
-/*
-* first path:
-* 1) symbols table:
- label | address (IC/DC) or val | type (cmd/data/mdefine) | external | entry
 
-* 2) create data segment, compute its size DC (from 100)
-* 3) create partial text segment, compute its size IC (from 0)
-* 4) create external table: | label | line that appears in program
-* 5.1) create entry table - text: | label | address
-* 5.2) create entry table - data: | label | address
-* 6) update address of data in the data segment (data is after text)
-*/
-
-LinkedList *symbols_table = NULL;
-LinkedList *entry_table = NULL;
-LinkedList *extern_table = NULL;
-char *data_seg = NULL;
-char *text_seg = NULL;
-size_t DC = 0, IC = 100;
+#define MAX_INT ( 8191) //   2^14 -1
+#define MIN_INT (-8191) // -(2^14 -1)
 
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"
@@ -36,49 +20,50 @@ size_t DC = 0, IC = 100;
 #define WHT   "\x1B[37m"
 #define RESET "\x1B[0m"
 
-typedef enum symbol_type
-{
-    DIRECTIVE, OPERATION, DEFINE
-} symbol_type;
 
-typedef struct symbol
-{
-    size_t address;
-    symbol_type type;
-    bool isEntry;
-    bool isExtern;
-} symbol;
-
+LinkedList *symbols_table = NULL;
+LinkedList *entry_table = NULL;
+LinkedList *extern_table = NULL;
+char *text_seg = NULL;
+size_t DC = 0, IC = 100, line_num = 1;
+Line curLine;
 
 //todo add file name and the whole line
-void raiseError(int line_num, char* cause, char* msg){
-  printf("file:%-2d ",line_num);
-  printf(RED"error " RESET"in '"  YEL"%s" RESET"' ", cause);
+void raiseError(char* cause, char* msg){
+  printf("file:%-2lu ",line_num);
+  printf(RED"error: " RESET"'"  YEL"%s" RESET"' ", cause);
   printf ("%s\n", msg);
   // 56 | mul a "b"
 }
 
-void print_dataSeg ()
+void raiseWarning(char* cause, char* msg){
+  printf("file:%-2lu ",line_num);
+  printf(CYN "warning: " RESET"'"  YEL"%s" RESET"' ", cause);
+  printf ("%s\n", msg);
+  // 56 | mul a "b"
+}
+
+void print_dataSeg (void)
 {
   int i;
   for (i = 0; i < DC; ++i) {
-    if (data_seg[i] == '\0'){
-      printf ("| \\0 ");
-    }else{
-      printf ("| %c ", data_seg[i]);
+    if (data_seg[i].type == INT_TYPE){
+      printf ("| %d ", data_seg[i].val);
+    }else{ //char
+      printf ("| %c ", (char)data_seg[i].val);
     }
   }
   printf("|\n");
 }
 
-int init_pass ()
+int init_pass (void)
 {
   symbols_table = createList (init_symbol, print_symbol, free);
   if (!symbols_table) {
     return EXIT_FAILURE; /* memory error */
   }
 
-  data_seg = (char *) malloc (INIT_SIZE * sizeof (char));
+  data_seg = (DS_Word *) malloc (INIT_SIZE * sizeof (DS_Word));
   if (!data_seg) {
     free (symbols_table);
     return EXIT_FAILURE;
@@ -91,7 +76,7 @@ int isLabel (const char *first_word)
   return first_word[strlen (first_word) - 1] == ':';
 }
 
-char *isValidStr (char *line, int line_num)
+char *isValidStr (char *line)
 {
   char *s, *end;
   if (line == NULL || *line == '\0') {
@@ -105,16 +90,16 @@ char *isValidStr (char *line, int line_num)
 
   // Must be enclosed in "" and have at least one char between them
   if (*line != '"'){
-    raiseError (line_num, line, "must start with opening \"");
+    raiseError (line, "must start with opening \"");
     return NULL;
   }
   if (*end != '"'){
-    raiseError (line_num, line, "must end with closing \"");
+    raiseError (line, "must end with closing \"");
     return NULL;
   }
 
   if (end - line <= 1) {
-    raiseError (line_num, line, "must be enclosed in \" \" and have at least"
+    raiseError (line, "must be enclosed in \" \" and have at least"
                                 " one char between");
     return NULL;
   }
@@ -122,7 +107,7 @@ char *isValidStr (char *line, int line_num)
   //Make sure there are no other " in the middle
   for (s = line + 1; s < end; s++) {
     if (*s == '"') {
-      raiseError (line_num, line, "extra text after closer \"\n");
+      raiseError (line, "extra text after closer \"\n");
       return NULL;
     }
   }
@@ -130,7 +115,7 @@ char *isValidStr (char *line, int line_num)
   return line + 1; //Return a pointer to the word between the ""
 }
 
-int add_str_to_dataSeg (char *str, size_t size)
+/*int add_str_to_dataSeg (char *str, size_t size)
 {
   size_t target_dc = DC + size;
   if (target_dc -1 >= 100) {
@@ -138,6 +123,37 @@ int add_str_to_dataSeg (char *str, size_t size)
   }
   for (;  DC < target_dc; DC++) {
     data_seg[DC] = *str++;
+  }
+  return TRUE;
+}*/
+
+int addToDataSeg(DS_Type type, void *arr, size_t size)
+{
+  size_t target_dc = DC + size;
+  int *intArr;
+  char *charArr;
+  if (target_dc - 1 >= 100) {
+    raiseError (".data", "overflow in data segment"); //todo
+    return FALSE;
+  }
+
+  switch (type) {
+    case INT_TYPE:
+      intArr = (int *) arr;
+      for (; DC < target_dc; DC++) {
+        data_seg[DC].type = type;
+        data_seg[DC].val = *intArr++;
+      }
+      break;
+    case CHAR_TYPE:
+      charArr = (char *) arr;
+      for (; DC < target_dc; DC++) {
+        data_seg[DC].type = type;
+        data_seg[DC].val = (int) *charArr++;
+      }
+      break;
+    default:
+      raiseError ("unknown data type", "");
   }
   return TRUE;
 }
@@ -156,9 +172,9 @@ int add_data_symbol(char* symbol_name){
   return TRUE;
 }
 
-int str_handler (char *line, int line_num, char *symbol_name)
+int str_handler (char *line, char *symbol_name)
 {
-  line = isValidStr (line, line_num);
+  line = isValidStr (line);
   if (!line) {
     //todo add more errors
     return FALSE; //non valid str
@@ -167,51 +183,108 @@ int str_handler (char *line, int line_num, char *symbol_name)
     if (!add_data_symbol(symbol_name)){
       return FALSE; //wasn't able to add str to symbol table (memory error)
     }
-
   }
-  if (!add_str_to_dataSeg (line, strlen (line) + 1)) {
+  else{
+    raiseWarning(".string", "lost variable");
+  }
+  if (!addToDataSeg(CHAR_TYPE, line, strlen (line) + 1)) {
     return FALSE; //wasn't able to add str to data seg
   }
   return TRUE;
 }
 
-int isValidInt (char* line, int line_num, int *arr){
-  char token[MAX_TOKEN_SIZE];
-  line = newToken (line, token);
+//get not null string
+int isInt (char* token, int *res){
+  char *end_ptr = NULL;
+  long int tmp;
 
+  tmp = strtol (token, &end_ptr, 10);
+  if (*end_ptr != '\0'){
+    raiseError (token, "undeclared (first use in this directive)")
+    ; //todo
+    return FALSE;
+  }
+  if (tmp > MAX_INT || tmp < MIN_INT){
+    raiseError (token, "out of integer bound [-(2^14-1),2^13-1]");
+    return FALSE;
+  }
+  *res = (int) tmp;
+  return TRUE;
 }
 
-int int_handler (char *line, int line_num, char *symbol_name)
+//return number of number the success find in row or 0 in error
+int validData(char* line, int* arr){
+  char token[MAX_TOKEN_SIZE];
+  int i=0, res;
+
+  //get first int
+  line = newToken (line, token);
+  if (token[0] == '\0'){ //exp: .data _
+    raiseError (".data", "empty integer initializer");
+    return 0;
+  }
+  if (!isInt (token, &res)){ //exp: .data 1,2,x
+    return -1;
+  }
+  arr[i++] = res;
+  line = newToken (line, token);
+
+  //get comma + next int
+  while (*token != '\0'){
+
+    //get comma
+    if (*token != ','){ //exp: .data 1,2 3 | .data 1 2 x
+      raiseError (token, "expected ',' before token");
+    }
+
+    //get next int
+    line = newToken (line, token);
+    if (*token == ','){ //exp: .data 1,,2
+      raiseError (token, "expected integer before ‘,’ token");
+    }
+    if (!isInt (token, &res)){ //exp: .data 1,2,x
+      return -1;
+    }
+    arr[i++] = res;
+    line = newToken (line, token);
+  }
+  return i;
+}
+
+int int_handler (char *line, char *symbol_name)
 {
-  int arr[100];
-  if (!isValidInt (line, line_num, arr)) {
-    return FALSE; //non valid numbers
+  int arr[MAX_LINE_SIZE];
+  int res = validData(line, arr);
+  if (res < 0) {
+    return FALSE; //non valid numbers def
   }
   if (symbol_name) {
     if (!add_data_symbol(symbol_name)){
       return FALSE; //wasn't able to add data to symbol table (memory error)
     }
-
   }
-  if (!add_str_to_dataSeg (line, strlen (line) + 1)) {
+  else{
+    raiseWarning(".data", "lost variable");
+  }
+  if (!addToDataSeg(INT_TYPE, arr, res)) {
     return FALSE; //wasn't able to add str to data seg
   }
   return TRUE;
-};
+}
 
 int
-f_processLine (char *line, int line_num, char *first_word, char *symbol_name)
+f_processLine (char *line, char *first_word, char *symbol_name)
 {
   //case: .string
   if (strcmp (".string", first_word) == 0) {
-    if (!str_handler (line, line_num, symbol_name)){
+    if (!str_handler (line, symbol_name)){
       return FALSE;
     }
   }
 
   //case: .data
   if (strcmp (".data", first_word) == 0) {
-    if (!int_handler (line, line_num, symbol_name)){
+    if (!int_handler (line, symbol_name)){
       return FALSE;
     }
   }
@@ -220,12 +293,20 @@ f_processLine (char *line, int line_num, char *first_word, char *symbol_name)
 
 int passOne (FILE *input)
 {
+  /*char prefix[MAX_LINE_SIZE] = "";
+  char token[MAX_LINE_SIZE] = "";
+  char postfix[MAX_LINE_SIZE] = "";
+
+  curLine.prefix = prefix;
+  curLine.token = token;
+  curLine.prefix = (char *) &postfix;*/
+
+
   char line[MAX_LINE_SIZE], line_copy[MAX_LINE_SIZE];
   char *first_word = NULL, *curr_label = NULL, *p_line = NULL;
-  int line_num = 1;
 
   if (init_pass ()) {
-    return FALSE; //memory error;
+    return EXIT_FAILURE; //memory error;
   }
 
   while (fgets (line, MAX_LINE_SIZE, input)) {
@@ -239,14 +320,15 @@ int passOne (FILE *input)
       curr_label = first_word;
       first_word = strtok (NULL, DELIM);
       p_line = strtok (NULL, "");
-      f_processLine (p_line, line_num++, first_word, curr_label);
+      f_processLine (p_line, first_word, curr_label);
     }
     else { //else pass the origin line (don't cut the first word)
       p_line = strtok (NULL, "");
-      f_processLine (p_line, line_num++, first_word, curr_label);
+      f_processLine (p_line, first_word, curr_label);
     }
+    ++line_num;
   }
-  print_dataSeg ();
+        print_dataSeg ();
   printList (symbols_table, stdout);
   freeList (symbols_table);
   return EXIT_SUCCESS;

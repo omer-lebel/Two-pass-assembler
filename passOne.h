@@ -5,9 +5,36 @@
 #ifndef _PASSONE_H_
 #define _PASSONE_H_
 
-#include <stdlib.h>
 #include "input.h"
 #include "linkedList.h"
+
+typedef enum {
+    CHAR_TYPE,
+    INT_TYPE
+} DS_Type;
+
+typedef struct DS_Word{
+    DS_Type type;
+    int val;
+} DS_Word;
+
+DS_Word *data_seg; //todo check about size
+
+
+typedef enum symbol_type
+{
+    DIRECTIVE, OPERATION, DEFINE
+} symbol_type;
+
+typedef struct symbol
+{
+    size_t address;
+    symbol_type type;
+    bool isEntry;
+    bool isExtern;
+} symbol;
+
+
 
 int passOne (FILE *input);
 
