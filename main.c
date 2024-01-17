@@ -3,77 +3,136 @@
 //
 
 #include <stdio.h>
-//#include "preAssembler.h"
+#include <stdlib.h>
 #include <ctype.h>
-#include "passOne.h"
-#define RED   "\x1B[31m"
-#define GRN   "\x1B[32m"
-#define YEL   "\x1B[33m"
-#define BLU   "\x1B[34m"
-#define MAG   "\x1B[35m"
-#define CYN   "\x1B[36m"
-#define WHT   "\x1B[37m"
-#define RESET "\x1B[0m"
 
+#include "preAssembler.h"
+#include "firstPass.h"
+
+enum mod{
+    PRE=0, FIRST, SEC
+};
+
+#define INPUT_IND 1
+#define MOD_IND 2
 
 
 int main (int argc, char *argv[])
 {
 
-  Line curLine;
-  char prefix[MAX_LINE_SIZE] = "";
-  char token[MAX_LINE_SIZE] = "";
-  char postfix[MAX_LINE_SIZE] = " LABEL:     .data 1,xxx,2";
-  char *p = postfix;
+  FILE *src_file, *am_file, *fp_src;
+  char fileName[100];
+  int res;
 
-  curLine.prefix = prefix;
-  curLine.token = token;
-  curLine.postfix = &p;
-
-  lineTok (&curLine);
-  lineTok (&curLine);
-  lineTok (&curLine);
-  lineTok (&curLine);
-  lineTok (&curLine);
-
-  r_error(&curLine, 4, "undeclared (first use in this directive)", 1);
-
-
-
-//  FILE *txt_file, *as_file;
-//  char pre_output[100];
-//  int res;
-//
-//  if (argc <= 1){
-//    printf ("must give at least one file to process\n");
-//    return EXIT_FAILURE;
-//  }
-//
-//  txt_file = fopen (argv[1], "r");
-//  if (!txt_file) {
-//    printf ("error while opening input file\n");
-//    return EXIT_FAILURE;
-//  }
-//  passOne(txt_file);
-
-/*  pre
- strcpy (pre_output, argv[1]);
-  strcat (pre_output, ".am");
-  as_file = fopen (pre_output, "w");
-  if (!as_file) {
-    printf ("error while opening %s.as file\n",argv[1]);
+  if (argc <= 1){
+    printf ("must give at least one file to process\n");
     return EXIT_FAILURE;
   }
 
-  res = preAssembler (txt_file, as_file);
-  */
+  src_file = fopen (argv[INPUT_IND], "r");
+  if (!src_file) {
+    printf ("error while opening input file\n");
+    return EXIT_FAILURE;
+  }
+  strcpy (fileName, argv[INPUT_IND]);
 
-//  fclose (txt_file);
-//  fclose (as_file);
+  //pre
+  if (argv[MOD_IND] == PRE){
+    strcat (fileName, ".am");
+    am_file = fopen (fileName, "w");
+    if (!am_file) {
+      printf ("error while opening %s.am file\n",argv[1]);
+      fclose (src_file);
+      return EXIT_FAILURE;
+    }
 
+    res = preAssembler (src_file, am_file);
+    if (res != TRUE){
+      fclose (src_file);
+      fclose (am_file);
+      return EXIT_FAILURE;
+    }
+    fp_src = am_file;
+  }
+  else{
+    fp_src = src_file;
+  }
+
+  //first
+  res = firstPass (fp_src, fileName);
+  fclose (src_file);
+
+  if (argc == 2){
+    fclose (fp_src);
+  }
+
+
+  if (res == FATAL){
+    return EXIT_FAILURE;
+  }
 
   return EXIT_SUCCESS;
 }
+
+/*
+
+LineInfo curLine;
+char prefix[MAX_LINE_SIZE] = "";
+char token[MAX_LINE_SIZE] = "";
+char postfix[MAX_LINE_SIZE] = " LABEL:     .data 1,xxx,2";
+char file_Name[MAX_LINE_SIZE] = "fileName";
+char *p = postfix;
+
+curLine.prefix = prefix;
+curLine.token = token;
+curLine.postfix = &p;
+curLine.file = file_Name;
+curLine.num = 4;
+
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+
+lineTok (&curLine);
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+
+lineTok (&curLine);
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+
+lineTok (&curLine);
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+
+lineTok (&curLine);
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+r_error("argument", &curLine, "undeclared (first use in this directive)");
+
+lineTok (&curLine);
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+r_error("argument", &curLine, "undeclared (first use in this directive)");
+
+lineTok (&curLine);
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+r_warning("argument", &curLine, "undeclared (first use in this directive)");
+
+lineTok (&curLine);
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+
+lineTok (&curLine);
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+
+lineTok (&curLine);
+printf ("pre: \"%s\" \t tok:\"%s\" \t post:\"%s\"\n", curLine.prefix,
+curLine.token, *curLine.postfix);
+*/
+
+
 
 /* printf(RED "red\n"     ); //error
  printf(GRN "green\n"   );

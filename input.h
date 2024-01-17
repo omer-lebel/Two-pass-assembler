@@ -15,19 +15,21 @@
 /* 8- register, 5-direction, 16-instruction */
 typedef enum bool
 {
-    FALSE = 0, TRUE = 1
+    FALSE = 0, TRUE = 1, FATAL=2
 }bool;
 
 
-typedef struct Line{
+typedef struct LineInfo{
+    char* file;
+    size_t num;
     char *prefix;
     char *token;
     char **postfix;
-}Line;
+}LineInfo;
 
-void lineTok (Line *line);
-void r_error(Line* line, size_t line_num, char *msg, int type);
-
+void lineTok (LineInfo *line);
+void r_error(char* msg_before, LineInfo* line, char *msg_after);
+void r_warning(char* msg_before, LineInfo* line, char *msg_after);
 
 /**
  * Extracts a token from the input string, skipping leading whitespaces.

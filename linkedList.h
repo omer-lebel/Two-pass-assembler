@@ -78,16 +78,16 @@ LinkedList *createList (init_data_func init_data, print_func print,
  * @param data Data to be stored in the new node.
  * @return A pointer to the created node or NULL on failure.
  */
-Node *createNode (LinkedList *linked_list, char* word, void *data);
+Node *createNode (LinkedList *linked_list, const char* word, void *data);
 
 /**
  * Retrieves the node containing the specified data.
  *
  * @param linked_list Pointer to the linked list.
- * @param data Data to search for in the linked list.
+ * @param word Data to search for in the linked list.
  * @return A pointer to the node containing the data or NULL if not found.
  */
-Node *findNode (LinkedList *linked_list, void *word);
+Node *findNode (const LinkedList *linked_list, const char *word);
 
 /**
  * Adds a new node to the end of the linked list.

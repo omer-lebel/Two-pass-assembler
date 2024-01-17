@@ -34,6 +34,7 @@ char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
                      "not", "clr", "inc", "dec", "jmp", "bne", "red", "prn",
                      "jsr", "rts", "hlt"};
 
+
 int isSavedWord (const char *s)
 {
   int i = 0;
@@ -87,23 +88,23 @@ char *newToken (char *line, char *token)
 }
 
 
-void lineTok (Line *line)
+void lineTok (LineInfo *line)
 {
   size_t j, i = 0;
   char *p = *(line->postfix);
 
-  // Concatenate prefix and token
+  /* Concatenate prefix and token */
   strcat(line->prefix, line->token);
   j = strlen (line->prefix);
 
-  // skip empty characters in postfix and write them in prefix
+  /* skip empty characters in postfix and write them in prefix */
   for (; isspace(*p); j++, p++){
     line->prefix[j] = *p;
   }
   line->prefix[j] = '\0';
 
-  // find next token and update postfix:
-  /* special case for a word consisting of a comma */
+  /* find next token and update postfix:
+   special case for a word consisting of a comma */
   if (*p == ',') {
     line->token[i] = ',';
     i++; p++;
@@ -119,14 +120,55 @@ void lineTok (Line *line)
   *line->postfix = p;
 }
 
+void lineNewCpy(LineInfo *dst, LineInfo *src){
+  dst->prefix[0] = '\0';
+  dst->token = "";
+  strcpy(*(dst->postfix), src->prefix);
+  dst->file = src->file;
+  dst->num = src->num;
+}
 
-void r_error(Line* line, size_t line_num, char *msg, int type){
-  printf("file:%-2lu " RED "error: ",line_num);
-  printf(RESET"'"  BOLD"%s" REG"' %s\n", line->token, msg);
+void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
+*msg_after)
+{
+  size_t i;
+  LineInfo tmp;
 
-  printf (" %-2lu | %s" RED "%s" RESET "%s\n",line_num, line->prefix,
-          line->token, *line->postfix);
+  /* in case of end of line, find the first token again */
+  if (*line->token == '\0'){ /*todo think */
+    strcpy(*(line->postfix), line->prefix);
+    line->prefix[0] = '\0';
+    line->token[0] = '\0';
+    lineTok (&tmp);
+  }
 
+  /* Print file and line number, error or warning type (fileNum:i error:) */
+  printf("%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
+
+  /* Print message context, token, and additional message */
+  printf("%s " BOLD "'%s'" REG " %s\n", msg_before, line->token, msg_after);
+
+
+  /* print line number and the line with the token bolded in color
+   i | line with error cause bolted in color
+     |           ^~~~~~~~~~~                            */
+  printf (" %-2lu | %s %s%s" RESET "%s\n",
+          line->num, line->prefix, color, line->token, *line->postfix);
+
+  /* print an arrow pointing to the location of the token in the line */
   printf(" %-2s | %*s", " ", (int)strlen (line->prefix), " ");
-  printf(RED "^" "%.*s" RESET, (int)strlen (line->token) - 1, "~~~~~~~~~~~~");
+  printf(" %s^", color);
+  for (i = 0; i < strlen (line->token) - 1; i++){
+    printf("%s~", color);
+  }
+  printf(RESET "\n");
+}
+
+
+void r_error(char* msg_before, LineInfo* line, char *msg_after){
+  r_msg("error", RED, msg_before,line, msg_after);
+}
+
+void r_warning(char* msg_before, LineInfo* line, char *msg_after){
+  r_msg("warning", BLU, msg_before,line, msg_after);
 }

@@ -20,7 +20,7 @@ LinkedList* createList(init_data_func init_data, print_func print,
 }
 
 
-Node *createNode (LinkedList *linked_list, char *word, void *data)
+Node *createNode (LinkedList *linked_list, const char *word, void *data)
 {
   Node *node = (Node*)malloc (sizeof (Node));
   if (!node) {
@@ -44,7 +44,7 @@ Node *createNode (LinkedList *linked_list, char *word, void *data)
   return node;
 }
 
-Node *findNode (LinkedList *linked_list, void *word)
+Node *findNode (const LinkedList *linked_list, const char *word)
 {
   Node *node = linked_list->head;
   while (node) {
