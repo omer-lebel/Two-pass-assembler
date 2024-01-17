@@ -1,0 +1,22 @@
+OMER: .string "omer"
+LOOP: .string "lebel"
+WHILE: .string "hi"
+.string "lebel
+.string "leb"el
+.string "
+.string bel
+.string le"bel"
+.string "lebel" "lebel"
+
+
+file:4  error in '"lebel' must end with closing "
+file:5  error in '"leb"el' must end with closing "
+file:6  error in '"' must be enclosed in " " and have at least one char between
+file:7  error in 'bel' must start with opening "
+file:8  error in 'le"bel"' must start with opening "
+file:9  error in '"lebel" "lebel"' extra text after closer "
+
+| o | m | e | r | \0 | l | e | b | e | l | \0 | h | i | \0 |
+ OMER:            0      directive       not external
+ LOOP:            5      directive       not external
+ WHILE:           11     directive       not external

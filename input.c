@@ -4,9 +4,6 @@
 
 
 #include "input.h"
-#include <ctype.h>
-#include <string.h>
-#include <stdio.h>
 
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"
@@ -91,7 +88,7 @@ char *newToken (char *line, char *token)
 void lineTok (LineInfo *line)
 {
   size_t j, i = 0;
-  char *p = *(line->postfix);
+  char *p = (line->postfix);
 
   /* Concatenate prefix and token */
   strcat(line->prefix, line->token);
@@ -117,13 +114,13 @@ void lineTok (LineInfo *line)
   }
   /* null terminate the token */
   line->token[i] = '\0';
-  *line->postfix = p;
+  line->postfix = p;
 }
 
 void lineNewCpy(LineInfo *dst, LineInfo *src){
   dst->prefix[0] = '\0';
   dst->token = "";
-  strcpy(*(dst->postfix), src->prefix);
+  strcpy(dst->postfix, src->prefix);
   dst->file = src->file;
   dst->num = src->num;
 }
@@ -136,7 +133,7 @@ void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
 
   /* in case of end of line, find the first token again */
   if (*line->token == '\0'){ /*todo think */
-    strcpy(*(line->postfix), line->prefix);
+    strcpy(line->postfix, line->prefix);
     line->prefix[0] = '\0';
     line->token[0] = '\0';
     lineTok (&tmp);
@@ -153,7 +150,7 @@ void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
    i | line with error cause bolted in color
      |           ^~~~~~~~~~~                            */
   printf (" %-2lu | %s %s%s" RESET "%s\n",
-          line->num, line->prefix, color, line->token, *line->postfix);
+          line->num, line->prefix, color, line->token, line->postfix);
 
   /* print an arrow pointing to the location of the token in the line */
   printf(" %-2s | %*s", " ", (int)strlen (line->prefix), " ");

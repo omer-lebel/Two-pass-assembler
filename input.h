@@ -10,6 +10,9 @@
 #define DELIM " \t\r\n"
 
 #include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdio.h>
 
 #define SAVED_WORD_NUM (8 + 5 + 16)
 /* 8- register, 5-direction, 16-instruction */
@@ -24,7 +27,7 @@ typedef struct LineInfo{
     size_t num;
     char *prefix;
     char *token;
-    char **postfix;
+    char *postfix;
 }LineInfo;
 
 void lineTok (LineInfo *line);
