@@ -10,25 +10,25 @@ all: testPre testFirst
 ################## pre assembler test ##################
 
 testPre: preAssembler
-	./testing/testPre.sh
+	./testing/testPre/testPre.sh
 
 preAssembler: testPre.o preAssembler.o input.o linkedList.o
 	$(CC) $(CFLAGS) testPre.o preAssembler.o input.o linkedList.o -o preAssembler
 
-testPre.o: testing/testPre.c
-	$(CC) $(CFLAGS) -c ./testing/testPre.c -o testPre.o
+testPre.o: ./testing/testPre/testPre.c
+	$(CC) $(CFLAGS) -c ./testing/testPre/testPre.c -o testPre.o
 
 
 
 ################## first pass test ##################
 testFirst: firstPass
-	./testing/testFirst.sh
+	./testing/testFirst/testFirst.sh
 
 firstPass: testFirst.o firstPass.o preAssembler.o input.o linkedList.o
 	$(CC) $(CFLAGS) testFirst.o firstPass.o preAssembler.o input.o linkedList.o -o firstPass
 
-testFirst.o: testing/testFirst.c
-	$(CC) $(CFLAGS) -c ./testing/testFirst.c -o testFirst.o
+testFirst.o: testing/testFirst/testFirst.c
+	$(CC) $(CFLAGS) -c testing/testFirst/testFirst.c -o testFirst.o
 
 
 
