@@ -3,13 +3,15 @@
 passed_tests=0
 total_tests=0
 
-cd ./testPre || exit
+cd ./testing/testPre || exit
+
+echo "================ preAssembler ================"
 
 run_test() {
     local test_name="$1"
 
     cd "./$test_name" || exit
-    ../../preAssembler input
+    ../../../preAssembler "input"
     diff_output=$(diff --strip-trailing-cr input.am expected.am)
 
     if [ $? -eq 0 ]; then
@@ -29,7 +31,7 @@ run_test() {
 error_test() {
     local test_name="$1"
 
-    ../../preAssembler "$test_name" output
+    ../../../preAssembler "$test_name" output
 
     if [ $? -eq 1 ]; then
             echo "$test_name: pass"

@@ -1,6 +1,7 @@
-//
-// Created by OMER on 1/15/2024.
-//
+/*
+ Created by OMER on 1/15/2024.
+*/
+
 
 #ifndef _FIRSTPASS_H_
 #define _FIRSTPASS_H_
@@ -8,6 +9,8 @@
 #include "input.h"
 #include "linkedList.h"
 
+#define MAX_INT 8191
+#define MIN_INT -8191
 /****************** symbols *******************/
 
 typedef enum SymbolType
@@ -43,7 +46,7 @@ typedef struct DsWord{
 
 
 
-int firstPass(FILE *input_file, char* file_name);
+int firstPass(FILE *input_file, char* file_name, bool *no_error);
 /* *************************************************
 * ...Function to handle the macro's linked list ...
 ***************************************************/
@@ -52,4 +55,4 @@ void *init_symbol (const void *data);
 void print_symbol (const char *word, const void *data, FILE *pf);
 
 
-#endif //_FIRSTPASS_H_
+#endif /*_FIRSTPASS_H_ */

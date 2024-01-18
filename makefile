@@ -1,16 +1,41 @@
-.PHONY: clean
+.PHONY: clean all testPre testFirst
 
 CC=gcc
-CFLAGS= -Wall -ansi -pedantic
+CFLAGS = -Wall -Wextra -Wvla -ansi -pedantic
+HUJI = -Wextra -Wall -Wvla -std=c99
 
-test: preAssembler
-	./test.sh
 
-preAssembler: test.o preAssembler.o input.o linkedList.o
-	$(CC) $(CFLAGS)  test.o preAssembler.o input.o linkedList.o -o preAssembler
+all: testPre testFirst
 
-test.o: test.c
-	$(CC) $(CFLAGS) -c test.c
+################## pre assembler test ##################
+
+testPre: preAssembler
+	./testing/testPre.sh
+
+preAssembler: testPre.o preAssembler.o input.o linkedList.o
+	$(CC) $(CFLAGS) testPre.o preAssembler.o input.o linkedList.o -o preAssembler
+
+testPre.o: testing/testPre.c
+	$(CC) $(CFLAGS) -c ./testing/testPre.c -o testPre.o
+
+
+
+################## first pass test ##################
+testFirst: firstPass
+	./testing/testFirst.sh
+
+firstPass: testFirst.o firstPass.o preAssembler.o input.o linkedList.o
+	$(CC) $(CFLAGS) testFirst.o firstPass.o preAssembler.o input.o linkedList.o -o firstPass
+
+testFirst.o: testing/testFirst.c
+	$(CC) $(CFLAGS) -c ./testing/testFirst.c -o testFirst.o
+
+
+
+
+################## o files #######################
+firstPass.o: firstPass.c firstPass.h
+	$(CC) $(CFLAGS) -c firstPass.c
 
 preAssembler.o: preAssembler.c preAssembler.h
 	$(CC) $(CFLAGS) -c preAssembler.c
@@ -21,5 +46,7 @@ input.o: input.c input.h
 linkedList.o: linkedList.c linkedList.h
 	$(CC) $(CFLAGS) -c linkedList.c
 
+
+
 clean:
-	rm -f *.o preAssembler
+	rm -f *.o preAssembler firstPass

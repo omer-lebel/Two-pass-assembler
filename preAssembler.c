@@ -126,6 +126,7 @@ void *init_mcrData (const void *data)
     free (new_data);
     return NULL;
   }
+  new_data->content[0] = '\0';
   new_data->total = 0;
   new_data->capacity = MAX_LINE_SIZE;
   return new_data;
@@ -136,7 +137,8 @@ int add_content (mcrData *macro_data, char *content)
 /*  static int i = 1; */
   char *tmp = NULL;
   size_t new_capacity;
-  size_t new_total = macro_data->total + strlen (content) + 1;
+  size_t new_total = macro_data->total + strlen(content) + 1;
+
   /* resize content array if needed */
   if (new_total > macro_data->capacity) {
     new_capacity = 2 * new_total;
@@ -148,7 +150,7 @@ int add_content (mcrData *macro_data, char *content)
     macro_data->content = tmp;
     macro_data->capacity = new_capacity;
   }
-  strcat (macro_data->content, content);
+  strcat(macro_data->content, content);
   macro_data->total = new_total;
 /*  printf ("\n%d) curr mcr content is:\n %s", i++, macro_data->content); */
   return TRUE;

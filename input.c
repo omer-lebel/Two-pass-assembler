@@ -13,8 +13,8 @@
 #define CYN   "\x1B[36m"
 #define WHT   "\x1B[37m"
 #define RESET "\x1B[0m"
-#define BOLD  "\e[1m"
-#define REG   "\e[m"
+#define BOLD "\033[1m"
+#define REG "\033[0m"
 
 
 /*
@@ -87,7 +87,7 @@ char *newToken (char *line, char *token)
 
 void lineTok (LineInfo *line)
 {
-  size_t j, i = 0;
+  size_t j=0, i = 0;
   char *p = (line->postfix);
 
   /* Concatenate prefix and token */
@@ -129,15 +129,6 @@ void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
 *msg_after)
 {
   size_t i;
-  LineInfo tmp;
-
-  /* in case of end of line, find the first token again */
-  if (*line->token == '\0'){ /*todo think */
-    strcpy(line->postfix, line->prefix);
-    line->prefix[0] = '\0';
-    line->token[0] = '\0';
-    lineTok (&tmp);
-  }
 
   /* Print file and line number, error or warning type (fileNum:i error:) */
   printf("%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
@@ -147,13 +138,16 @@ void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
 
 
   /* print line number and the line with the token bolded in color
-   i | line with error cause bolted in color
-     |           ^~~~~~~~~~~                            */
+   i | line with error cause bolted in color */
   printf (" %-2lu | %s %s%s" RESET "%s\n",
           line->num, line->prefix, color, line->token, line->postfix);
 
-  /* print an arrow pointing to the location of the token in the line */
-  printf(" %-2s | %*s", " ", (int)strlen (line->prefix), " ");
+  /* print an arrow pointing to the location of the token in the line
+       |           ^~~~~~~~~                 */
+  printf(" %-2s | ", " ");
+  for (i = 0; i < strlen (line->prefix); i++){
+    printf(" ");
+  }
   printf(" %s^", color);
   for (i = 0; i < strlen (line->token) - 1; i++){
     printf("%s~", color);
@@ -167,5 +161,5 @@ void r_error(char* msg_before, LineInfo* line, char *msg_after){
 }
 
 void r_warning(char* msg_before, LineInfo* line, char *msg_after){
-  r_msg("warning", BLU, msg_before,line, msg_after);
+  r_msg("warning", YEL, msg_before,line, msg_after);
 }

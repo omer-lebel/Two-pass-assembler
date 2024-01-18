@@ -1,6 +1,7 @@
-//
-// Created by OMER on 1/15/2024.
-//
+/*
+ Created by OMER on 1/15/2024.
+*/
+
 
 #include "firstPass.h"
 
@@ -10,8 +11,7 @@ LinkedList *symbols_table;
 char *text_seg;
 DsWord *data_seg;
 
-size_t DC = 0,
-      IC = 100;
+size_t DC, IC;
 
 
 /****************** pass helpers *******************/
@@ -31,21 +31,26 @@ int init_pass (LineInfo *line, char* prefix, char* token, char* postfix,
     return FATAL; /* memory error */
   }
 
-  //line info
+  /* line info */
   line->file = file_name;
   line->num = 1;
   line->prefix = prefix;
   line->token = token;
   line->postfix = postfix;
 
+  DC = 0;
+  IC = 100;
+
   return TRUE;
 }
 
-void restartLine(LineInfo *line){
-  line->num++;
-  line->prefix[0] = '\0';
-  line->token[0] = '\0';
-  line->postfix[0] = '\0';
+void restartLine(char* line, LineInfo *line_info, char* label){
+  line_info->num++;
+  line_info->prefix[0] = '\0';
+  line_info->token[0] = '\0';
+  /* postfix contain the whole line without the trim chars */
+  line_info->postfix = strtok(line, "\r\nEOF");
+  label[0] = '\0';
 }
 
 /****************** data segment *******************/
@@ -84,15 +89,17 @@ int addToDataSeg(LineInfo *line, DsType type, void *arr, size_t size)
 
 void printDs (void)
 {
-  int i;
+  size_t i;
   for (i = 0; i < DC; ++i) {
     if (data_seg[i].type == INT_TYPE){
       printf ("| %d ", data_seg[i].val);
-    }else{ //char
+    }else{ /* char */
       printf ("| %c ", (char)data_seg[i].val);
     }
   }
-  printf("|\n");
+  if (i!=0){
+    printf("|\n");
+  }
 }
 
 /****************** symbol table *******************/
@@ -102,7 +109,7 @@ void *init_symbol (const void *data)
   Symbol *symbol_data = (Symbol *) data;
   Symbol *new_symbol = (Symbol *) malloc (sizeof (Symbol));
   if (!new_symbol) {
-    return NULL; //memory error
+    return NULL; /* memory error */
   }
   new_symbol->address = symbol_data->address;
   new_symbol->isExtern = symbol_data->isExtern;
@@ -115,7 +122,7 @@ void print_symbol (const char *word, const void *data, FILE *pf)
 {
   Symbol *symbol_data = (Symbol *) data;
 
-  fprintf (pf, " %-15s  %-5zu ", word, symbol_data->address);
+  fprintf (pf, " %-15s  %-5lu ", word, symbol_data->address);
 
   switch (symbol_data->type) {
     case DIRECTIVE:
@@ -140,13 +147,16 @@ void print_symbol (const char *word, const void *data, FILE *pf)
 
 bool addSymbol(const char* label, SymbolType type, size_t address){
   Symbol symbol_data;
+  Node *new_symbol;
+
   symbol_data.address = address;
   symbol_data.type = type;
   symbol_data.isExtern = FALSE;
   symbol_data.isEntry = FALSE;
-  Node *new_symbol = createNode (symbols_table, label, &symbol_data);
+
+  new_symbol = createNode (symbols_table, label, &symbol_data);
   if (!new_symbol) {
-    return FATAL; //memory error
+    return FATAL; /* memory error */
   }
   appendToTail (symbols_table, new_symbol);
   return TRUE;
@@ -162,7 +172,7 @@ int isLabel (const char *str)
 }
 
 bool validLabel(LineInfo *line, char *str){
-  //todo check
+  /* todo check */
 /*  if (isSavedWord (str)){
     r_error (line, "is a saved word");
     return FALSE;
@@ -177,7 +187,7 @@ bool validLabel(LineInfo *line, char *str){
 /***** string */
 
 void getDataTok(LineInfo *line){
-  size_t j, i = 0;
+  size_t j = 0;
   char *p = (line->postfix);
 
   /* Concatenate prefix and token */
@@ -190,7 +200,7 @@ void getDataTok(LineInfo *line){
   }
   line->prefix[j] = '\0';
 
-  strcpy (line->token, line->postfix);
+  strcpy (line->token, p);
 
   /* empty the  postfix */
   line->postfix[0] = '\0';
@@ -200,19 +210,22 @@ bool validStr(LineInfo *line){
   char *start = line->token;
   size_t len = strlen (start);
   char *end = start + len - 1;
-  if (*start == '\0'){ //.string _
+  char* res = NULL;
+
+  if (*start == '\0'){ /* .string _ */
+    strcat (line->token, " ");
     r_error ("", line, "empty string initialization");
     return FALSE;
   }
-  if (*start != '"'){ //.string hello"
+  if (*start != '"'){ /* .string a" */
     r_error ("missing opening \" character in", line, "");
     return FALSE;
   }
-  if (strchr(start+1,'"')!=end){ //.string "hello"world"
+  if ((res = strchr(start+1,'"'))!= NULL && res !=end){ /* .string "a"b */
     r_error ("redundant text after terminating \" character in", line, "");
     return FALSE;
   }
-  if (*end != '"'){ //.string "hello
+  if (*end != '"'){ /*.string "a */
     r_error ("missing terminating \" character in", line, "");
     return FALSE;
   }
@@ -227,35 +240,31 @@ bool str_handler(LineInfo *line, const char* label){
   }
   strcpy (str, line->token);
   len = strlen (str);
-  str[--len] = '\0'; //remove '"' char
+  str[--len] = '\0'; /* remove '"' char */
 
-  //add to data symbol or raise warning
-  if (label){
+  /* add to data symbol or raise warning */
+  if (*label!= '\0'){
     if (addSymbol (label, DIRECTIVE, DC) == FATAL){
-      return FATAL; //memory error
+      return FATAL; /* memory error */
     }
   }
   else{
-    r_warning ("variables define in ", line, "are lost, won't be able to "
+    r_warning ("variable", line, "is lost, won't be able to "
                                              "access later");
   }
 
-  //add to data segment
+  /* add to data segment */
   return addToDataSeg (line, CHAR_TYPE, (str+1), len);
 }
 
 
 /***** data */
-bool data_handler(LineInfo *line, char* label){
+/*bool data_handler(LineInfo *line, char* label){
 
   return TRUE;
-}
+}*/
 
 /***** define */
-bool define_handler(LineInfo *line, char* label){
-
-  return TRUE;
-}
 
 
 /****************** process function *******************/
@@ -264,20 +273,20 @@ bool
 f_processLine (LineInfo *line, char *label)
 {
   bool res;
-  //case: .string
+  /* case: .string */
   if (strcmp (".string", line->token) == 0) {
-//    lineTok (line);
+    getDataTok(line);
     res = str_handler (line, label);
     if (res != TRUE){
       return res;
     }
   }
 
-  //case: .data
+  /* case: .data */
   else if (strcmp (".data", line->token) == 0) {
-//    if (!int_handler (line, label)){
-//      return FALSE;
-//    }
+/*    if (!int_handler (line, label)){
+      return FALSE;
+    }*/
   }
   return TRUE;
 }
@@ -287,56 +296,49 @@ f_processLine (LineInfo *line, char *label)
 
 /****************** main function *******************/
 
-int firstPass(FILE *input_file, char* file_name){
-  char prefix[MAX_LINE_SIZE] = "",
-       token[MAX_LINE_SIZE] = "",
-       postfix[MAX_LINE_SIZE] = "",
-       label[MAX_LINE_SIZE] = "";
+int firstPass(FILE *input_file, char* file_name, bool *no_error){
+  char line[MAX_LINE_SIZE],
+       prefix[MAX_LINE_SIZE],
+       token[MAX_LINE_SIZE],
+       label[MAX_LINE_SIZE];
   LineInfo line_info;
-  bool errors = TRUE;
   bool res;
 
-  if (init_pass (&line_info, prefix, token, postfix, file_name) == FATAL) {
-    return EXIT_FAILURE; //memory error;
+  if (init_pass (&line_info, prefix, token, line, file_name) == FATAL) {
+    return EXIT_FAILURE; /* memory error; */
   }
 
-  while (fgets (line_info.postfix, MAX_LINE_SIZE, input_file)) {
-    //postfix contain the whole line without the trim chars
-    line_info.postfix = strtok(line_info.postfix, "\r\nEOF");
+  while (fgets (line, MAX_LINE_SIZE, input_file)) {
+    restartLine(line, &line_info, label);
 
     lineTok (&line_info);
     if (isLabel (line_info.token)){
-      if (validLabel (&line_info, line_info.token) == FALSE){
+      strcpy (label, line_info.token);
+      label[strlen (label) - 1] = '\0'; /* remove ":" */
+      if (validLabel (&line_info, label) == FALSE){
         continue;
       }
-      strcpy (label, line_info.token);
-      label[strlen (label) - 1] = '\0'; //remove ":"
       lineTok (&line_info);
       res = f_processLine (&line_info, label);
-    }//endIf label
+    }/* endIf label */
     else{
-      lineTok (&line_info);
       res = f_processLine (&line_info, label);
     }
 
     if (res == FATAL){
       break;
     }
-    errors += res;
-    restartLine(&line_info);
+    *no_error += res;
   }
 
   printDs ();
   printList (symbols_table, stdout);
-//  free(data_seg);
-  //todo free...
 
+  /* todo free... */
+  free(data_seg);
+  freeList(symbols_table);
 
-  if (errors > 0){
-    return EXIT_FAILURE;
-  }
     return EXIT_SUCCESS;
-
 }
 
 

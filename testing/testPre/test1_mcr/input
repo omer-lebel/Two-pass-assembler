@@ -1,8 +1,11 @@
 test number 1:
 1 line
 2 mcr def:
-3 line
-4 call for mcr:
+mcr mcr_name
     content1
     content2
+endmcr
+3 line
+4 call for mcr:
+mcr_name
 7 end
