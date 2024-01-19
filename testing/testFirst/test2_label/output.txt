@@ -1,0 +1,42 @@
+input.am:3  error: 'L!1:' contains non-alphanumeric characters
+ 3  | L!1: .string "b"
+    | ^~~~
+input.am:4  error: 'E1$' contains non-alphanumeric characters
+ 4  | .extern E1$
+    |         ^~~
+input.am:5  error: '2L:' starts with a non-alphabetic character
+ 5  | 2L: .string "c"
+    | ^~~
+input.am:6  error: '@E2' starts with a non-alphabetic character
+ 6  | .extern @E2
+    |         ^~~
+input.am:8  error: 'L3:' has already declared in earlier line
+ 8  | L3: .string "e"
+    | ^~~
+input.am:9  error: 'L3' has already declared in earlier line
+ 9  | .extern L3
+    |         ^~
+input.am:11 error: 'E4' has already declared in earlier line
+ 11 | .extern E4
+    |         ^~
+input.am:12 error: 'E4:' has already declared in earlier line
+ 12 | E4: .string "f"
+    | ^~~
+input.am:13 warning: ignored label'E5:'before '.extern'
+ 13 | E5: .extern E6
+    | ^~~
+input.am:14 error: 'mov:' is a reserved keyword that cannot be used as an identifier
+ 14 | mov: .string "g"
+    | ^~~~
+input.am:15 error: 'r0' is a reserved keyword that cannot be used as an identifier
+ 15 | .extern r0
+    |         ^~
+input.am:16 error: ' ' empty external declaration
+ 16 | .extern 
+    |        ^
+| a |   | d |   |
+ L0               0      directive       not external   	
+ E0               0      directive       external       	
+ L3               2      directive       not external   	
+ E4               0      directive       external       	
+ E6               0      directive       external       	
