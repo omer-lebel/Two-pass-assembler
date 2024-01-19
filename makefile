@@ -5,7 +5,7 @@ CFLAGS = -Wall -Wextra -Wvla -ansi -pedantic
 HUJI = -Wextra -Wall -Wvla -std=c99
 
 
-all: testPre testFirst
+all: testFirst
 
 ################## pre assembler test ##################
 

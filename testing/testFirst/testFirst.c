@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../preAssembler.h"
-#include "../firstPass.h"
+#include "../../preAssembler.h"
+#include "../../firstPass.h"
 
 
 #define INPUT_IND 1
@@ -41,7 +41,7 @@ int call_pre(char* file_name){
 }
 
 
-int call_first(char* file_name, bool *no_error){
+int call_first(char* file_name, exit_code *no_error){
   FILE *am_file;
   int res;
 
@@ -61,11 +61,13 @@ int call_first(char* file_name, bool *no_error){
 
 
 
+
+
 int main (int argc, char *argv[])
 {
   char fileName[100];
   int res, i;
-  bool no_error = TRUE;
+  exit_code no_error = SUCCESS;
 
   if (argc <= 1) {
     printf ("must give at least one file to process\n");

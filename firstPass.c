@@ -7,33 +7,34 @@
 
 #define INIT_SIZE 100
 
+
+
 LinkedList *symbols_table;
 char *text_seg;
 DsWord *data_seg;
 
 size_t DC, IC;
 
-
 /****************** pass helpers *******************/
 
 
-int init_pass (LineInfo *line, char* prefix, char* token, char* postfix,
-               char*file_name)
+int init_pass (LineInfo *line, char *prefix, char *token, char *postfix,
+               char *file_name)
 {
   symbols_table = createList (init_symbol, print_symbol, free);
   if (!symbols_table) {
-    return FATAL; /* memory error */
+    return FAILURE; /* memory error */
   }
 
   data_seg = (DsWord *) malloc (INIT_SIZE * sizeof (DsWord));
   if (!data_seg) {
     free (symbols_table);
-    return FATAL; /* memory error */
+    return FAILURE; /* memory error */
   }
 
   /* line info */
   line->file = file_name;
-  line->num = 1;
+  line->num = 0;
   line->prefix = prefix;
   line->token = token;
   line->postfix = postfix;
@@ -41,28 +42,29 @@ int init_pass (LineInfo *line, char* prefix, char* token, char* postfix,
   DC = 0;
   IC = 100;
 
-  return TRUE;
+  return SUCCESS;
 }
 
-void restartLine(char* line, LineInfo *line_info, char* label){
+void restartLine (char *line, LineInfo *line_info, char *label)
+{
   line_info->num++;
-  line_info->prefix[0] = '\0';
-  line_info->token[0] = '\0';
+  RESET_STRING(label);
+  RESET_STRING(line_info->prefix);
+  RESET_STRING(line_info->token);
   /* postfix contain the whole line without the trim chars */
-  line_info->postfix = strtok(line, "\r\nEOF");
-  label[0] = '\0';
+  line_info->postfix = strtok (line, "\r\n");
 }
 
 /****************** data segment *******************/
 
-int addToDataSeg(LineInfo *line, DsType type, void *arr, size_t size)
+exit_code addToDataSeg (LineInfo *line, DsType type, void *arr, size_t size)
 {
   size_t target_dc = DC + size;
   int *intArr;
   char *charArr;
   if (target_dc - 1 >= 100) {
-    r_error("adding the variables:", line, "causes data segment overflow");
-    return FATAL;
+    r_error ("adding the variables:", line, "causes data segment overflow");
+    return FAILURE;
   }
 
   switch (type) {
@@ -81,24 +83,29 @@ int addToDataSeg(LineInfo *line, DsType type, void *arr, size_t size)
       }
       break;
     default:
-      r_error("unknown data type in", line, "");
-      return FALSE;
+      r_error ("unknown data type in", line, "");
+      return ERROR;
   }
-  return TRUE;
+  return SUCCESS;
 }
 
 void printDs (void)
 {
   size_t i;
+  char c;
   for (i = 0; i < DC; ++i) {
-    if (data_seg[i].type == INT_TYPE){
+    if (data_seg[i].type == INT_TYPE) {
       printf ("| %d ", data_seg[i].val);
-    }else{ /* char */
-      printf ("| %c ", (char)data_seg[i].val);
+    }
+    else if ((c = (char) data_seg[i].val) != '\0') { /* char */
+      printf ("| %c ", c);
+    }
+    else { /* '\0' */
+      printf ("|   ");
     }
   }
-  if (i!=0){
-    printf("|\n");
+  if (i != 0) {
+    printf ("|\n");
   }
 }
 
@@ -138,123 +145,139 @@ void print_symbol (const char *word, const void *data, FILE *pf)
       fprintf (pf, " %-15s", "unknown");
   }
 
-  fprintf (pf, " %-15s\t", (symbol_data->isExtern == TRUE ?
-                            "external": "not external"));
+  fprintf (pf, " %-15s\t", (symbol_data->isExtern == EXTERNAL ?
+                            "external" : "not external"));
   fprintf (pf, "\n");
 
 }
 
-
-bool addSymbol(const char* label, SymbolType type, size_t address){
+exit_code addSymbol (const char *label, SymbolType type, size_t address, int
+isExtern)
+{
   Symbol symbol_data;
   Node *new_symbol;
 
   symbol_data.address = address;
   symbol_data.type = type;
-  symbol_data.isExtern = FALSE;
+  symbol_data.isExtern = isExtern;
   symbol_data.isEntry = FALSE;
 
   new_symbol = createNode (symbols_table, label, &symbol_data);
   if (!new_symbol) {
-    return FATAL; /* memory error */
+    return FAILURE; /* memory error */
   }
   appendToTail (symbols_table, new_symbol);
-  return TRUE;
+  return SUCCESS;
 }
 
 /****************** handler & validation function *******************/
 
 
 /***** label */
+/*todo macro*/
 int isLabel (const char *str)
 {
   return str[strlen (str) - 1] == ':';
 }
 
-bool validLabel(LineInfo *line, char *str){
-  /* todo check */
-/*  if (isSavedWord (str)){
-    r_error (line, "is a saved word");
-    return FALSE;
-  }*/
-  if (findNode (symbols_table, str)){
-    r_error ("label", line, "was already declared");
-    return FALSE;
+exit_code validLabel (LineInfo *line, char *str)
+{
+  if (!isalpha(str[0])){
+    r_error ("label", line, "starts with a non-alphabetic character");
+    return ERROR;
   }
-  return TRUE;
+  if (!isAlphaNumeric (str)){
+    r_error ("label", line, "contains non-alphanumeric characters");
+    return ERROR;
+  }
+  /* todo check */
+  if (isSavedWord (str)){
+    r_error ("", line, "is a reserved keyword that cannot be used as an "
+                       "identifier");
+    return ERROR;
+  }
+  if (findNode (symbols_table, str)) {
+    /* todo maybe add line num */
+    r_error ("label", line, "has already declared in earlier line");
+    return ERROR;
+  }
+  return SUCCESS;
 }
 
 /***** string */
 
-void getDataTok(LineInfo *line){
+void getDataTok (LineInfo *line)
+{
   size_t j = 0;
   char *p = (line->postfix);
 
   /* Concatenate prefix and token */
-  strcat(line->prefix, line->token);
+  strcat (line->prefix, line->token);
   j = strlen (line->prefix);
 
   /* skip empty characters in postfix and write them in prefix */
-  for (; isspace(*p); j++, p++){
+  for (; isspace(*p); j++, p++) {
     line->prefix[j] = *p;
   }
-  line->prefix[j] = '\0';
+  NULL_TERMINATE(line->prefix, j);
 
   strcpy (line->token, p);
 
   /* empty the  postfix */
-  line->postfix[0] = '\0';
+  RESET_STRING(line->postfix);
 }
 
-bool validStr(LineInfo *line){
+bool validStr (LineInfo *line)
+{
   char *start = line->token;
   size_t len = strlen (start);
   char *end = start + len - 1;
-  char* res = NULL;
+  char *res = NULL;
 
-  if (*start == '\0'){ /* .string _ */
-    strcat (line->token, " ");
+  if (IS_EMPTY (line->token)) { /* .string _ */
+    strcat (line->token, " "); /*add token to msg error*/
     r_error ("", line, "empty string initialization");
     return FALSE;
   }
-  if (*start != '"'){ /* .string a" */
+  if (*start != '"') { /* .string a" */
     r_error ("missing opening \" character in", line, "");
     return FALSE;
   }
-  if ((res = strchr(start+1,'"'))!= NULL && res !=end){ /* .string "a"b */
+  if ((res = strchr (start + 1, '"')) != NULL
+      && res != end) { /* .string "a"b */
     r_error ("redundant text after terminating \" character in", line, "");
     return FALSE;
   }
-  if (*end != '"'){ /*.string "a */
+  if (*end != '"') { /*.string "a */
     r_error ("missing terminating \" character in", line, "");
     return FALSE;
   }
   return TRUE;
 }
 
-bool str_handler(LineInfo *line, const char* label){
+exit_code str_handler (LineInfo *line, const char *label)
+{
   char str[MAX_TOKEN_SIZE];
   size_t len;
-  if (!validStr (line)){
-    return FALSE;
+  if (!validStr (line)) {
+    return ERROR;
   }
   strcpy (str, line->token);
   len = strlen (str);
-  str[--len] = '\0'; /* remove '"' char */
+  NULL_TERMINATE(str, --len); /* remove '"' char */
 
-  /* add to data symbol or raise warning */
-  if (*label!= '\0'){
-    if (addSymbol (label, DIRECTIVE, DC) == FATAL){
-      return FATAL; /* memory error */
-    }
-  }
-  else{
+  if (IS_EMPTY(label)) {
     r_warning ("variable", line, "is lost, won't be able to "
-                                             "access later");
+                                 "access later");
+  }
+  else { /*add to symbol table */
+    if (addSymbol (label, DIRECTIVE, DC, NOT_EXTERNAL) == FAILURE) {
+      return FAILURE; /* memory error */
+    }
   }
 
   /* add to data segment */
-  return addToDataSeg (line, CHAR_TYPE, (str+1), len);
+  return addToDataSeg (line, CHAR_TYPE, (str + 1), len);
 }
 
 
@@ -264,68 +287,116 @@ bool str_handler(LineInfo *line, const char* label){
   return TRUE;
 }*/
 
+
 /***** define */
+exit_code define_handler (LineInfo *line, const char *label){
+  if (IS_EMPTY(line->token)){
+    strcat (line->token, " "); /*add token to msg error*/
+    r_error ("no value given in define directive", line ,"");
+    return ERROR;
+  }
+  return SUCCESS;
+}
 
-
-/****************** process function *******************/
-
-bool
-f_processLine (LineInfo *line, char *label)
+/***** extern */
+exit_code extern_handler (LineInfo *line, const char *label)
 {
-  bool res;
-  /* case: .string */
-  if (strcmp (".string", line->token) == 0) {
-    getDataTok(line);
-    res = str_handler (line, label);
-    if (res != TRUE){
-      return res;
-    }
+  char *symbol = line->token;
+  if (IS_EMPTY (line->token)){
+    strcat (line->token, " "); /*add token to msg error*/
+    r_error ("", line ,"empty external declaration");
+    return ERROR;
   }
 
-  /* case: .data */
+  if (validLabel (line, symbol) == ERROR) {
+    return ERROR;
+  }
+  if (addSymbol (symbol, DIRECTIVE, 0, EXTERNAL) == FAILURE) {
+    return FAILURE; /* memory error */
+  }
+  if (!IS_EMPTY(label)){
+    lineToPostfix (line); /*get the fist tok again for the error msg */
+    lineTok (line);
+    r_warning ("ignored label", line, "before '.extern'");
+  }
+  return SUCCESS;
+}
+
+/****************** process function *******************/
+/*todo add empty line after label*/
+
+exit_code f_processLine (LineInfo *line, char *label)
+{
+  exit_code res = SUCCESS;
+  /* case: .string */
+  if (strcmp (".define", line->token) == 0) {
+    lineTok (line);
+    res = define_handler (line, label);
+    /*nothing*/
+  }
+
+  /* case: .entry */
+  else if (strcmp (".entry", line->token) == 0) {
+    /*todo nothing ?*/
+  }
+
+    /* case: .extern */
+  else if (strcmp (".extern", line->token) == 0) {
+    lineTok (line);
+    res = extern_handler (line, label);
+    /*nothing*/
+  }
+
+    /* case: .string */
+  else if (strcmp (".string", line->token) == 0) {
+    getDataTok (line);
+    res = str_handler (line, label);
+  }
+
+    /* case: .data */
   else if (strcmp (".data", line->token) == 0) {
 /*    if (!int_handler (line, label)){
       return FALSE;
     }*/
   }
-  return TRUE;
+  return res;
 }
-
-
-
 
 /****************** main function *******************/
 
-int firstPass(FILE *input_file, char* file_name, bool *no_error){
+int firstPass (FILE *input_file, char *file_name, exit_code *no_error)
+{
   char line[MAX_LINE_SIZE],
-       prefix[MAX_LINE_SIZE],
-       token[MAX_LINE_SIZE],
-       label[MAX_LINE_SIZE];
+      prefix[MAX_LINE_SIZE],
+      token[MAX_LINE_SIZE],
+      label[MAX_LINE_SIZE];
   LineInfo line_info;
-  bool res;
+  exit_code res;
 
-  if (init_pass (&line_info, prefix, token, line, file_name) == FATAL) {
+  if (init_pass (&line_info, prefix, token, line, file_name) == FAILURE) {
     return EXIT_FAILURE; /* memory error; */
   }
 
   while (fgets (line, MAX_LINE_SIZE, input_file)) {
-    restartLine(line, &line_info, label);
+/*    printf("%s\n", line);*/
+    restartLine (line, &line_info, label);
 
     lineTok (&line_info);
-    if (isLabel (line_info.token)){
+    if (isLabel (line_info.token)) {
       strcpy (label, line_info.token);
-      label[strlen (label) - 1] = '\0'; /* remove ":" */
-      if (validLabel (&line_info, label) == FALSE){
+      NULL_TERMINATE(label, strlen (label) - 1); /* remove ":" */
+      if (validLabel (&line_info, label) == ERROR) {
+        *no_error += ERROR; /*todo think*/
         continue;
       }
       lineTok (&line_info);
       res = f_processLine (&line_info, label);
     }/* endIf label */
-    else{
+    else {
       res = f_processLine (&line_info, label);
     }
 
-    if (res == FATAL){
+    if (res == FAILURE) {
       break;
     }
     *no_error += res;
@@ -335,10 +406,10 @@ int firstPass(FILE *input_file, char* file_name, bool *no_error){
   printList (symbols_table, stdout);
 
   /* todo free... */
-  free(data_seg);
-  freeList(symbols_table);
+  free (data_seg);
+  freeList (symbols_table);
 
-    return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
 
 

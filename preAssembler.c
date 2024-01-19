@@ -1,6 +1,5 @@
 #include "preAssembler.h"
 
-#define IS_EMPTY(s) ((s) == NULL)
 #define IS_COMMENT(s) ((s)[0] == ';')
 #define IS_MCR_DEF(s) (strcmp((s), "mcr") == 0)
 #define IS_MCR_END(s) (strcmp((s), "endmcr") == 0)
@@ -38,7 +37,11 @@ int p_processLine (FILE *output, LinkedList *mcr_list, char *line,
                    int line_num, char* first_word, Node **curr_mcr)
 {
   char* mcr_name = NULL;
-  if (IS_EMPTY (first_word) || IS_COMMENT (first_word)) {
+
+  line_num++; /*todo add line error*/
+
+
+  if (first_word == NULL || IS_COMMENT (first_word)) {
     return TRUE;
   }
   else if (IS_MCR_DEF (first_word)) {
@@ -126,9 +129,11 @@ void *init_mcrData (const void *data)
     free (new_data);
     return NULL;
   }
-  new_data->content[0] = '\0';
+  RESET_STRING(new_data->content);
   new_data->total = 0;
   new_data->capacity = MAX_LINE_SIZE;
+
+  (void) data; /*todo becouse I dont use the param*/
   return new_data;
 }
 

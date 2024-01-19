@@ -45,6 +45,18 @@ int isSavedWord (const char *s)
   return FALSE;
 }
 
+bool isAlphaNumeric(const char *str) {
+  while (*str) {
+    if (!isalnum(*str)) {
+      return FALSE;  /* Not alphanumeric */
+    }
+    str++;
+  }
+  return TRUE;  /* All characters are alphanumeric */
+}
+
+
+/* todo check what is valid macro name*/
 int isValidName(char *s)
 {
   for (; *s != '\0'; s++){
@@ -55,34 +67,6 @@ int isValidName(char *s)
   return TRUE;
 }
 
-
-char *newToken (char *line, char *token)
-{
-  int i = 0;
-
-  /* skip empty chars */
-  while (isspace(*line)) { line++; }
-
-  /* special case for a word consisting of a comma */
-  if (*line == ',') {
-    token[i] = ',';
-    i++;
-    line++;
-  }
-  else { /* coping word */
-    for (; *line && !isspace(*line) && *line != ','; i++, line++) {
-      token[i] = *line;
-    }
-  }
-  /* null terminate */
-  /* null terminate */
-  token[i] = '\0';
-
-  if (i == 0) { /* empty word */
-    return NULL;
-  }
-  return line;
-}
 
 
 void lineTok (LineInfo *line)
@@ -98,12 +82,12 @@ void lineTok (LineInfo *line)
   for (; isspace(*p); j++, p++){
     line->prefix[j] = *p;
   }
-  line->prefix[j] = '\0';
+  NULL_TERMINATE(line->prefix,j);
 
-  /* find next token and update postfix:
-   special case for a word consisting of a comma */
-  if (*p == ',') {
-    line->token[i] = ',';
+  /* find next token and update postfix: */
+   /*special case for a word consisting of a comma or equal sign */
+  if (*p == ',' || *p == '=') {
+    line->token[i] = *p;
     i++; p++;
   }
   else{ /* coping word */
@@ -113,17 +97,21 @@ void lineTok (LineInfo *line)
     }
   }
   /* null terminate the token */
-  line->token[i] = '\0';
+  NULL_TERMINATE(line->token, i);
   line->postfix = p;
 }
 
-void lineNewCpy(LineInfo *dst, LineInfo *src){
-  dst->prefix[0] = '\0';
-  dst->token = "";
-  strcpy(dst->postfix, src->prefix);
-  dst->file = src->file;
-  dst->num = src->num;
+void lineToPostfix(LineInfo *line) {
+  /* concatenate prefix, token and postfix to recreate the original line */
+  strcat (line->postfix, line->prefix);
+  strcat (line->postfix, line->token);
+
+  /* Reset token and postfix */
+  RESET_STRING(line->prefix);
+  RESET_STRING(line->token);
 }
+
+
 
 void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
 *msg_after)

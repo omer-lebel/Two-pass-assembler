@@ -18,12 +18,17 @@ typedef enum SymbolType
     DIRECTIVE, OPERATION, DEFINE
 } SymbolType;
 
+typedef enum IsExtern
+{
+    EXTERNAL, NOT_EXTERNAL
+} IsExtern;
+
 typedef struct Symbol
 {
     size_t address;
     SymbolType type;
     bool isEntry;
-    bool isExtern;
+    IsExtern isExtern;
 } Symbol;
 
 
@@ -46,7 +51,7 @@ typedef struct DsWord{
 
 
 
-int firstPass(FILE *input_file, char* file_name, bool *no_error);
+int firstPass(FILE *input_file, char* file_name, exit_code *no_error);
 /* *************************************************
 * ...Function to handle the macro's linked list ...
 ***************************************************/

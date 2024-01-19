@@ -9,6 +9,10 @@
 #define MAX_TOKEN_SIZE (80+1)
 #define DELIM " \t\r\n"
 
+#define IS_EMPTY(s) (*s == '\0')
+#define RESET_STRING(str) ((str)[0] = '\0')
+#define NULL_TERMINATE(str, index) ((str)[index] = '\0')
+
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
@@ -18,9 +22,13 @@
 /* 8- register, 5-direction, 16-instruction */
 typedef enum bool
 {
-    FALSE = 0, TRUE = 1, FATAL=2
+    FALSE = 0, TRUE = 1
 }bool;
 
+typedef enum exit_code
+{
+    SUCCESS = 0, ERROR = 1, FAILURE = 2
+}exit_code;
 
 typedef struct LineInfo{
     char* file;
@@ -30,7 +38,10 @@ typedef struct LineInfo{
     char *postfix;
 }LineInfo;
 
+bool isEmptyTok(char* token);
+bool isAlphaNumeric(const char *str);
 void lineTok (LineInfo *line);
+void lineToPostfix(LineInfo *line);
 void r_error(char* msg_before, LineInfo* line, char *msg_after);
 void r_warning(char* msg_before, LineInfo* line, char *msg_after);
 

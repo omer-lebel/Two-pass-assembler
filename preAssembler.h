@@ -15,8 +15,8 @@
  */
 
 
-#ifndef _PREASSEMBLER_H_
-#define _PREASSEMBLER_H_
+#ifndef _PRE_ASSEMBLER_H_
+#define _PRE_ASSEMBLER_H_
 
 #include <stdlib.h>
 #include "input.h"
@@ -134,5 +134,5 @@ void free_mcrData (void *data);
 
 
 
-#endif /*_PREASSEMBLER_H_ */
+#endif /*_PRE_ASSEMBLER_H_ */
 

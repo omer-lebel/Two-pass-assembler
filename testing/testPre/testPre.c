@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "../preAssembler.h"
+#include "../../preAssembler.h"
 
 
 #define INPUT_IND 1
