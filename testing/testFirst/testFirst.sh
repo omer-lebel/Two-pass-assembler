@@ -40,3 +40,8 @@ run_test "test2_label"
 
 percentage_passed=$((passed_tests * 100 / total_tests))
 echo "passed $percentage_passed% tests ($passed_tests/$total_tests)"
+
+
+#../../../firstPass "input" > "tmp.txt"
+#sed -r "s/\x1B\[[0-9;]*[mGK]//g" "tmp.txt" > "expected.txt"
+#diff --strip-trailing-cr "output.txt" "expected.txt"

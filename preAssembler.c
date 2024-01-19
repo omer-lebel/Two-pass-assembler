@@ -129,7 +129,7 @@ void *init_mcrData (const void *data)
     free (new_data);
     return NULL;
   }
-  RESET_STRING(new_data->content);
+  RESET_STR(new_data->content);
   new_data->total = 0;
   new_data->capacity = MAX_LINE_SIZE;
 

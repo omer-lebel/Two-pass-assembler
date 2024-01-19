@@ -107,8 +107,8 @@ void lineToPostfix(LineInfo *line) {
   strcat (line->postfix, line->token);
 
   /* Reset token and postfix */
-  RESET_STRING(line->prefix);
-  RESET_STRING(line->token);
+  RESET_STR(line->prefix);
+  RESET_STR(line->token);
 }
 
 

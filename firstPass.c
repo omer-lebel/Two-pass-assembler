@@ -7,8 +7,6 @@
 
 #define INIT_SIZE 100
 
-
-
 LinkedList *symbols_table;
 char *text_seg;
 DsWord *data_seg;
@@ -48,9 +46,9 @@ int init_pass (LineInfo *line, char *prefix, char *token, char *postfix,
 void restartLine (char *line, LineInfo *line_info, char *label)
 {
   line_info->num++;
-  RESET_STRING(label);
-  RESET_STRING(line_info->prefix);
-  RESET_STRING(line_info->token);
+  RESET_STR(label);
+  RESET_STR(line_info->prefix);
+  RESET_STR(line_info->token);
   /* postfix contain the whole line without the trim chars */
   line_info->postfix = strtok (line, "\r\n");
 }
@@ -183,16 +181,16 @@ int isLabel (const char *str)
 /* todo change function name */
 exit_code valid_symbol_name (LineInfo *line, char *str)
 {
-  if (!isalpha(str[0])){
+  if (!isalpha(str[0])) {
     r_error ("", line, " starts with a non-alphabetic character");
     return ERROR;
   }
-  if (!isAlphaNumeric (str)){
+  if (!isAlphaNumeric (str)) {
     r_error ("", line, " contains non-alphanumeric characters");
     return ERROR;
   }
   /* todo check */
-  if (isSavedWord (str)){
+  if (isSavedWord (str)) {
     r_error ("", line, " is a reserved keyword that cannot be used as an "
                        "identifier");
     return ERROR;
@@ -206,10 +204,9 @@ exit_code valid_symbol_name (LineInfo *line, char *str)
 }
 
 /***** string */
-
 void getDataTok (LineInfo *line)
 {
-  size_t j = 0;
+  size_t j = 0, i = 0;
   char *p = (line->postfix);
 
   /* Concatenate prefix and token */
@@ -222,10 +219,25 @@ void getDataTok (LineInfo *line)
   }
   NULL_TERMINATE(line->prefix, j);
 
-  strcpy (line->token, p);
+  /* copy opening " (if exist) */
+  if (*p == '"'){
+    line->token[i] = '"';
+    p++; i++;
+  }
 
-  /* empty the  postfix */
-  RESET_STRING(line->postfix);
+  /* copy content between */
+  for (; *p && *p!='"'; i++, p++) {
+    line->token[i] = *p;
+  }
+
+  /* copy ending " (if exist) */
+  if (*p == '"'){
+    line->token[i] = '"';
+    p++; i++;
+  }
+
+  NULL_TERMINATE(line->token, i);
+  line->postfix = p;
 }
 
 bool validStr (LineInfo *line)
@@ -233,7 +245,6 @@ bool validStr (LineInfo *line)
   char *start = line->token;
   size_t len = strlen (start);
   char *end = start + len - 1;
-  char *res = NULL;
 
   if (IS_EMPTY (line->token)) { /* .string _ */
     strcat (line->token, " "); /*add token to msg error*/
@@ -244,13 +255,13 @@ bool validStr (LineInfo *line)
     r_error ("missing opening \" character in ", line, "");
     return FALSE;
   }
-  if ((res = strchr (start + 1, '"')) != NULL
-      && res != end) { /* .string "a"b */
-    r_error ("redundant text after terminating \" character in ", line, "");
-    return FALSE;
-  }
   if (*end != '"') { /*.string "a */
     r_error ("missing terminating \" character in ", line, "");
+    return FALSE;
+  }
+  if (!IS_EMPTY(line->postfix)){
+    lineTok (line);
+    r_error ("extraneous text ", line, " after terminating \" character");
     return FALSE;
   }
   return TRUE;
@@ -267,16 +278,21 @@ exit_code str_handler (LineInfo *line, const char *label)
   len = strlen (str);
   NULL_TERMINATE(str, --len); /* remove '"' char */
 
-  if (IS_EMPTY(label)) {
-    r_warning ("variable", line, "is lost, won't be able to "
+  if (!IS_EMPTY(line->postfix)) { /* L: .string "a" xxx */
+    lineTok (line);
+    r_error ("extraneous text ", line, " after directive");
+    return ERROR;
+  }
+
+  if (IS_EMPTY(label)) { /* .string "a" */
+    r_warning ("variable", line, " is lost, won't be able to "
                                  "access later");
   }
-  else { /*add to symbol table */
+  else{ /*add to symbol table */
     if (addSymbol (label, DIRECTIVE, DC, NOT_EXTERNAL) == FAILURE) {
       return FAILURE; /* memory error */
     }
   }
-
   /* add to data segment */
   return addToDataSeg (line, CHAR_TYPE, (str + 1), len);
 }
@@ -301,11 +317,11 @@ exit_code define_handler (LineInfo *line, const char *label)
   char *name = line->token;
 
   /* label and define at the same line */
-  if (!IS_EMPTY(label)){
+  if (!IS_EMPTY(label)) {
     lineToPostfix (line); /*get the fist tok again for the error msg */
     lineTok (line);
     r_error ("label ", line, " and '.define' cannot be declared on the same "
-                              "line");
+                             "line");
     return ERROR;
   }
 
@@ -320,8 +336,8 @@ exit_code define_handler (LineInfo *line, const char *label)
     return ERROR;
   }
 
-      /*equal sign*/
-      lineTok (line);
+  /*equal sign*/
+  lineTok (line);
   if (strcmp (line->token, "=") != 0) { /*.define x y | .define x 3 */
     r_error ("expected '=' before numeric token, but got ", line, "");
   }
@@ -340,19 +356,24 @@ exit_code define_handler (LineInfo *line, const char *label)
 exit_code extern_handler (LineInfo *line, const char *label)
 {
   char *symbol = line->token;
-  if (IS_EMPTY (line->token)){
+  if (IS_EMPTY (line->token)) {
     strcat (line->token, " "); /*add token to msg error*/
-    r_error ("", line ," empty external declaration");
+    r_error ("", line, " empty external declaration");
     return ERROR;
   }
 
   if (valid_symbol_name (line, symbol) == ERROR) {
     return ERROR;
   }
+  if (!IS_EMPTY(line->postfix)) {
+    lineTok (line);
+    r_error ("extraneous text ", line, " after directive");
+    return ERROR;
+  }
   if (addSymbol (symbol, DIRECTIVE, 0, EXTERNAL) == FAILURE) {
     return FAILURE; /* memory error */
   }
-  if (!IS_EMPTY(label)){
+  if (!IS_EMPTY(label)) {
     lineToPostfix (line); /*get the fist tok again for the error msg */
     lineTok (line);
     r_warning ("ignored label", line, "before '.extern'");
@@ -373,7 +394,7 @@ exit_code f_processLine (LineInfo *line, char *label)
     /*nothing*/
   }
 
-  /* case: .entry */
+    /* case: .entry */
   else if (strcmp (".entry", line->token) == 0) {
     /*todo nothing ?*/
   }

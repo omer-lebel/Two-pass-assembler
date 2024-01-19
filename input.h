@@ -10,7 +10,7 @@
 #define DELIM " \t\r\n"
 
 #define IS_EMPTY(s) (*s == '\0')
-#define RESET_STRING(str) ((str)[0] = '\0')
+#define RESET_STR(str) ((str)[0] = '\0')
 #define NULL_TERMINATE(str, index) ((str)[index] = '\0')
 
 #include <stdlib.h>
