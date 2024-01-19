@@ -57,7 +57,7 @@ bool isAlphaNumeric(const char *str) {
 
 
 /* todo check what is valid macro name*/
-int isValidName(char *s)
+int is_valid_mcr_name(char *s)
 {
   for (; *s != '\0'; s++){
     if (!isalnum(*s) && *s != '_'){
@@ -122,18 +122,18 @@ void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
   printf("%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
 
   /* Print message context, token, and additional message */
-  printf("%s " BOLD "'%s'" REG " %s\n", msg_before, line->token, msg_after);
+  printf("%s" BOLD "'%s'" REG "%s\n", msg_before, line->token, msg_after);
 
 
   /* print line number and the line with the token bolded in color
    i | line with error cause bolted in color */
-  printf (" %-2lu | %s %s%s" RESET "%s\n",
+  printf (" %-2lu | %s%s%s" RESET "%s\n",
           line->num, line->prefix, color, line->token, line->postfix);
 
   /* print an arrow pointing to the location of the token in the line
        |           ^~~~~~~~~                 */
-  printf(" %-2s | ", " ");
-  for (i = 0; i < strlen (line->prefix); i++){
+  printf(" %-2s |", " ");
+  for (i = 0; i < strlen (line->prefix) ; i++){
     printf(" ");
   }
   printf(" %s^", color);

@@ -58,7 +58,7 @@ char *newToken (char *line, char *token);
 
 int isSavedWord(const char *s);
 
-int isValidName(char *s);
+int is_valid_mcr_name(char *s);
 
 
 #endif /* _INPUT_H_ */

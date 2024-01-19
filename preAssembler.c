@@ -89,7 +89,7 @@ int isValidMcr (LinkedList *macro_list, char *macro_name)
   }
   /*name contain chars thar are not numbers or ABC */
   /*todo check if needed */
-  if (!isValidName (macro_name)) {
+  if (!is_valid_mcr_name (macro_name)) {
     return FALSE;
   }
   /*already exist macro; */

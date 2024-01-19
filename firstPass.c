@@ -63,7 +63,7 @@ exit_code addToDataSeg (LineInfo *line, DsType type, void *arr, size_t size)
   int *intArr;
   char *charArr;
   if (target_dc - 1 >= 100) {
-    r_error ("adding the variables:", line, "causes data segment overflow");
+    r_error ("adding the variables: ", line, " causes data segment overflow");
     return FAILURE;
   }
 
@@ -83,7 +83,7 @@ exit_code addToDataSeg (LineInfo *line, DsType type, void *arr, size_t size)
       }
       break;
     default:
-      r_error ("unknown data type in", line, "");
+      r_error ("unknown data type in ", line, "");
       return ERROR;
   }
   return SUCCESS;
@@ -180,25 +180,26 @@ int isLabel (const char *str)
   return str[strlen (str) - 1] == ':';
 }
 
-exit_code validLabel (LineInfo *line, char *str)
+/* todo change function name */
+exit_code valid_symbol_name (LineInfo *line, char *str)
 {
   if (!isalpha(str[0])){
-    r_error ("label", line, "starts with a non-alphabetic character");
+    r_error ("", line, " starts with a non-alphabetic character");
     return ERROR;
   }
   if (!isAlphaNumeric (str)){
-    r_error ("label", line, "contains non-alphanumeric characters");
+    r_error ("", line, " contains non-alphanumeric characters");
     return ERROR;
   }
   /* todo check */
   if (isSavedWord (str)){
-    r_error ("", line, "is a reserved keyword that cannot be used as an "
+    r_error ("", line, " is a reserved keyword that cannot be used as an "
                        "identifier");
     return ERROR;
   }
   if (findNode (symbols_table, str)) {
     /* todo maybe add line num */
-    r_error ("label", line, "has already declared in earlier line");
+    r_error ("", line, " has already declared in earlier line");
     return ERROR;
   }
   return SUCCESS;
@@ -236,20 +237,20 @@ bool validStr (LineInfo *line)
 
   if (IS_EMPTY (line->token)) { /* .string _ */
     strcat (line->token, " "); /*add token to msg error*/
-    r_error ("", line, "empty string initialization");
+    r_error ("", line, " empty string initialization");
     return FALSE;
   }
   if (*start != '"') { /* .string a" */
-    r_error ("missing opening \" character in", line, "");
+    r_error ("missing opening \" character in ", line, "");
     return FALSE;
   }
   if ((res = strchr (start + 1, '"')) != NULL
       && res != end) { /* .string "a"b */
-    r_error ("redundant text after terminating \" character in", line, "");
+    r_error ("redundant text after terminating \" character in ", line, "");
     return FALSE;
   }
   if (*end != '"') { /*.string "a */
-    r_error ("missing terminating \" character in", line, "");
+    r_error ("missing terminating \" character in ", line, "");
     return FALSE;
   }
   return TRUE;
@@ -287,14 +288,51 @@ exit_code str_handler (LineInfo *line, const char *label)
   return TRUE;
 }*/
 
+/*1. valid name (not saved word && abc123 && new name)
+2. have '='
+3. have num*/
+
+
+/*bool equal_handler(LineInfo *line, const char *label);*/
 
 /***** define */
-exit_code define_handler (LineInfo *line, const char *label){
-  if (IS_EMPTY(line->token)){
-    strcat (line->token, " "); /*add token to msg error*/
-    r_error ("no value given in define directive", line ,"");
+exit_code define_handler (LineInfo *line, const char *label)
+{
+  char *name = line->token;
+
+  /* label and define at the same line */
+  if (!IS_EMPTY(label)){
+    lineToPostfix (line); /*get the fist tok again for the error msg */
+    lineTok (line);
+    r_error ("label ", line, " and '.define' cannot be declared on the same "
+                              "line");
     return ERROR;
   }
+
+  /*define symbol name*/
+  if (IS_EMPTY(name)) { /* .define _ */
+    strcat (line->token, " "); /*add token to msg error*/
+    r_error ("no value given in define directive ", line, "");
+    return ERROR;
+  }
+  if (valid_symbol_name (line, name) == ERROR) {
+    /* (not saved word && not abc123 && or not new name) */
+    return ERROR;
+  }
+
+      /*equal sign*/
+      lineTok (line);
+  if (strcmp (line->token, "=") != 0) { /*.define x y | .define x 3 */
+    r_error ("expected '=' before numeric token, but got ", line, "");
+  }
+
+  /*number*/
+  lineTok (line);
+  /*add to table list*/
+  if (addSymbol (name, DEFINE, 0, NOT_EXTERNAL) == FAILURE) {
+    return FAILURE; /* memory error */
+  }
+
   return SUCCESS;
 }
 
@@ -304,11 +342,11 @@ exit_code extern_handler (LineInfo *line, const char *label)
   char *symbol = line->token;
   if (IS_EMPTY (line->token)){
     strcat (line->token, " "); /*add token to msg error*/
-    r_error ("", line ,"empty external declaration");
+    r_error ("", line ," empty external declaration");
     return ERROR;
   }
 
-  if (validLabel (line, symbol) == ERROR) {
+  if (valid_symbol_name (line, symbol) == ERROR) {
     return ERROR;
   }
   if (addSymbol (symbol, DIRECTIVE, 0, EXTERNAL) == FAILURE) {
@@ -385,7 +423,7 @@ int firstPass (FILE *input_file, char *file_name, exit_code *no_error)
     if (isLabel (line_info.token)) {
       strcpy (label, line_info.token);
       NULL_TERMINATE(label, strlen (label) - 1); /* remove ":" */
-      if (validLabel (&line_info, label) == ERROR) {
+      if (valid_symbol_name (&line_info, label) == ERROR) {
         *no_error += ERROR; /*todo think*/
         continue;
       }
