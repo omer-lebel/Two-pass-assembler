@@ -20,5 +20,5 @@ input.am:9  warning: variable'"b"' is lost, won't be able to access later
  9  | .string "b"
     |         ^~~
 | h | e | l | l | o |   | w | o | r | l | d | ! |   | 1 | 2 | 3 |   |   | b |   |
- S                0      directive       not external   	
- S0               17     directive       not external   	
+ S                0      directive       not external   
+ S0               17     directive       not external   

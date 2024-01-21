@@ -120,6 +120,7 @@ void *init_symbol (const void *data)
   new_symbol->isExtern = symbol_data->isExtern;
   new_symbol->type = symbol_data->type;
   new_symbol->isEntry = symbol_data->isEntry;
+  new_symbol->val = symbol_data->val;
   return new_symbol;
 }
 
@@ -128,7 +129,6 @@ void print_symbol (const char *word, const void *data, FILE *pf)
   Symbol *symbol_data = (Symbol *) data;
 
   fprintf (pf, " %-15s  %-5lu ", word, symbol_data->address);
-
   switch (symbol_data->type) {
     case DIRECTIVE:
       fprintf (pf, " %-15s", "directive");
@@ -143,14 +143,18 @@ void print_symbol (const char *word, const void *data, FILE *pf)
       fprintf (pf, " %-15s", "unknown");
   }
 
-  fprintf (pf, " %-15s\t", (symbol_data->isExtern == EXTERNAL ?
+  fprintf (pf, " %-15s", (symbol_data->isExtern == EXTERNAL ?
                             "external" : "not external"));
+
+  if (symbol_data->type == DEFINE){
+    fprintf (pf, " %-5d", symbol_data->val);
+  }
   fprintf (pf, "\n");
 
 }
 
 exit_code addSymbol (const char *label, SymbolType type, size_t address, int
-isExtern)
+isExtern, int val)
 {
   Symbol symbol_data;
   Node *new_symbol;
@@ -159,6 +163,7 @@ isExtern)
   symbol_data.type = type;
   symbol_data.isExtern = isExtern;
   symbol_data.isEntry = FALSE;
+  symbol_data.val = val;
 
   new_symbol = createNode (symbols_table, label, &symbol_data);
   if (!new_symbol) {
@@ -289,7 +294,7 @@ exit_code str_handler (LineInfo *line, const char *label)
                                  "access later");
   }
   else{ /*add to symbol table */
-    if (addSymbol (label, DIRECTIVE, DC, NOT_EXTERNAL) == FAILURE) {
+    if (addSymbol (label, DIRECTIVE, DC, NOT_EXTERNAL, 0) == FAILURE) {
       return FAILURE; /* memory error */
     }
   }
@@ -299,42 +304,101 @@ exit_code str_handler (LineInfo *line, const char *label)
 
 
 /***** data */
-/*bool data_handler(LineInfo *line, char* label){
-
+/*get not null string*/
+int validInt (LineInfo *line, long int *res){
+  char *end_ptr = NULL;
+  *res = strtol (line->token, &end_ptr, 10);
+  if (!IS_EMPTY(end_ptr) || *res > MAX_INT || *res < MIN_INT){
+    return FALSE;
+  }
   return TRUE;
-}*/
+}
 
-/*1. valid name (not saved word && abc123 && new name)
-2. have '='
-3. have num*/
+bool isImm(LineInfo *line, int* res){
+  long int tmp;
+  Node *node = findNode(symbols_table, line->token);
+  Symbol *symbol_data;
+  if (node){
+    symbol_data = (Symbol*) node->data;
+    if (symbol_data->type !=DEFINE){
+      r_error ("label ", line, " is not a directive of define");
+      return FALSE;
+    }
+    if (symbol_data->type ==DEFINE){
+      *res = symbol_data->val;
+      return TRUE;
+    }
+  }
+  if (!validInt (line, &tmp)){
+    if (tmp > MAX_INT || tmp < MIN_INT) {
+      r_error ("", line, " exceeds integer bounds [-(2^14-1), 2^13-1]");
+    }
+    else{
+      r_error ("", line, " undeclared (first use in this directive)");
+    }
+    return FALSE;
+  }
+  return TRUE;
+}
+
+
+exit_code data_handler(LineInfo *line, char* label){
+  int tmp = 0, i=1, j;
+  int arr[100] = {0}; /*todo*/
+
+  /* get first int */
+  lineTok (line);
+  if (IS_EMPTY(line->token)){ /* .data _ */
+    strcat (line->token, " "); /*add token to msg error*/
+    r_error ("", line, "empty integer initializer");
+    return ERROR;
+  }
+  if (!isImm (line, &tmp)){ /* .data xxx */
+    return ERROR;
+  }
+  arr[i++] = tmp;
+  ++arr[0];
+  lineTok (line);
+/*  printf("val of data: %d\n", tmp); */
+
+  /* get comma + next int */
+  while (!IS_EMPTY(line->token)){
+
+    /* get comma */
+    if (strcmp (line->token, ",") != 0){ /* exp: .data 1,2 3 | .data 1 2 x */
+      r_error ("expected ',' before integer token", line, "");
+    }
+
+    /* get next int */
+    lineTok (line);
+    if (strcmp (line->token, ",") == 0){ /* exp: .data 1,,2 */
+      r_error ("expected integer before ", line, "token");
+    }
+    if (!isImm(line, &tmp)){ /* exp: .data 1,2,xxx */
+      return ERROR;
+    }
+    arr[i++] = tmp;
+    ++arr[0];
+    lineTok (line);
+  }
+  for (j = 0; j< arr[0]; j++){
+    printf ("%d ", arr[i+1]);
+  }
+  return SUCCESS;
+}
+
+
 
 
 /*bool equal_handler(LineInfo *line, const char *label);*/
 
 /***** define */
-//get not null string
-int validInt (LineInfo *line, int *res){
-  char *end_ptr = NULL;
-  long int tmp;
-
-  tmp = strtol (line->token, &end_ptr, 10);
-  if (*end_ptr != '\0'){
-    r_error ("",line, " is not a valid numeric expression");
-    return FALSE;
-  }
-  if (tmp > MAX_INT || tmp < MIN_INT){
-    r_error ("", line, " exceeds integer bounds [-(2^14-1), 2^13-1]");
-    return FALSE;
-  }
-  *res = (int) tmp;
-  return TRUE;
-}
 
 exit_code define_handler (LineInfo *line, const char *label)
 {
+  long int res = 0;
   char name[MAX_LINE_SIZE];
   strcpy (name, line->token);
-  int res = 0;
 
   /* label and define at the same line */
   if (!IS_EMPTY(label)) { /* LABEL: .define x=3 */
@@ -374,6 +438,12 @@ exit_code define_handler (LineInfo *line, const char *label)
     return ERROR;
   }
   if (!validInt (line, &res)){
+    if (res > MAX_INT || res < MIN_INT) {
+      r_error ("", line, " exceeds integer bounds [-(2^14-1), 2^13-1]");
+    }
+    else{
+      r_error ("",line, " is not a valid numeric expression");
+  }
     return ERROR;
   }
 
@@ -385,7 +455,7 @@ exit_code define_handler (LineInfo *line, const char *label)
 
   /*add to table list*/
   /*todo val of define?!?! */
-  if (addSymbol (name, DEFINE, 0, NOT_EXTERNAL) == FAILURE) {
+  if (addSymbol (name, DEFINE, 0, NOT_EXTERNAL, res) == FAILURE) {
     return FAILURE; /* memory error */
   }
   return SUCCESS;
@@ -409,7 +479,7 @@ exit_code extern_handler (LineInfo *line, const char *label)
     r_error ("extraneous text ", line, " after directive");
     return ERROR;
   }
-  if (addSymbol (symbol, DIRECTIVE, 0, EXTERNAL) == FAILURE) {
+  if (addSymbol (symbol, DIRECTIVE, 0, EXTERNAL, 0) == FAILURE) {
     return FAILURE; /* memory error */
   }
   if (!IS_EMPTY(label)) {
@@ -419,6 +489,10 @@ exit_code extern_handler (LineInfo *line, const char *label)
   }
   return SUCCESS;
 }
+
+
+
+
 
 /****************** process function *******************/
 /*todo add empty line after label*/
@@ -453,9 +527,7 @@ exit_code f_processLine (LineInfo *line, char *label)
 
     /* case: .data */
   else if (strcmp (".data", line->token) == 0) {
-/*    if (!int_handler (line, label)){
-      return FALSE;
-    }*/
+    res = data_handler (line, label);
   }
   return res;
 }

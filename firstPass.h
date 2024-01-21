@@ -10,7 +10,7 @@
 #include "linkedList.h"
 
 #define MAX_INT 8191
-#define MIN_INT -8191
+#define MIN_INT (-8191)
 /****************** symbols *******************/
 
 typedef enum SymbolType
@@ -29,6 +29,7 @@ typedef struct Symbol
     SymbolType type;
     bool isEntry;
     IsExtern isExtern;
+    int val;
 } Symbol;
 
 

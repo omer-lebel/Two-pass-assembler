@@ -104,8 +104,10 @@ void lineTok (LineInfo *line)
 
 void lineToPostfix(LineInfo *line) {
   /* concatenate prefix, token and postfix to recreate the original line */
-  strcat (line->postfix, line->prefix);
-  strcat (line->postfix, line->token);
+  strcat (line->prefix, line->token);
+  strcat (line->prefix, line->postfix);
+
+  strcpy (line->postfix, line->prefix); /*move the whole line to post fix */
 
   /* Reset token and postfix */
   RESET_STR(line->prefix);

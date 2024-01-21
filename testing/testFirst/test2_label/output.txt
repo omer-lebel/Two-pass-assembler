@@ -35,8 +35,8 @@ input.am:16 error: ' ' empty external declaration
  16 | .extern 
     |        ^
 | a |   | d |   |
- L0               0      directive       not external   	
- E0               0      directive       external       	
- L3               2      directive       not external   	
- E4               0      directive       external       	
- E6               0      directive       external       	
+ L0               0      directive       not external   
+ E0               0      directive       external       
+ L3               2      directive       not external   
+ E4               0      directive       external       
+ E6               0      directive       external       

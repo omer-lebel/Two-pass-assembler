@@ -221,11 +221,11 @@ int validData(char* line, int* arr){
 
   //get first int
   line = newToken (line, token);
-  if (token[0] == '\0'){ //exp: .data _
+  if (token[0] == '\0'){ /* .data _ */
     raiseError (".data", "empty integer initializer");
     return 0;
   }
-  if (!isInt (token, &res)){ //exp: .data 1,2,x
+  if (!isInt (token, &res)){ /* .data xxx */
     return -1;
   }
   arr[i++] = res;
