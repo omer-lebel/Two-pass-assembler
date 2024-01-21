@@ -312,12 +312,32 @@ exit_code str_handler (LineInfo *line, const char *label)
 /*bool equal_handler(LineInfo *line, const char *label);*/
 
 /***** define */
+//get not null string
+int validInt (LineInfo *line, int *res){
+  char *end_ptr = NULL;
+  long int tmp;
+
+  tmp = strtol (line->token, &end_ptr, 10);
+  if (*end_ptr != '\0'){
+    r_error ("",line, " is not a valid numeric expression");
+    return FALSE;
+  }
+  if (tmp > MAX_INT || tmp < MIN_INT){
+    r_error ("", line, " exceeds integer bounds [-(2^14-1), 2^13-1]");
+    return FALSE;
+  }
+  *res = (int) tmp;
+  return TRUE;
+}
+
 exit_code define_handler (LineInfo *line, const char *label)
 {
-  char *name = line->token;
+  char name[MAX_LINE_SIZE];
+  strcpy (name, line->token);
+  int res = 0;
 
   /* label and define at the same line */
-  if (!IS_EMPTY(label)) {
+  if (!IS_EMPTY(label)) { /* LABEL: .define x=3 */
     lineToPostfix (line); /*get the fist tok again for the error msg */
     lineTok (line);
     r_error ("label ", line, " and '.define' cannot be declared on the same "
@@ -338,17 +358,36 @@ exit_code define_handler (LineInfo *line, const char *label)
 
   /*equal sign*/
   lineTok (line);
+  if (IS_EMPTY(line->token)){
+    strcat (line->token, " ");
+  }
   if (strcmp (line->token, "=") != 0) { /*.define x y | .define x 3 */
     r_error ("expected '=' before numeric token, but got ", line, "");
+    return ERROR;
   }
 
   /*number*/
   lineTok (line);
+  if (IS_EMPTY(line->token)){
+    strcat (line->token, " "); /*add token to msg error*/
+    r_error ("expected numeric expression after '=' but got ", line, "");
+    return ERROR;
+  }
+  if (!validInt (line, &res)){
+    return ERROR;
+  }
+
+  if (!IS_EMPTY(line->postfix)){
+    lineTok (line);
+    r_error ("extraneous text ", line, " after directive");
+    return ERROR;
+  }
+
   /*add to table list*/
+  /*todo val of define?!?! */
   if (addSymbol (name, DEFINE, 0, NOT_EXTERNAL) == FAILURE) {
     return FAILURE; /* memory error */
   }
-
   return SUCCESS;
 }
 

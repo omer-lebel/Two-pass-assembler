@@ -73,6 +73,7 @@ void lineTok (LineInfo *line)
 {
   size_t j=0, i = 0;
   char *p = (line->postfix);
+  char c;
 
   /* Concatenate prefix and token */
   strcat(line->prefix, line->token);
@@ -86,14 +87,14 @@ void lineTok (LineInfo *line)
 
   /* find next token and update postfix: */
    /*special case for a word consisting of a comma or equal sign */
-  if (*p == ',' || *p == '=') {
-    line->token[i] = *p;
+  if ((c=*p) == ',' || c == '=') {
+    line->token[i] = c;
     i++; p++;
   }
   else{ /* coping word */
-    for (; *p!= '\0' && !isspace(*p) && *p != ',';
+    for (; (c=*p) != '\0' && !isspace(c) && c != ',' && c != '=';
            i++, p++) {
-      line->token[i] = *p;
+      line->token[i] = c;
     }
   }
   /* null terminate the token */
