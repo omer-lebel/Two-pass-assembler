@@ -3,7 +3,7 @@
 #define IS_COMMENT(s) ((s)[0] == ';')
 #define IS_MCR_DEF(s) (strcmp((s), "mcr") == 0)
 #define IS_MCR_END(s) (strcmp((s), "endmcr") == 0)
-
+#define DELIM " \t\r\n"
 
 
 int preAssembler (FILE *input, FILE *output)

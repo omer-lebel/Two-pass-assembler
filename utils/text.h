@@ -5,9 +5,7 @@
 #ifndef _TEXT_H_
 #define _TEXT_H_
 
-#define MAX_LINE_SIZE (80+1)
-#define MAX_TOKEN_SIZE (80+1)
-#define DELIM " \t\r\n"
+/*#define DELIM " \t\r\n"*/
 
 #define IS_EMPTY(s) (*s == '\0')
 #define RESET_STR(str) ((str)[0] = '\0')

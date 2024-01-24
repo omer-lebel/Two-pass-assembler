@@ -1,12 +1,9 @@
 /*
  Created by OMER on 1/15/2024.
 */
-
-
 #include "firstPass.h"
 
 /****************** pass helpers *******************/
-
 
 int init_pass (LineInfo *line, char *prefix, char *token, char *postfix,
                char *file_name)
@@ -26,9 +23,6 @@ int init_pass (LineInfo *line, char *prefix, char *token, char *postfix,
   line->prefix = prefix;
   line->token = token;
   line->postfix = postfix;
-
-  DC = 0;
-  IC = 100;
 
   return SUCCESS;
 }
@@ -79,7 +73,7 @@ exit_code valid_symbol_name (LineInfo *line, char *str)
 }
 
 /***** string */
-void getDataTok (LineInfo *line)
+void get_data_tok (LineInfo *line)
 {
   size_t j, i = 0;
   char *p = (line->postfix);
@@ -115,7 +109,7 @@ void getDataTok (LineInfo *line)
   line->postfix = p;
 }
 
-Bool validStr (LineInfo *line)
+Bool is_str (LineInfo *line)
 {
   char *start = line->token;
   size_t len = strlen (start);
@@ -146,7 +140,7 @@ exit_code str_handler (LineInfo *line, const char *label)
 {
   char str[MAX_TOKEN_SIZE];
   size_t len;
-  if (!validStr (line)) {
+  if (!is_str (line)) {
     return ERROR;
   }
   strcpy (str, line->token);
@@ -176,7 +170,7 @@ exit_code str_handler (LineInfo *line, const char *label)
 
 /***** data */
 /*get not null string*/
-int validInt (LineInfo *line, long int *res){
+int is_int (LineInfo *line, long int *res){
   char *end_ptr = NULL;
   *res = strtol (line->token, &end_ptr, 10);
   if (!IS_EMPTY(end_ptr) || *res > MAX_INT || *res < MIN_INT){
@@ -185,7 +179,7 @@ int validInt (LineInfo *line, long int *res){
   return TRUE;
 }
 
-Bool isImm(LineInfo *line, int* res){
+Bool is_imm(LineInfo *line, int* res){
   long int tmp = 0;
   Node *node;
   Symbol *symbol_data;
@@ -205,7 +199,7 @@ Bool isImm(LineInfo *line, int* res){
   }
 
   /*check if it's a integer */
-  if (!validInt (line, &tmp)){
+  if (!is_int (line, &tmp)){
     if (tmp > MAX_INT || tmp < MIN_INT) {
       r_error ("", line, " exceeds integer bounds [-(2^14-1), 2^13-1]");
     }
@@ -231,7 +225,7 @@ exit_code data_handler(LineInfo *line, char* label){
     r_error ("", line, "empty integer initializer");
     return ERROR;
   }
-  if (!isImm (line, &tmp)){ /* .data xxx */
+  if (!is_imm (line, &tmp)){ /* .data xxx */
     return ERROR;
   }
   arr[i++] = tmp;
@@ -253,7 +247,7 @@ exit_code data_handler(LineInfo *line, char* label){
       r_error ("expected integer before ", line, "token");
       return ERROR;
     }
-    if (!isImm(line, &tmp)){ /* .data 1,2,xxx | .data 1, 99999999999 */
+    if (!is_imm (line, &tmp)){ /* .data 1,2,xxx | .data 1, 99999999999 */
       return ERROR;
     }
     arr[i++] = tmp;
@@ -324,7 +318,7 @@ exit_code define_handler (LineInfo *line, const char *label)
     r_error ("expected numeric expression after '=' but got ", line, "");
     return ERROR;
   }
-  if (!validInt (line, &res)){
+  if (!is_int (line, &res)){
     if (res > MAX_INT || res < MIN_INT) {
       r_error ("", line, " exceeds integer bounds [-(2^14-1), 2^13-1]");
     }
@@ -408,7 +402,7 @@ exit_code f_processLine (LineInfo *line, char *label)
 
     /* case: .string */
   else if (strcmp (".string", line->token) == 0) {
-    getDataTok (line);
+    get_data_tok (line);
     res = str_handler (line, label);
   }
 
@@ -423,10 +417,10 @@ exit_code f_processLine (LineInfo *line, char *label)
 
 int firstPass (FILE *input_file, char *file_name, exit_code *no_error)
 {
-  char line[MAX_LINE_SIZE],
-      prefix[MAX_LINE_SIZE],
-      token[MAX_LINE_SIZE],
-      label[MAX_LINE_SIZE];
+  char line[MAX_LINE_SIZE] = "",
+      prefix[MAX_LINE_SIZE] = "",
+      token[MAX_LINE_SIZE] = "",
+      label[MAX_LINE_SIZE] = "";
   LineInfo line_info;
   exit_code res;
 

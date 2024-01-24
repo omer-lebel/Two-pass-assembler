@@ -10,9 +10,12 @@
 #include <string.h>
 #include <stdarg.h>
 
+#define MAX_LINE_SIZE (80+1)
+#define MAX_TOKEN_SIZE (80+1)
 #define NUM_OF_OP 16
 #define NUM_OF_ADDRESSING_MODE 4
 #define MAX_CMD_NAME_LEN 3
+#define NUM_OF_SAVED_WORD sizeof(SavedWord) / sizeof(*SavedWord);
 
 /*todo change */
 typedef enum Bool
@@ -50,21 +53,21 @@ typedef enum Opcode
     HLT = 15
 } Opcode;
 
-typedef enum Operand_Add_Mode
+typedef enum Addressing_Mode
 {
     NONE_MODE = -1,
     IMMEDIATE_MODE = 0,
     DIRECT_MODE = 1,
     INDEX_MODE = 2,
     REGISTER_MODE = 3
-} Operand_Add_Mode;
+} Addressing_Mode;
 
 typedef struct Op_Info
 {
     Opcode opcode;
     char name[MAX_CMD_NAME_LEN];
-    Bool src_modes[NUM_OF_ADDRESSING_MODE];
-    Bool target_modes[NUM_OF_ADDRESSING_MODE];
+    Bool valid_src_modes[NUM_OF_ADDRESSING_MODE];
+    Bool valid_target_modes[NUM_OF_ADDRESSING_MODE];
 } Op_Info;
 
 typedef enum Register
@@ -75,5 +78,6 @@ typedef enum Register
 void init_assembler_setting ();
 
 extern Op_Info op_info[NUM_OF_OP];
+extern char *SavedWord[];
 
 #endif /* _SETTING_H_ */

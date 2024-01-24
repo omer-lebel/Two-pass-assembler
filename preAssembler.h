@@ -19,6 +19,7 @@
 #define _PRE_ASSEMBLER_H_
 
 #include <stdlib.h>
+#include "setting.h"
 #include "utils/text.h"
 #include "utils/linkedList.h"
 

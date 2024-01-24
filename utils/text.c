@@ -25,18 +25,17 @@ char* cmd_type2[] = {"not", "clr", "inc", "dec", "jmp", "bne", "red", "prn","jsr
 char* cmd_type3[] = {"rts", "hlt"};
  */
 
-char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
-                     ".data", ".string", ".entry", ".extern", ".define",
-                     "mov", "cmp", "add", "sub", "lea",
-                     "not", "clr", "inc", "dec", "jmp", "bne", "red", "prn",
-                     "jsr", "rts", "hlt"};
+//char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
+//                     ".data", ".string", ".entry", ".extern", ".define",
+//                     "mov", "cmp", "add", "sub", "lea",
+//                     "not", "clr", "inc", "dec", "jmp", "bne", "red", "prn",
+//                     "jsr", "rts", "hlt"};
 
 
 int isSavedWord (const char *s)
 {
-  int i = 0;
-  int len = sizeof(SavedWord) / sizeof(*SavedWord);
-  for (i = 0; i < len; i++) {
+  int i;
+  for (i = 0; SavedWord[i][0] != '\0' ; i++) {
     if (strcmp (s, SavedWord[i]) == 0)
     {
       return TRUE;

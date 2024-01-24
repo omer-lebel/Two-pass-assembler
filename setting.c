@@ -7,23 +7,30 @@
 
 Op_Info op_info[NUM_OF_OP];
 
+char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
+                     ".data", ".string", ".entry", ".extern", ".define",
+                     "mov", "cmp", "add", "sub", "lea",
+                     "not", "clr", "inc", "dec", "jmp", "bne", "red", "prn",
+                     "jsr", "rts", "hlt",
+                     ""};
+
 void init_op (Opcode opcode, char* op_name,...)
 {
   int i;
   va_list args; /* point to each unnamed arg in turn */
-  Operand_Add_Mode mode;
+  Addressing_Mode mode;
 
   op_info->opcode = opcode;
   strcpy (op_info->name, op_name);
 
   va_start(args, op_name); /* args point to the first unnamed arg */
   for (i = 0 ; i < 4 ; i++){
-    mode = va_arg(args, Operand_Add_Mode); /* to the next unnamed arg */
-    op_info->src_modes[i] = (mode != NONE_MODE);
+    mode = va_arg(args, Addressing_Mode); /* to the next unnamed arg */
+    op_info->valid_src_modes[i] = (mode != NONE_MODE);
   }
   for (i = 0 ; i < 4 ; i++){
-    mode = va_arg(args, Operand_Add_Mode); /* to the next unnamed arg */
-    op_info->target_modes[i] = (mode != NONE_MODE);
+    mode = va_arg(args, Addressing_Mode); /* to the next unnamed arg */
+    op_info->valid_target_modes[i] = (mode != NONE_MODE);
   }
   va_end(args);
 }
