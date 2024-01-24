@@ -3,7 +3,7 @@
 */
 
 
-#include "textUtils.h"
+#include "text.h"
 
 #define RED   "\x1B[31m"
 #define GRN   "\x1B[32m"
@@ -86,7 +86,7 @@ void lineTok (LineInfo *line)
   NULL_TERMINATE(line->prefix,j);
 
   /* find next token and update postfix: */
-   /*special case for a word consisting of a comma or equal sign */
+  /*special case for a word consisting of a comma or equal sign */
   if ((c=*p) == ',' || c == '=') {
     line->token[i] = c;
     i++; p++;

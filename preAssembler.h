@@ -19,8 +19,8 @@
 #define _PRE_ASSEMBLER_H_
 
 #include <stdlib.h>
-#include "textUtils.h"
-#include "linkedList.h"
+#include "utils/text.h"
+#include "utils/linkedList.h"
 
 /**
  * Data structure representing the content of a macro in the linked list.

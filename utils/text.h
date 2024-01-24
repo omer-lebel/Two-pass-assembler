@@ -2,8 +2,8 @@
  Created by OMER on 1/1/2024.
 */
 
-#ifndef _TEXTUTILS_H_
-#define _TEXTUTILS_H_
+#ifndef _TEXT_H_
+#define _TEXT_H_
 
 #define MAX_LINE_SIZE (80+1)
 #define MAX_TOKEN_SIZE (80+1)
@@ -17,7 +17,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
-#include "setting.h"
+#include "../setting.h"
 
 #define SAVED_WORD_NUM (8 + 5 + 16)
 /* 8- register, 5-direction, 16-instruction */
@@ -54,4 +54,4 @@ int isSavedWord(const char *s);
 int is_valid_mcr_name(char *s);
 
 
-#endif /* _TEXTUTILS_H_ */
+#endif /* _TEXT_H_ */

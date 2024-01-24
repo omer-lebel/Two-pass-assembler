@@ -3,7 +3,7 @@
 //
 
 #include "fsm.h"
-#include "linkedList.h"
+#include "utils/linkedList.h"
 
 Bool is_reg(char* str, int* val){
   if (str[0] == 'r' && str[1] >= '0' && str[1] <= '7' && str[2] == '\0'){

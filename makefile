@@ -12,8 +12,8 @@ all: testFirst
 testPre: preAssembler
 	./testing/testPre/testPre.sh
 
-preAssembler: testPre.o preAssembler.o input.o linkedList.o
-	$(CC) $(CFLAGS) testPre.o preAssembler.o input.o linkedList.o -o preAssembler
+preAssembler: testPre.o preAssembler.o text.o linkedList.o
+	$(CC) $(CFLAGS) testPre.o preAssembler.o text.o linkedList.o -o preAssembler
 
 testPre.o: ./testing/testPre/testPre.c
 	$(CC) $(CFLAGS) -c ./testing/testPre/testPre.c -o testPre.o
@@ -24,27 +24,45 @@ testPre.o: ./testing/testPre/testPre.c
 testFirst: firstPass
 	./testing/testFirst/testFirst.sh
 
-firstPass: testFirst.o firstPass.o preAssembler.o input.o linkedList.o
-	$(CC) $(CFLAGS) testFirst.o firstPass.o preAssembler.o input.o linkedList.o -o firstPass
+firstPass: testFirst.o firstPass.o preAssembler.o text.o linkedList.o symbolTable.o memoryImg.o
+	$(CC) $(CFLAGS) testFirst.o firstPass.o preAssembler.o text.o linkedList.o symbolTable.o memoryImg.o -o firstPass
 
 testFirst.o: testing/testFirst/testFirst.c
 	$(CC) $(CFLAGS) -c testing/testFirst/testFirst.c -o testFirst.o
 
 
+################## generic #######################
+setting.o: setting.c setting.h
+	$(CC) $(CFLAGS) -c setting.c
 
+################## utils #######################
 
-################## o files #######################
-firstPass.o: firstPass.c firstPass.h
-	$(CC) $(CFLAGS) -c firstPass.c
+linkedList.o: utils/linkedList.c utils/linkedList.h setting.h
+	$(CC) $(CFLAGS) -c utils/linkedList.c
 
-preAssembler.o: preAssembler.c preAssembler.h
+text.o: utils/text.c utils/text.h setting.h
+	$(CC) $(CFLAGS) -c utils/text.c
+
+################## file structures #######################
+
+symbolTable.o: fileStructures/symbolTable.c fileStructures/symbolTable.h utils/linkedList.h setting.h
+	$(CC) $(CFLAGS) -c fileStructures/symbolTable.c
+
+memoryImg.o: fileStructures/memoryImg.c fileStructures/memoryImg.h utils/text.h setting.h
+	$(CC) $(CFLAGS) -c fileStructures/memoryImg.c
+
+################## program running #######################
+
+preAssembler.o: preAssembler.c preAssembler.h utils/text.h utils/linkedList.h
 	$(CC) $(CFLAGS) -c preAssembler.c
 
-input.o: textUtils.c textUtils.h
-	$(CC) $(CFLAGS) -c input.c
+firstPass.o: firstPass.c firstPass.h fileStructures/symbolTable.h fileStructures/memoryImg.h
+	$(CC) $(CFLAGS) -c firstPass.c
 
-linkedList.o: linkedList.c linkedList.h
-	$(CC) $(CFLAGS) -c linkedList.c
+
+
+
+
 
 
 

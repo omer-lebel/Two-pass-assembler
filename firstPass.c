@@ -5,27 +5,17 @@
 
 #include "firstPass.h"
 
-#define INIT_SIZE 100
-
-LinkedList *symbols_table;
-char *text_seg;
-DsWord *data_seg;
-
-size_t DC, IC;
-
 /****************** pass helpers *******************/
 
 
 int init_pass (LineInfo *line, char *prefix, char *token, char *postfix,
                char *file_name)
 {
-  symbols_table = createList (init_symbol, print_symbol, free);
-  if (!symbols_table) {
+  if (init_symbol_table() != SUCCESS) {
     return FAILURE; /* memory error */
   }
 
-  data_seg = (DsWord *) malloc (INIT_SIZE * sizeof (DsWord));
-  if (!data_seg) {
+  if (init_data_seg() != SUCCESS) {
     free (symbols_table);
     return FAILURE; /* memory error */
   }
@@ -51,126 +41,6 @@ void restartLine (char *line, LineInfo *line_info, char *label)
   RESET_STR(line_info->token);
   /* postfix contain the whole line without the trim chars */
   line_info->postfix = strtok (line, "\r\n");
-}
-
-/****************** data segment *******************/
-
-exit_code addToDataSeg (LineInfo *line, DsType type, void *arr, size_t size)
-{
-  size_t target_dc = DC + size;
-  int *intArr;
-  char *charArr;
-  if (target_dc - 1 >= 100) {
-    r_error ("adding the variables: ", line, " causes data segment overflow");
-    return FAILURE;
-  }
-
-  switch (type) {
-    case INT_TYPE:
-      intArr = (int *) arr;
-      for (; DC < target_dc; DC++) {
-        data_seg[DC].type = type;
-        data_seg[DC].val = *intArr++;
-      }
-      break;
-    case CHAR_TYPE:
-      charArr = (char *) arr;
-      for (; DC < target_dc; DC++) {
-        data_seg[DC].type = type;
-        data_seg[DC].val = (int) *charArr++;
-      }
-      break;
-    default:
-      r_error ("unknown data type in ", line, "");
-      return ERROR;
-  }
-  return SUCCESS;
-}
-
-void printDs (void)
-{
-  size_t i;
-  char c;
-  for (i = 0; i < DC; ++i) {
-    if (data_seg[i].type == INT_TYPE) {
-      printf ("| %d ", data_seg[i].val);
-    }
-    else if ((c = (char) data_seg[i].val) != '\0') { /* char */
-      printf ("| %c ", c);
-    }
-    else { /* '\0' */
-      printf ("|   ");
-    }
-  }
-  if (i != 0) {
-    printf ("|\n");
-  }
-}
-
-/****************** symbol table *******************/
-
-void *init_symbol (const void *data)
-{
-  Symbol *symbol_data = (Symbol *) data;
-  Symbol *new_symbol = (Symbol *) malloc (sizeof (Symbol));
-  if (!new_symbol) {
-    return NULL; /* memory error */
-  }
-  new_symbol->address = symbol_data->address;
-  new_symbol->isExtern = symbol_data->isExtern;
-  new_symbol->type = symbol_data->type;
-  new_symbol->isEntry = symbol_data->isEntry;
-  new_symbol->val = symbol_data->val;
-  return new_symbol;
-}
-
-void print_symbol (const char *word, const void *data, FILE *pf)
-{
-  Symbol *symbol_data = (Symbol *) data;
-
-  fprintf (pf, " %-15s  %-5lu ", word, symbol_data->address);
-  switch (symbol_data->type) {
-    case DIRECTIVE:
-      fprintf (pf, " %-15s", "directive");
-      break;
-    case OPERATION:
-      fprintf (pf, " %-15s", "operation");
-      break;
-    case DEFINE:
-      fprintf (pf, " %-15s", "define");
-      break;
-    default:
-      fprintf (pf, " %-15s", "unknown");
-  }
-
-  fprintf (pf, " %-15s", (symbol_data->isExtern == EXTERNAL ?
-                            "external" : "not external"));
-
-  if (symbol_data->type == DEFINE){
-    fprintf (pf, " %-5d", symbol_data->val);
-  }
-  fprintf (pf, "\n");
-
-}
-
-exit_code addSymbol (const char *label, SymbolType type, size_t address, int
-isExtern, int val)
-{
-  Symbol symbol_data;
-  Node *new_symbol;
-
-  symbol_data.address = address;
-  symbol_data.type = type;
-  symbol_data.isExtern = isExtern;
-  symbol_data.isEntry = FALSE;
-  symbol_data.val = val;
-
-  new_symbol = createNode (symbols_table, label, &symbol_data);
-  if (!new_symbol) {
-    return FAILURE; /* memory error */
-  }
-  appendToTail (symbols_table, new_symbol);
-  return SUCCESS;
 }
 
 /****************** handler & validation function *******************/
@@ -211,7 +81,7 @@ exit_code valid_symbol_name (LineInfo *line, char *str)
 /***** string */
 void getDataTok (LineInfo *line)
 {
-  size_t j = 0, i = 0;
+  size_t j, i = 0;
   char *p = (line->postfix);
 
   /* Concatenate prefix and token */
@@ -295,7 +165,7 @@ exit_code str_handler (LineInfo *line, const char *label)
     r_warning ("", line, " variables may be inaccessible without label");
   }
   else{ /*add to symbol table */
-    if (addSymbol (label, DIRECTIVE, DC, NOT_EXTERNAL, 0) == FAILURE) {
+    if (add_symbol (label, DIRECTIVE, DC, NOT_EXTERNAL, 0) == FAILURE) {
       return FAILURE; /* memory error */
     }
   }
@@ -396,13 +266,12 @@ exit_code data_handler(LineInfo *line, char* label){
     r_warning ("", line, " variables may be inaccessible without label");
   }
   else{ /*add to symbol table */
-    if (addSymbol (label, DIRECTIVE, DC, NOT_EXTERNAL, 0) == FAILURE) {
+    if (add_symbol (label, DIRECTIVE, DC, NOT_EXTERNAL, 0) == FAILURE) {
       return FAILURE; /* memory error */
     }
   }
   /* add to data segment */
   return addToDataSeg (line, INT_TYPE, arr, i);
-  return SUCCESS;
 }
 
 
@@ -473,7 +342,7 @@ exit_code define_handler (LineInfo *line, const char *label)
 
   /*add to table list*/
   /*todo val of define?!?! */
-  if (addSymbol (name, DEFINE, 0, NOT_EXTERNAL, res) == FAILURE) {
+  if (add_symbol (name, DEFINE, 0, NOT_EXTERNAL, (int) res) == FAILURE) {
     return FAILURE; /* memory error */
   }
   return SUCCESS;
@@ -497,7 +366,7 @@ exit_code extern_handler (LineInfo *line, const char *label)
     r_error ("extraneous text ", line, " after directive");
     return ERROR;
   }
-  if (addSymbol (symbol, DIRECTIVE, 0, EXTERNAL, 0) == FAILURE) {
+  if (add_symbol (symbol, DIRECTIVE, 0, EXTERNAL, 0) == FAILURE) {
     return FAILURE; /* memory error */
   }
   if (!IS_EMPTY(label)) {

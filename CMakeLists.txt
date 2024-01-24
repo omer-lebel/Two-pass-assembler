@@ -11,11 +11,18 @@ set(CMAKE_C_STANDARD 90)
 
 
 add_executable(project___mama14
-        linkedList.c linkedList.h
-        textUtils.c textUtils.h
+        setting.c setting.h
+
+        utils/linkedList.c utils/linkedList.h
+        utils/text.c utils/text.h
+
+        fileStructures/symbolTable.c fileStructures/symbolTable.h
+        fileStructures/memoryImg.c fileStructures/memoryImg.h
+
         preAssembler.c preAssembler.h
         firstPass.c firstPass.h
-        setting.c setting.h
-        main.c)
+
+        main.c
+        )
 
 

@@ -1,6 +1,7 @@
-//
-// Created by OMER on 1/23/2024.
-//
+/*
+ Created by OMER on 1/23/2024.
+*/
+
 
 #ifndef _SETTING_H_
 #define _SETTING_H_
@@ -13,7 +14,7 @@
 #define NUM_OF_ADDRESSING_MODE 4
 #define MAX_CMD_NAME_LEN 3
 
-//todo change
+/*todo change */
 typedef enum Bool
 {
     FALSE = 0, TRUE = 1
@@ -75,4 +76,4 @@ void init_assembler_setting ();
 
 extern Op_Info op_info[NUM_OF_OP];
 
-#endif //_SETTING_H_
+#endif /* _SETTING_H_ */
