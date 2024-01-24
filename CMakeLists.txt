@@ -12,10 +12,10 @@ set(CMAKE_C_STANDARD 90)
 
 add_executable(project___mama14
         linkedList.c linkedList.h
-        input.c input.h
+        textUtils.c textUtils.h
         preAssembler.c preAssembler.h
-#        passOne.c passOne.h
         firstPass.c firstPass.h
-        main.c firstPass.c)
+        setting.c setting.h
+        main.c)
 
 

@@ -245,7 +245,7 @@ void getDataTok (LineInfo *line)
   line->postfix = p;
 }
 
-bool validStr (LineInfo *line)
+Bool validStr (LineInfo *line)
 {
   char *start = line->token;
   size_t len = strlen (start);
@@ -290,8 +290,9 @@ exit_code str_handler (LineInfo *line, const char *label)
   }
 
   if (IS_EMPTY(label)) { /* .string "a" */
-    r_warning ("variable", line, " is lost, won't be able to "
-                                 "access later");
+    lineToPostfix (line); /*get the fist tok again for the error msg */
+    lineTok (line);
+    r_warning ("", line, " variables may be inaccessible without label");
   }
   else{ /*add to symbol table */
     if (addSymbol (label, DIRECTIVE, DC, NOT_EXTERNAL, 0) == FAILURE) {
@@ -314,10 +315,13 @@ int validInt (LineInfo *line, long int *res){
   return TRUE;
 }
 
-bool isImm(LineInfo *line, int* res){
-  long int tmp;
-  Node *node = findNode(symbols_table, line->token);
+Bool isImm(LineInfo *line, int* res){
+  long int tmp = 0;
+  Node *node;
   Symbol *symbol_data;
+
+  /*check if it's a define */
+  node = findNode(symbols_table, line->token);
   if (node){
     symbol_data = (Symbol*) node->data;
     if (symbol_data->type !=DEFINE){
@@ -329,6 +333,8 @@ bool isImm(LineInfo *line, int* res){
       return TRUE;
     }
   }
+
+  /*check if it's a integer */
   if (!validInt (line, &tmp)){
     if (tmp > MAX_INT || tmp < MIN_INT) {
       r_error ("", line, " exceeds integer bounds [-(2^14-1), 2^13-1]");
@@ -338,12 +344,14 @@ bool isImm(LineInfo *line, int* res){
     }
     return FALSE;
   }
+  *res = (int)tmp;
   return TRUE;
 }
 
 
 exit_code data_handler(LineInfo *line, char* label){
-  int tmp = 0, i=1, j;
+  int tmp = 0;
+  size_t i=0;
   int arr[100] = {0}; /*todo*/
 
   /* get first int */
@@ -357,7 +365,6 @@ exit_code data_handler(LineInfo *line, char* label){
     return ERROR;
   }
   arr[i++] = tmp;
-  ++arr[0];
   lineTok (line);
 /*  printf("val of data: %d\n", tmp); */
 
@@ -365,32 +372,43 @@ exit_code data_handler(LineInfo *line, char* label){
   while (!IS_EMPTY(line->token)){
 
     /* get comma */
-    if (strcmp (line->token, ",") != 0){ /* exp: .data 1,2 3 | .data 1 2 x */
-      r_error ("expected ',' before integer token", line, "");
+    if (strcmp (line->token, ",") != 0){ /* exp: .data 1,2 3 | .data 1 x, 3 */
+      r_error ("expected ',' before ", line, "");
+      return ERROR;
     }
 
     /* get next int */
     lineTok (line);
-    if (strcmp (line->token, ",") == 0){ /* exp: .data 1,,2 */
+    if (strcmp (line->token, ",") == 0){ /* .data 1,,2 */
       r_error ("expected integer before ", line, "token");
+      return ERROR;
     }
-    if (!isImm(line, &tmp)){ /* exp: .data 1,2,xxx */
+    if (!isImm(line, &tmp)){ /* .data 1,2,xxx | .data 1, 99999999999 */
       return ERROR;
     }
     arr[i++] = tmp;
-    ++arr[0];
     lineTok (line);
+  } /* end of while */
+
+  if (IS_EMPTY(label)) { /* .data 3 */
+    lineToPostfix (line); /*get the fist tok again for the error msg */
+    lineTok (line);
+    r_warning ("", line, " variables may be inaccessible without label");
   }
-  for (j = 0; j< arr[0]; j++){
-    printf ("%d ", arr[i+1]);
+  else{ /*add to symbol table */
+    if (addSymbol (label, DIRECTIVE, DC, NOT_EXTERNAL, 0) == FAILURE) {
+      return FAILURE; /* memory error */
+    }
   }
+  /* add to data segment */
+  return addToDataSeg (line, INT_TYPE, arr, i);
   return SUCCESS;
 }
 
 
 
 
-/*bool equal_handler(LineInfo *line, const char *label);*/
+/*Bool equal_handler(LineInfo *line, const char *label);*/
 
 /***** define */
 

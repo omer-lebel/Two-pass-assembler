@@ -40,7 +40,7 @@ firstPass.o: firstPass.c firstPass.h
 preAssembler.o: preAssembler.c preAssembler.h
 	$(CC) $(CFLAGS) -c preAssembler.c
 
-input.o: input.c input.h
+input.o: textUtils.c textUtils.h
 	$(CC) $(CFLAGS) -c input.c
 
 linkedList.o: linkedList.c linkedList.h

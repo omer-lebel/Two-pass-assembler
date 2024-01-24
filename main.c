@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "setting.h"
 #include "preAssembler.h"
 #include "firstPass.h"
 
@@ -63,6 +64,8 @@ int main (int argc, char *argv[])
   char fileName[100];
   int res, i;
   exit_code no_error = SUCCESS;
+
+  init_assembler_setting ();
 
   if (argc <= 1) {
     printf ("must give at least one file to process\n");

@@ -35,8 +35,11 @@ run_test "test1_str"
 echo "---------------- test 2 ----------------"
 run_test "test2_label"
 
-echo "---------------- test 2 ----------------"
+echo "---------------- test 3 ----------------"
 run_test "test3_define"
+
+echo "---------------- test 4 ----------------"
+run_test "test4_data"
 
 
 

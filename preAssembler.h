@@ -19,7 +19,7 @@
 #define _PRE_ASSEMBLER_H_
 
 #include <stdlib.h>
-#include "input.h"
+#include "textUtils.h"
 #include "linkedList.h"
 
 /**

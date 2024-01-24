@@ -6,11 +6,12 @@
 #ifndef _FIRSTPASS_H_
 #define _FIRSTPASS_H_
 
-#include "input.h"
+#include "textUtils.h"
 #include "linkedList.h"
 
 #define MAX_INT 8191
 #define MIN_INT (-8191)
+
 /****************** symbols *******************/
 
 typedef enum SymbolType
@@ -27,7 +28,7 @@ typedef struct Symbol
 {
     size_t address;
     SymbolType type;
-    bool isEntry;
+    Bool isEntry;
     IsExtern isExtern;
     int val;
 } Symbol;
