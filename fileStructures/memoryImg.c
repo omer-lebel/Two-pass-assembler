@@ -75,3 +75,57 @@ void printDs (void)
     printf ("|\n");
   }
 }
+
+void print_op_analyze(op_analyze *op){
+  if (op->errors == TRUE){
+    return;
+  }
+  printf ("<op: %s>\t", op->propriety->name);
+  printf ("<opcode: %d>\t", op->propriety->opcode);
+
+  switch (op->src.add_mode) {
+    case IMM_ADD:
+      printf ("<imm: %d>\t", op->src.val);
+      break;
+    case DIRECT_ADD:
+      if (op->src.symbol == NULL){
+        printf ("<symbol: ?????>\t");
+      }
+      else{
+        printf ("<symbol: %s>\t", op->src.symbol->word);
+      }
+      break;
+    case INDEX_ADD:
+      printf ("<index: %s[%d]>\t", op->src.symbol->word, op->src.val);
+      break;
+    case REG_ADD:
+      printf ("<reg: r%d>\t", op->src.val);
+      break;
+    case NONE_ADD:
+      break;
+  }
+
+  switch (op->target.add_mode) {
+    case IMM_ADD:
+      printf ("<imm: %d>\t", op->target.val);
+      break;
+    case DIRECT_ADD:
+      if (op->target.symbol == NULL){
+        printf ("<symbol: ?????>\t");
+      }
+      else{
+        printf ("<symbol: %s>\t", op->target.symbol->word);
+      }
+
+      break;
+    case INDEX_ADD:
+      printf ("<index: %s[%d] >\t", op->target.symbol->word, op->target.val);
+      break;
+    case REG_ADD:
+      printf ("<reg: r%d>\t", op->target.val);
+      break;
+    case NONE_ADD:
+      break;
+  }
+  printf ("\n");
+}

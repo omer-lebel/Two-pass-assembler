@@ -5,7 +5,7 @@
 
 #include "setting.h"
 
-Op_Info op_info[NUM_OF_OP];
+Op_Propriety op_propriety[NUM_OF_OP];
 
 char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
                      ".data", ".string", ".entry", ".extern", ".define",
@@ -14,23 +14,24 @@ char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
                      "jsr", "rts", "hlt",
                      ""};
 
-void init_op (Opcode opcode, char* op_name,...)
+void init_op_propriety (Opcode opcode, char* op_name, ...)
 {
   int i;
   va_list args; /* point to each unnamed arg in turn */
   Addressing_Mode mode;
+  Op_Propriety *op = &op_propriety[opcode];
 
-  op_info->opcode = opcode;
-  strcpy (op_info->name, op_name);
+  op->opcode = opcode;
+  strcpy (op->name, op_name);
 
   va_start(args, op_name); /* args point to the first unnamed arg */
   for (i = 0 ; i < 4 ; i++){
     mode = va_arg(args, Addressing_Mode); /* to the next unnamed arg */
-    op_info->valid_src_modes[i] = (mode != NONE_MODE);
+    op->src_modes[i] = (mode != NONE_ADD);
   }
   for (i = 0 ; i < 4 ; i++){
     mode = va_arg(args, Addressing_Mode); /* to the next unnamed arg */
-    op_info->valid_target_modes[i] = (mode != NONE_MODE);
+    op->target_modes[i] = (mode != NONE_ADD);
   }
   va_end(args);
 }
@@ -39,74 +40,74 @@ void init_assembler_setting ()
 {
   /* ----------------- first group - 2 operands ----------------- */
 
-  init_op(MOV, "mov",
-          IMMEDIATE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (MOV, "mov",
+                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(CMP, "cmp",
-          IMMEDIATE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (CMP, "cmp",
+                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(ADD, "add",
-          IMMEDIATE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (ADD, "add",
+                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(SUB, "sub",
-          IMMEDIATE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (SUB, "sub",
+                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(LEA, "lea",
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, NONE_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (LEA, "lea",
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, NONE_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
 
   /* ----------------- second group - 1 operators ----------------- */
 
-  init_op(NOT, "not",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (NOT, "not",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(CLR, "clr",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (CLR, "clr",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(INC, "inc",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (INC, "inc",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(DEC, "dec",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (DEC, "dec",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(JMP, "jmp",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, DIRECT_MODE, NONE_MODE, REGISTER_MODE);
+  init_op_propriety (JMP, "jmp",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, DIRECT_ADD, NONE_ADD, REG_ADD);
 
-  init_op(BNE, "bne",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, DIRECT_MODE, NONE_MODE, REGISTER_MODE);
+  init_op_propriety (BNE, "bne",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, DIRECT_ADD, NONE_ADD, REG_ADD);
 
-  init_op(RED, "red",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (RED, "red",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(PRN, "prn",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          IMMEDIATE_MODE, DIRECT_MODE, INDEX_MODE, REGISTER_MODE);
+  init_op_propriety (PRN, "prn",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
-  init_op(JSR, "jsr",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, DIRECT_MODE, NONE_MODE, REGISTER_MODE);
+  init_op_propriety (JSR, "jsr",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, DIRECT_ADD, NONE_ADD, REG_ADD);
 
 
   /* ----------------- third group - NONE_MODE operators ----------------- */
 
-  init_op(RTS, "rts",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE);
+  init_op_propriety (RTS, "rts",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD);
 
-  init_op(HLT, "hlt",
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE,
-          NONE_MODE, NONE_MODE, NONE_MODE, NONE_MODE);
+  init_op_propriety (HLT, "hlt",
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
+                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD);
 
 }

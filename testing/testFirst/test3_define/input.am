@@ -1,0 +1,19 @@
+.define d0 = 1
+.define d1=-222
+L: .define d2 = 0
+.define
+.define jmp = 2
+not saved word && not abc123 && or not new name
+.define d3&=1
+.define !4d =7
+.define d0=2
+s: .string "hey"
+.define s=3
+.extern e
+.define e=3
+.define d3
+.define d3 3
+.define d4=
+.define d4=x
+.define d5= 1000000000
+.define d6= -100000000

@@ -1,0 +1,18 @@
+D1: .data +100,-100,11
+.define len = +20
+D2: .data -02, len
+.data 3,-3,13
+D4: .data xxx
+D5: .data 5, yyy
+s: .string "a"
+D6: .data s
+D7: .data +7000000000
+D8: .data -800000000
+D9: .data
+D:10 .data 10 11
+D:11 .data +11, 12 -13, 14
+D:12 .data -12 z, 13
+D13: .data 13,,14, -15, len
+D1: .data 0
+14D0: .data 14,-14
+D15_d: .data 15

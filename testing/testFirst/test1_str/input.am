@@ -1,0 +1,9 @@
+S: .string "hello world! 123"
+S0: .string ""
+S0: .string "hey"
+S1: .string
+S2: .string a"
+S3: .string "a"b"
+S4: .string "a"b
+S5: .string "a
+.string "b"

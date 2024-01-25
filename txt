@@ -1,0 +1,29 @@
+
+;============== mov =================
+;invalid add mode
+mov #2, #3
+
+
+;illegal comma
+mov ,r0,r2
+mov r0,,r2
+
+;missing comma
+mov r2 r3
+
+;extra text after end of command
+mov r2, r3, r4
+mov r2, r3,
+
+
+.define def=3
+INT: .data 5
+STR: .string "str"
+.extern EXT
+
+mov r2, r0
+mov #def, r1
+mov #-43, STR
+mov INT, r7
+mov #+22, EXT
+mov EXT, INT

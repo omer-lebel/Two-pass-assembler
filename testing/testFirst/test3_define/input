@@ -1,0 +1,48 @@
+;============== .define =================
+;correct
+.define d0 = 1
+.define d1=-222
+
+;label and define
+L: .define d2 = 0
+
+;empty
+.define
+
+;=========== non valid name:
+;saved word
+.define jmp = 2
+not saved word && not abc123 && or not new name
+
+;not abc123
+.define d3&=1
+
+;not start with abc:
+.define !4d =7
+
+;used name with define
+.define d0=2
+
+;used name with str
+s: .string "hey"
+.define s=3
+
+;used name with extern
+.extern e
+.define e=3
+
+;=========== equal sign
+.define d3
+.define d3 3
+
+
+;=========== number
+;no num
+.define d4=
+
+;not a num
+.define d4=x
+
+;out of bound
+.define d5= 1000000000
+.define d6= -100000000

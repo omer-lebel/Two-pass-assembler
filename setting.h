@@ -55,20 +55,20 @@ typedef enum Opcode
 
 typedef enum Addressing_Mode
 {
-    NONE_MODE = -1,
-    IMMEDIATE_MODE = 0,
-    DIRECT_MODE = 1,
-    INDEX_MODE = 2,
-    REGISTER_MODE = 3
+    NONE_ADD = -1,
+    IMM_ADD = 0,
+    DIRECT_ADD = 1,
+    INDEX_ADD = 2,
+    REG_ADD = 3
 } Addressing_Mode;
 
-typedef struct Op_Info
+typedef struct Op_Propriety
 {
     Opcode opcode;
     char name[MAX_CMD_NAME_LEN];
-    Bool valid_src_modes[NUM_OF_ADDRESSING_MODE];
-    Bool valid_target_modes[NUM_OF_ADDRESSING_MODE];
-} Op_Info;
+    Bool src_modes[NUM_OF_ADDRESSING_MODE];
+    Bool target_modes[NUM_OF_ADDRESSING_MODE];
+} Op_Propriety;
 
 typedef enum Register
 {
@@ -77,7 +77,7 @@ typedef enum Register
 
 void init_assembler_setting ();
 
-extern Op_Info op_info[NUM_OF_OP];
+extern Op_Propriety op_propriety[NUM_OF_OP];
 extern char *SavedWord[];
 
 #endif /* _SETTING_H_ */

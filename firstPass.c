@@ -3,6 +3,8 @@
 */
 #include "firstPass.h"
 
+#include "fsm.h"
+
 /****************** pass helpers *******************/
 
 int init_pass (LineInfo *line, char *prefix, char *token, char *postfix,
@@ -371,7 +373,13 @@ exit_code extern_handler (LineInfo *line, const char *label)
   return SUCCESS;
 }
 
-
+void init_op_analyze(op_analyze *op, Opcode opcode, LineInfo *line){
+  op->propriety = &op_propriety[opcode];
+  op->src = (Operand) {NONE_ADD, NULL, 0, FALSE};
+  op->target = (Operand) {NONE_ADD, NULL, 0, FALSE};
+  op->line_info = line;
+  Bool errors = FALSE;
+}
 
 
 
@@ -381,6 +389,8 @@ exit_code extern_handler (LineInfo *line, const char *label)
 exit_code f_processLine (LineInfo *line, char *label)
 {
   exit_code res = SUCCESS;
+  op_analyze op;
+
   /* case: .string */
   if (strcmp (".define", line->token) == 0) {
     lineTok (line);
@@ -409,6 +419,12 @@ exit_code f_processLine (LineInfo *line, char *label)
     /* case: .data */
   else if (strcmp (".data", line->token) == 0) {
     res = data_handler (line, label);
+  }
+
+  else if (strcmp ("mov", line->token) == 0){
+    init_op_analyze(&op, MOV, line);
+    run_fsm(&op);
+    print_op_analyze(&op);
   }
   return res;
 }

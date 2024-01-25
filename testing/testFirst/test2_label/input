@@ -1,0 +1,33 @@
+;============== labels: | extern =================
+
+;correct
+L0: .string "a"
+.extern E0
+
+;contains non-alphanumeric char
+L!1: .string "b"
+.extern E1$
+
+;starts with a non-alphabetic char
+2L: .string "c"
+.extern @E2
+
+;already exist label (in string label)
+L3: .string "d"
+L3: .string "e"
+.extern L3
+
+;already exist label (in extern label)
+.extern E4
+.extern E4
+E4: .string "f"
+
+;meaningless label
+E5: .extern E6
+
+;saved word
+mov: .string "g"
+.extern r0
+
+;empty declaration
+.extern

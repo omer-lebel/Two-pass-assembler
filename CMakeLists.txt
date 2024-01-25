@@ -18,6 +18,7 @@ add_executable(project___mama14
 
         fileStructures/symbolTable.c fileStructures/symbolTable.h
         fileStructures/memoryImg.c fileStructures/memoryImg.h
+        fsm.c fsm.h
 
         preAssembler.c preAssembler.h
         firstPass.c firstPass.h

@@ -61,6 +61,7 @@ int call_first (char *file_name, exit_code *no_error)
 
 int main (int argc, char *argv[])
 {
+
   char fileName[100];
   int res, i;
   exit_code no_error = SUCCESS;

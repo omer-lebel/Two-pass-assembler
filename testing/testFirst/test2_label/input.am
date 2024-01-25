@@ -1,0 +1,16 @@
+L0: .string "a"
+.extern E0
+L!1: .string "b"
+.extern E1$
+2L: .string "c"
+.extern @E2
+L3: .string "d"
+L3: .string "e"
+.extern L3
+.extern E4
+.extern E4
+E4: .string "f"
+E5: .extern E6
+mov: .string "g"
+.extern r0
+.extern
