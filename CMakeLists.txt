@@ -23,7 +23,6 @@ add_executable(project___mama14
         preAssembler.c preAssembler.h
         firstPass.c firstPass.h
 
-        main.c
-        )
+        main.c)
 
 

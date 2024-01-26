@@ -16,8 +16,8 @@
 typedef enum state
 {
     SRC_STATE,
-    COMA_STATE,
     TARGET_STATE,
+    COMA_STATE,
     EXTRA_TEXT_STATE,
     END_STATE,
     ERROR_STATE

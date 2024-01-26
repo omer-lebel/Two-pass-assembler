@@ -375,10 +375,10 @@ exit_code extern_handler (LineInfo *line, const char *label)
 
 void init_op_analyze(op_analyze *op, Opcode opcode, LineInfo *line){
   op->propriety = &op_propriety[opcode];
-  op->src = (Operand) {NONE_ADD, NULL, 0, FALSE};
-  op->target = (Operand) {NONE_ADD, NULL, 0, FALSE};
+/*  op->src = (Operand) {NONE_ADD, NULL, NO_REG, FALSE};
+  op->target = (Operand) {NONE_ADD, NULL, NO_REG, FALSE};*/
   op->line_info = line;
-  Bool errors = FALSE;
+  op->errors = FALSE;
 }
 
 

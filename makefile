@@ -24,8 +24,8 @@ testPre.o: ./testing/testPre/testPre.c
 testFirst: firstPass
 	./testing/testFirst/testFirst.sh
 
-firstPass: testFirst.o firstPass.o preAssembler.o text.o linkedList.o symbolTable.o memoryImg.o
-	$(CC) $(CFLAGS) testFirst.o firstPass.o preAssembler.o text.o linkedList.o symbolTable.o memoryImg.o -o firstPass
+firstPass: testFirst.o firstPass.o fsm.o preAssembler.o text.o linkedList.o symbolTable.o memoryImg.o setting.o
+	$(CC) $(CFLAGS) testFirst.o firstPass.o fsm.o preAssembler.o text.o linkedList.o symbolTable.o memoryImg.o setting.o -o firstPass
 
 testFirst.o: testing/testFirst/testFirst.c
 	$(CC) $(CFLAGS) -c testing/testFirst/testFirst.c -o testFirst.o
@@ -42,6 +42,9 @@ linkedList.o: utils/linkedList.c utils/linkedList.h setting.h
 
 text.o: utils/text.c utils/text.h setting.h
 	$(CC) $(CFLAGS) -c utils/text.c
+
+fsm.o: fsm.c fsm.h fileStructures/symbolTable.c fileStructures/memoryImg.h utils/text.h setting.h
+	$(CC) $(HUJI) -c fsm.c
 
 ################## file structures #######################
 

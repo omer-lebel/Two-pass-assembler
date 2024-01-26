@@ -25,12 +25,6 @@ char* cmd_type2[] = {"not", "clr", "inc", "dec", "jmp", "bne", "red", "prn","jsr
 char* cmd_type3[] = {"rts", "hlt"};
  */
 
-//char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
-//                     ".data", ".string", ".entry", ".extern", ".define",
-//                     "mov", "cmp", "add", "sub", "lea",
-//                     "not", "clr", "inc", "dec", "jmp", "bne", "red", "prn",
-//                     "jsr", "rts", "hlt"};
-
 
 int isSavedWord (const char *s)
 {
@@ -85,13 +79,14 @@ void lineTok (LineInfo *line)
   NULL_TERMINATE(line->prefix,j);
 
   /* find next token and update postfix: */
-  /*special case for a word consisting of a comma or equal sign */
-  if ((c=*p) == ',' || c == '=') {
+  /*special case for a word consisting a special sign */
+  if ((c=*p) == ',' || c == '=' || c == '#' || c == '[' || c == ']') {
     line->token[i] = c;
     i++; p++;
   }
   else{ /* coping word */
-    for (; (c=*p) != '\0' && !isspace(c) && c != ',' && c != '=';
+    for (; (c=*p) != '\0' &&
+    !isspace(c) && c != ',' && c != '=' && c != '#' && c != '[' && c!= ']';
            i++, p++) {
       line->token[i] = c;
     }
@@ -118,13 +113,18 @@ void lineToPostfix(LineInfo *line) {
 void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
 *msg_after)
 {
-  size_t i;
+  signed i;
 
   /* Print file and line number, error or warning type (fileNum:i error:) */
   printf("%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
 
   /* Print message context, token, and additional message */
-  printf("%s" BOLD "'%s'" REG "%s\n", msg_before, line->token, msg_after);
+  if(IS_EMPTY(line->token)){
+    printf("%s\n", msg_before);
+  }
+  else{
+    printf("%s" BOLD "'%s'" REG "%s\n", msg_before, line->token, msg_after);
+  }
 
 
   /* print line number and the line with the token bolded in color
@@ -135,13 +135,13 @@ void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
   /* print an arrow pointing to the location of the token in the line
        |           ^~~~~~~~~                 */
   printf(" %-2s |", " ");
-  for (i = 0; i < strlen (line->prefix) ; i++){
+  for (i = 0; i < (int) strlen (line->prefix) ; i++){
     printf(" ");
   }
   printf(" %s^", color);
-  for (i = 0; i < strlen (line->token) - 1; i++){
-    printf("%s~", color);
-  }
+    for (i = 0; i < (int) strlen (line->token) - 1; i++){
+      printf("%s~", color);
+    }
   printf(RESET "\n");
 }
 

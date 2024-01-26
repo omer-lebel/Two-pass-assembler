@@ -77,9 +77,21 @@ void printDs (void)
 }
 
 void print_op_analyze(op_analyze *op){
+  char symbol_src[MAX_LINE_SIZE] = "?";
+  char symbol_target[MAX_LINE_SIZE] = "?";
   if (op->errors == TRUE){
     return;
   }
+
+  if (op->src.symbol != NULL){
+    strcpy (symbol_src, op->src.symbol->word);
+  }
+
+  if (op->target.symbol != NULL){
+    strcpy (symbol_target, op->target.symbol->word);
+  }
+
+  printf ("%s:%-2lu ", op->line_info->file, op->line_info->num);
   printf ("<op: %s>\t", op->propriety->name);
   printf ("<opcode: %d>\t", op->propriety->opcode);
 
@@ -88,15 +100,10 @@ void print_op_analyze(op_analyze *op){
       printf ("<imm: %d>\t", op->src.val);
       break;
     case DIRECT_ADD:
-      if (op->src.symbol == NULL){
-        printf ("<symbol: ?????>\t");
-      }
-      else{
-        printf ("<symbol: %s>\t", op->src.symbol->word);
-      }
+      printf ("<symbol: %s>\t", symbol_src);
       break;
     case INDEX_ADD:
-      printf ("<index: %s[%d]>\t", op->src.symbol->word, op->src.val);
+      printf ("<index: %s[%d]>\t", symbol_src, op->src.val);
       break;
     case REG_ADD:
       printf ("<reg: r%d>\t", op->src.val);
@@ -110,16 +117,10 @@ void print_op_analyze(op_analyze *op){
       printf ("<imm: %d>\t", op->target.val);
       break;
     case DIRECT_ADD:
-      if (op->target.symbol == NULL){
-        printf ("<symbol: ?????>\t");
-      }
-      else{
-        printf ("<symbol: %s>\t", op->target.symbol->word);
-      }
-
+      printf ("<symbol: %s>\t", symbol_target);
       break;
     case INDEX_ADD:
-      printf ("<index: %s[%d] >\t", op->target.symbol->word, op->target.val);
+      printf ("<index: %s[%d] >\t", symbol_target, op->target.val);
       break;
     case REG_ADD:
       printf ("<reg: r%d>\t", op->target.val);

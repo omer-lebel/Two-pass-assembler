@@ -1,16 +1,46 @@
+mov r0
+.define def=+3
+INT: .data 5
+STR: .string "str"
+.extern EXT
+mov #+01, INT
+mov #-02, STR[2]
+mov #def, r3
+mov INT, STR
+mov STR, INT[def]
+mov EXT, r4
+mov xxx, xxx
+mov INT[def], STR
+mov STR[5], INT[def]
+mov EXT[3], r7
+mov xxx[2], xxx[def]
+invalid add mode
 mov #2, #3
 mov ,r0,r2
 mov r0,,r2
 mov r2 r3
+mov r0
 mov r2, r3, r4
 mov r2, r3,
-.define def=3
-INT: .data 5
-STR: .string "str"
-.extern EXT
-mov r2, r0
-mov #def, r1
-mov #-43, STR
-mov INT, r7
-mov #+22, EXT
-mov EXT, INT
+mov
+mov r2,
+mov #STR, r2,
+mov #!@94a, r2
+mov #zzz, r0
+mov # , r2
+mov r0 ,#
+mov r2, 2L
+mov ew!, r4
+mov .string, #3
+LABEL: .string "a"
+.define size=5
+mov r4, L[!@$]
+mov L[zzz], r3
+mov L[STR], r3
+mov r2, L[
+mov r2, L[3 a]
+mov L[,
+mov r2, L[4
+mov r2, L[]
+mov r2, L]
+mov r2, L[#2]
