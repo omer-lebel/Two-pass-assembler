@@ -72,7 +72,7 @@ typedef struct Op_Propriety
 
 typedef enum Register
 {
-    R0 = 0, R1, R2, R3, R4, R5, R6, R7, NO_REG=-1
+    R0 = 0, R1, R2, R3, R4, R5, R6, R7, INVALID_REG=-1
 } Register;
 
 void init_assembler_setting ();

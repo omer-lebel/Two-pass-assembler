@@ -1,6 +1,7 @@
-//
-// Created by OMER on 1/23/2024.
-//
+/*
+ Created by OMER on 1/23/2024.
+*/
+
 
 #include "fsm.h"
 
@@ -8,8 +9,9 @@
 #define MIN_IMM (-(2^11 -1))
 
 #define CHAR_TO_INT(c) ((c) - '0')
-#define IS_COMMA(s) (s == ',')
-#define IMM_SIGN(s) (s == '#')
+#define IS_COMMA(s) ((s) == ',')
+#define IMM_SIGN(s) ((s) == '#')
+#define IN_REG_BOUND(s) ((s) >= '0' && (s) <= '7')
 #define OPENING_INDEX_SIGN(s) (s == '[')
 
 /* mov */
@@ -23,44 +25,41 @@ transition map_mov[] = {
 
 Bool is_reg (const char *str, int *val)
 {
-  if (str[0] == 'r' && str[1] >= '0' && str[1] <= '7' && str[2] == '\0') {
+  if (str[0] == 'r' && IN_REG_BOUND(str[1]) && str[2] == '\0') {
     *val = CHAR_TO_INT(str[1]);
     return TRUE;
   }
-  *val = NO_REG;
+  *val = INVALID_REG;
   return FALSE;
 }
 
 Bool is_int2 (op_analyze *op, int *imm)
 {
   char *end_ptr = NULL;
-  *imm = (int) strtol (op->line_info->token, &end_ptr, 10); /*todo check about
- * long*/
-  if (!IS_EMPTY(end_ptr)) {
-    return FALSE;
-  }
-  return TRUE;
+  /*todo check about long*/
+  *imm = (int) strtol (op->line_info->token, &end_ptr, 10);
+  return IS_EMPTY(end_ptr);
 }
 
 /*check that it's a valid name for symbol*/
-Bool valid_symbol_name2 (op_analyze *op, state state)
+Bool valid_symbol_name2 (op_analyze *op, state curr_state)
 {
   char *str = op->line_info->token;
 
   if (!isalpha(str[0])) {
-    if (state != TARGET_STATE && state != SRC_STATE) { /* 2L: .string "a" */
+    if (curr_state != TARGET_STATE && curr_state != SRC_STATE) { /* 2L: .string "a" */
       r_error ("", op->line_info, " starts with a non-alphabetic character");
     }
     return FALSE;
   }
   if (!isAlphaNumeric (str)) {
-    if (state != TARGET_STATE && state != SRC_STATE) { /* L!L: .string "a" */
+    if (curr_state != TARGET_STATE && curr_state != SRC_STATE) { /* L!L: .string "a" */
       r_error ("", op->line_info, " contains non-alphanumeric characters");
     }
     return FALSE;
   }
   if (isSavedWord (str)) { /* mov: .string "a" */
-    if (state != TARGET_STATE && state != SRC_STATE) {
+    if (curr_state != TARGET_STATE && curr_state != SRC_STATE) {
       r_error ("", op->line_info, " is a reserved keyword that cannot be used "
                                   "as an identifier");
     }
@@ -178,13 +177,9 @@ Addressing_Mode get_addressing_mode (op_analyze *op, state curr_state)
   }
 
   /*imm*/
-  if (strcmp (token, "#") == 0) {
-    /* move to the next tok and make sure it's valid imm */
+  if (IMM_SIGN (*token)) {
     lineTok (op->line_info);
-    if (is_imm2 (op, val)) {
-      return IMM_ADD;
-    }
-    return NONE_ADD;
+    return is_imm2 (op, val) ? IMM_ADD : NONE_ADD;
   }
 
   /*symbol*/ //todo think about where the error msg
@@ -197,12 +192,7 @@ Addressing_Mode get_addressing_mode (op_analyze *op, state curr_state)
     else{ //fount [
       lineTok (op->line_info); //move to [
       lineTok (op->line_info); //move to imm
-      if (is_index (op, val)){
-        return INDEX_ADD;
-      }
-      else{
-        return NONE_ADD;
-      }
+      return is_index(op, val) ? INDEX_ADD : NONE_ADD;
     }
   }
   r_error ("", op->line_info, " invalid operand");
@@ -263,16 +253,16 @@ state operand_handler (op_analyze *op, state curr_state, state next_state)
   return next_state;
 }
 
-state src_handler (op_analyze *op, state nextState)
+state src_handler (op_analyze *op, state next_state)
 {
-  return operand_handler (op, SRC_STATE, nextState);
+  return operand_handler (op, SRC_STATE, next_state);
 }
 
-state comma_handler (op_analyze *op, state nextState)
+state comma_handler (op_analyze *op, state next_state)
 {
   char *token = op->line_info->token;
   if (IS_COMMA(*token)) {
-    return nextState;
+    return next_state;
   }
   if (IS_EMPTY(token)) { /*mov r0 */
     r_error ("too few arguments in instruction", op->line_info, "");
@@ -283,12 +273,12 @@ state comma_handler (op_analyze *op, state nextState)
   return ERROR_STATE;
 }
 
-state target_handler (op_analyze *op, state nextState)
+state target_handler (op_analyze *op, state next_state)
 {
-  return operand_handler (op, TARGET_STATE, nextState);
+  return operand_handler (op, TARGET_STATE, next_state);
 }
 
-state extra_text_handler (op_analyze *op, state nextState)
+state extra_text_handler (op_analyze *op, state next_state)
 {
   char *token = op->line_info->token;
   if (!IS_EMPTY(token)) {
@@ -298,21 +288,21 @@ state extra_text_handler (op_analyze *op, state nextState)
     r_error ("unexpected text after end of the command: ", op->line_info, "");
     return ERROR_STATE;
   }
-  return nextState; /*end state*/
+  return next_state; /*end state*/
 }
 
 int run_fsm (op_analyze *op)
 {
-  state nextState = map_mov[0].from, next;
+  state next_state = map_mov[0].from, next;
   int i = 0;
 //  int stateIdx;
 
-  while (nextState != END_STATE) {
+  while (next_state != END_STATE) {
     lineTok (op->line_info);
-//    stateIdx = get_state_idx (op_info->map, nextState);
+//    stateIdx = get_state_idx (op_info->map, next_state);
     next = map_mov[i].next;
-    nextState = map_mov[i].handler (op, next);
-    if (nextState == ERROR_STATE) {
+    next_state = map_mov[i].handler (op, next);
+    if (next_state == ERROR_STATE) {
       op->errors = TRUE;
       return FALSE;
     }
