@@ -15,7 +15,7 @@
 #define MIN_INT (-8191)
 
 
-int firstPass(FILE *input_file, char* file_name, exit_code *no_error);
+int firstPass(FILE *input_file, file_analyze* file_analyze);
 
 
 #endif /*_FIRST_PASS_H_ */

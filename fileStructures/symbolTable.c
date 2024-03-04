@@ -5,16 +5,9 @@
 
 #include "symbolTable.h"
 
-LinkedList *symbols_table = NULL;
 
-exit_code init_symbol_table(){
-  symbols_table = createList (init_symbol, print_symbol, free);
-  if (!symbols_table) {
-    return FAILURE; /* memory error */
-  }
-  else{
-    return SUCCESS;
-  }
+LinkedList* init_symbol_table(void){
+  return createList (init_symbol, print_symbol, free);
 }
 
 void *init_symbol (const void *data)
@@ -61,7 +54,9 @@ void print_symbol (const char *word, const void *data, FILE *pf)
 
 }
 
-exit_code add_symbol (const char *label, SymbolType type, size_t address, int
+exit_code add_symbol (LinkedList *symbol_table, const char *label, SymbolType
+type, size_t
+address, int
 isExtern, int val)
 {
   Symbol symbol_data;
@@ -73,10 +68,10 @@ isExtern, int val)
   symbol_data.isEntry = FALSE;
   symbol_data.val = val;
 
-  new_symbol = createNode (symbols_table, label, &symbol_data);
+  new_symbol = createNode (symbol_table, label, &symbol_data);
   if (!new_symbol) {
     return FAILURE; /* memory error */
   }
-  appendToTail (symbols_table, new_symbol);
+  appendToTail (symbol_table, new_symbol);
   return SUCCESS;
 }

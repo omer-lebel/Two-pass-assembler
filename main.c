@@ -9,25 +9,33 @@
 #include "preAssembler.h"
 #include "firstPass.h"
 
+
+
 #define INPUT_IND 1
 
-  int call_pre (char *file_name)
+
+
+void init_new_file(file_analyze *file){
+  memset(file, 0, sizeof(file_analyze));
+}
+
+int call_pre (file_analyze *file)
 {
   FILE *src_file, *am_file;
   int res;
 
   /* opening src file */
-  src_file = fopen (file_name, "r");
+  src_file = fopen (file->file_name, "r");
   if (!src_file) {
-    printf ("error while opening '%s'\n", file_name);
+    printf ("error while opening '%s'\n", file->file_name);
     return EXIT_FAILURE;
   }
 
   /* opening file.am for writing */
-  strcat (file_name, ".am");
-  am_file = fopen (file_name, "w");
+  strcat (file->file_name, ".am");
+  am_file = fopen (file->file_name, "w");
   if (!am_file) {
-    printf ("error while opening %s file\n", file_name);
+    printf ("error while opening %s file\n", file->file_name);
     fclose (src_file);
     return EXIT_FAILURE;
   }
@@ -40,20 +48,20 @@
   return res;
 }
 
-int call_first (char *file_name, exit_code *no_error)
+int call_first (file_analyze *file)
 {
   FILE *am_file;
   int res;
 
   /* opening file.am for reading */
-  am_file = fopen (file_name, "r");
+  am_file = fopen (file->file_name, "r");
   if (!am_file) {
-    printf ("error while opening %s file\n", file_name);
+    printf ("error while opening %s file\n", file->file_name);
     return EXIT_FAILURE;
   }
 
   /* running first pass */
-  res = firstPass (am_file, file_name, no_error);
+  res = firstPass (am_file, file);
   fclose (am_file);
 
   return res;
@@ -61,10 +69,10 @@ int call_first (char *file_name, exit_code *no_error)
 
 int main (int argc, char *argv[])
 {
-
   char fileName[100];
   int res, i;
   exit_code no_error = SUCCESS;
+  file_analyze file_analyze;
 
   init_assembler_setting ();
 
@@ -74,15 +82,16 @@ int main (int argc, char *argv[])
   }
 
   for (i = INPUT_IND; i<argc; i++) {
+    strcpy(file_analyze.file_name, argv[i]);
     strcpy (fileName, argv[i]);
     /* -------------------- pre ------------------- */
-    res = call_pre (fileName);
+    res = call_pre (&file_analyze);
     if (res != EXIT_SUCCESS) {
       return EXIT_FAILURE;
     }
 
     /* ------------------- first ----------------- */
-    res = call_first (fileName, &no_error);
+    res = call_first (&file_analyze);
     if (res != EXIT_SUCCESS) {
       return EXIT_FAILURE;
     }

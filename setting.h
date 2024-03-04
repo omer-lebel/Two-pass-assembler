@@ -9,6 +9,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include "utils/vector.h"
+#include "utils/linkedList.h"
 
 #define MAX_LINE_SIZE (80+1)
 #define MAX_TOKEN_SIZE (80+1)
@@ -74,6 +76,21 @@ typedef enum Register
 {
     R0 = 0, R1, R2, R3, R4, R5, R6, R7, INVALID_REG=-1
 } Register;
+
+typedef struct file_analyze{
+    char file_name[1000]; /* todo */
+    LinkedList *macro_list;
+    LinkedList *symbol_table;
+    vector *data_segment;
+    vector *text_segment;
+    vector *second_pass_lines;
+    vector *entry_lines;
+    vector *extern_lines;
+    size_t IC;
+    size_t DC;
+    exit_code error;
+}file_analyze;
+
 
 void init_assembler_setting ();
 

@@ -68,13 +68,13 @@ Bool valid_symbol_name2 (op_analyze *op, state curr_state)
   return TRUE;
 }
 
-Bool is_define (op_analyze *op, int *imm)
+Bool is_define (op_analyze *op, LinkedList *symbol_table, int *imm)
 {
   Node *node;
   Symbol *symbol;
   char *token = op->line_info->token;
 
-  node = findNode (symbols_table, token);
+  node = findNode (symbol_table, token);
   if (node) {
     symbol = (Symbol *) node->data;
     if (symbol->type == DEFINE) {
@@ -99,7 +99,7 @@ Bool is_define (op_analyze *op, int *imm)
   return FALSE;
 }
 
-Bool is_imm2 (op_analyze *op, int *imm)
+Bool is_imm2 (op_analyze *op, LinkedList *symbol_table, int *imm)
 {
   // mov r0, #_ | mov r0, label[_ */
   if (IS_EMPTY(op->line_info->token)) {
@@ -107,14 +107,14 @@ Bool is_imm2 (op_analyze *op, int *imm)
              op->line_info, "");
     return FALSE;
   }
-  return is_int2 (op, imm) || is_define (op, imm);
+  return is_int2 (op, imm) || is_define (op, symbol_table, imm);
 }
 
-Bool is_data_symbol (op_analyze *op, Node **node)
+Bool is_data_symbol (op_analyze *op, LinkedList *symbol_table, Node **node)
 {
   Symbol *symbol;
 
-  *node = findNode (symbols_table, op->line_info->token);
+  *node = findNode (symbol_table, op->line_info->token);
   if (*node) {
     symbol = (Symbol *) (*node)->data;
     // todo add test, maybe there is no need for that!?
@@ -124,7 +124,7 @@ Bool is_data_symbol (op_analyze *op, Node **node)
     else {
       // LABEL: mov r1, r2
       // move #2, LABEL
-      r_error ("expected directive label, but label", op->line_info,
+      r_warning ("expected directive label, but label", op->line_info,
                "is of invalid type");
     }
   }
@@ -144,9 +144,9 @@ Bool index_indicate(op_analyze *op){
   return TRUE;
 }
 
-Bool is_index(op_analyze *op, int *val){
+Bool is_index(op_analyze *op, LinkedList *symbol_table, int *val){
   char *token = op->line_info->token;
-  if (!is_imm2 (op, val)) { /* mov r0 LABEL[#$] */
+  if (!is_imm2 (op, symbol_table, val)) { /* mov r0 LABEL[#$] */
     return FALSE;
   }
 
@@ -164,7 +164,8 @@ Bool is_index(op_analyze *op, int *val){
 }
 
 /*todo outside if empty*/
-Addressing_Mode get_addressing_mode (op_analyze *op, state curr_state)
+Addressing_Mode get_addressing_mode (op_analyze *op, LinkedList *symbol_table,
+                                     state curr_state)
 {
   char *token = op->line_info->token;
   int *val = (curr_state == SRC_STATE) ? &(op->src.val) : &(op->target.val);
@@ -179,11 +180,12 @@ Addressing_Mode get_addressing_mode (op_analyze *op, state curr_state)
   /*imm*/
   if (IMM_SIGN (*token)) {
     lineTok (op->line_info);
-    return is_imm2 (op, val) ? IMM_ADD : NONE_ADD;
+    return is_imm2 (op, symbol_table, val) ? IMM_ADD : NONE_ADD;
   }
 
   /*symbol*/ //todo think about where the error msg
-  if (is_data_symbol (op, p_node) || valid_symbol_name2 (op, curr_state)) {
+  if (is_data_symbol (op, symbol_table, p_node) || valid_symbol_name2 (op,
+                                                              curr_state)) {
 
     //check if it's label with index
     if (!index_indicate (op)){
@@ -192,7 +194,7 @@ Addressing_Mode get_addressing_mode (op_analyze *op, state curr_state)
     else{ //fount [
       lineTok (op->line_info); //move to [
       lineTok (op->line_info); //move to imm
-      return is_index(op, val) ? INDEX_ADD : NONE_ADD;
+      return is_index(op, symbol_table, val) ? INDEX_ADD : NONE_ADD;
     }
   }
   r_error ("", op->line_info, " invalid operand");
@@ -215,7 +217,8 @@ Bool valid_add_mode (op_analyze *op, state operand)
   }
 }
 
-state operand_handler (op_analyze *op, state curr_state, state next_state)
+state operand_handler (op_analyze *op, LinkedList *symbol_table, state
+curr_state, state next_state)
 {
   Addressing_Mode add_mode;
   char *token = op->line_info->token;
@@ -233,7 +236,7 @@ state operand_handler (op_analyze *op, state curr_state, state next_state)
   }
 
   /* find the addressing mode and assign it to the appropriate operand*/
-  add_mode = get_addressing_mode (op, curr_state);
+  add_mode = get_addressing_mode (op, symbol_table, curr_state);
   if (curr_state == SRC_STATE) {
     op->src.add_mode = add_mode;
   }
@@ -253,12 +256,12 @@ state operand_handler (op_analyze *op, state curr_state, state next_state)
   return next_state;
 }
 
-state src_handler (op_analyze *op, state next_state)
+state src_handler (op_analyze *op, file_analyze *file, state next_state)
 {
-  return operand_handler (op, SRC_STATE, next_state);
+  return operand_handler (op, file->symbol_table, SRC_STATE, next_state);
 }
 
-state comma_handler (op_analyze *op, state next_state)
+state comma_handler (op_analyze *op, file_analyze *file, state next_state)
 {
   char *token = op->line_info->token;
   if (IS_COMMA(*token)) {
@@ -273,12 +276,12 @@ state comma_handler (op_analyze *op, state next_state)
   return ERROR_STATE;
 }
 
-state target_handler (op_analyze *op, state next_state)
+state target_handler (op_analyze *op, file_analyze *file, state next_state)
 {
-  return operand_handler (op, TARGET_STATE, next_state);
+  return operand_handler (op, file->symbol_table, TARGET_STATE, next_state);
 }
 
-state extra_text_handler (op_analyze *op, state next_state)
+state extra_text_handler (op_analyze *op, file_analyze *file, state next_state)
 {
   char *token = op->line_info->token;
   if (!IS_EMPTY(token)) {
@@ -291,7 +294,7 @@ state extra_text_handler (op_analyze *op, state next_state)
   return next_state; /*end state*/
 }
 
-int run_fsm (op_analyze *op)
+int run_fsm (op_analyze *op, file_analyze *file_analyze)
 {
   state next_state = map_mov[0].from, next;
   int i = 0;
@@ -301,7 +304,7 @@ int run_fsm (op_analyze *op)
     lineTok (op->line_info);
 //    stateIdx = get_state_idx (op_info->map, next_state);
     next = map_mov[i].next;
-    next_state = map_mov[i].handler (op, next);
+    next_state = map_mov[i].handler (op, file_analyze, next);
     if (next_state == ERROR_STATE) {
       op->errors = TRUE;
       return FALSE;

@@ -23,7 +23,7 @@ typedef enum state
     ERROR_STATE
 } state;
 
-typedef state (*handler) ( op_analyze *op, state nextState);
+typedef state (*handler) ( op_analyze *op, file_analyze *file_analyze ,state nextState);
 
 typedef struct transition
 {
@@ -33,11 +33,12 @@ typedef struct transition
 } transition;
 
 
-state src_handler ( op_analyze *op, state nextState);
-state comma_handler ( op_analyze *op, state nextState);
-state target_handler ( op_analyze *op, state nextState);
-state extra_text_handler ( op_analyze *op, state nextState);
+state src_handler ( op_analyze *op, file_analyze *file, state nextState);
+state comma_handler ( op_analyze *op, file_analyze *file, state nextState);
+state target_handler ( op_analyze *op, file_analyze *file, state nextState);
+state extra_text_handler ( op_analyze *op, file_analyze *file ,state
+nextState);
 
-int run_fsm (op_analyze *op);
+int run_fsm (op_analyze *op, file_analyze *file_analyze);
 
 #endif /* _FSM_H_ */

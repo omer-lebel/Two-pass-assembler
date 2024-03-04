@@ -10,6 +10,9 @@
 #include "../utils/text.h"
 #include "../fileStructures/symbolTable.h"
 
+#include "../utils/vector.h"
+
+#define MACHINE_WORD_SIZE 14
 /****************** data segment *******************/
 
 typedef enum DsType
@@ -20,18 +23,38 @@ typedef enum DsType
 
 typedef struct DsWord
 {
-    DsType type;
-    int val;
+    DsType type; /*todo debug*/
+    unsigned int val: 14;
 } DsWord;
+
+typedef enum Operand_Type
+{
+    SRC,
+    TARGET
+} Operand_Type;
 
 typedef struct Operand
 {
+    Operand_Type type;
     Addressing_Mode add_mode;
     Node *symbol;
     int val; /*imm or reg num*/
     Bool seen;
 } Operand;
 
+
+/*------------------------------------*/
+
+vector* init_data_seg(size_t *curr_DC);
+
+exit_code add_to_data_seg (vector *data_segment, size_t *curr_DC ,
+                           LineInfo* line, DsType type, void *arr, size_t
+                           size);
+
+void print_data_segment (vector *data_segment, size_t cur_DC);
+
+
+/****************** text segment *******************/
 typedef struct op_analyze
 {
     Op_Propriety *propriety;
@@ -43,22 +66,18 @@ typedef struct op_analyze
 
 } op_analyze;
 
-exit_code init_data_seg (void);
+//extern size_t IC;
+//extern op_analyze *text_seg;
 
-exit_code addToDataSeg (LineInfo *line, DsType type, void *arr, size_t size);
+vector* init_text_seg(size_t *curr_IC);
 
-void printDs (void);
+/*------------------------------------*/
 
 void print_op_analyze(op_analyze *op);
-
-/****************** text segment *******************/
-
 
 
 
 /****************** extern *******************/
-extern char *text_seg;
-extern DsWord *data_seg;
-extern size_t DC, IC;
+
 
 #endif /*_MEMORY_IMG_H_ */

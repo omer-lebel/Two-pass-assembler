@@ -43,4 +43,3 @@ mov L[,
 mov r2, L[4
 mov r2, L[]
 mov r2, L]
-mov r2, L[#2]

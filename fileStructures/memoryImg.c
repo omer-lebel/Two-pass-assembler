@@ -4,31 +4,25 @@
 
 
 #include "memoryImg.h"
+#include "../machineWord.h"
 
-#define INIT_SIZE 100
-
-char *text_seg;
-DsWord *data_seg;
-
-size_t DC = 0, IC = 100;
 
 /****************** data segment *******************/
 
-exit_code init_data_seg(void){
-  DC = 0;
-  IC = 100;
-  data_seg = (DsWord *) malloc (INIT_SIZE * sizeof (DsWord));
-  if (!data_seg) {
-    return FAILURE; /* memory error */
-  }
-  return SUCCESS;
+
+vector *init_data_seg (size_t *curr_DC)
+{
+  *curr_DC = 0;
+  return create_vector (sizeof (DsWord));
 }
 
-exit_code addToDataSeg (LineInfo *line, DsType type, void *arr, size_t size)
+exit_code add_to_data_seg (vector *data_segment, size_t *curr_DC,
+                           LineInfo *line, DsType type, void *arr, size_t size)
 {
-  size_t target_dc = DC + size;
+  DsWord word;
   int *intArr;
   char *charArr;
+  size_t target_dc = *curr_DC + size;
   if (target_dc - 1 >= 100) {
     r_error ("adding the variables: ", line, " causes data segment overflow");
     return FAILURE;
@@ -37,16 +31,22 @@ exit_code addToDataSeg (LineInfo *line, DsType type, void *arr, size_t size)
   switch (type) {
     case INT_TYPE:
       intArr = (int *) arr;
-      for (; DC < target_dc; DC++) {
-        data_seg[DC].type = type;
-        data_seg[DC].val = *intArr++;
+      for (; *curr_DC < target_dc; (*curr_DC)++) {
+        word.type = type;
+        word.val = *intArr++;
+        if (!push (data_segment, &word)) {
+          return FAILURE;
+        }
       }
       break;
     case CHAR_TYPE:
       charArr = (char *) arr;
-      for (; DC < target_dc; DC++) {
-        data_seg[DC].type = type;
-        data_seg[DC].val = (int) *charArr++;
+      for (; *curr_DC < target_dc; (*curr_DC)++) {
+        word.type = type;
+        word.val = (int) *charArr++;
+        if (!push (data_segment, &word)) {
+          return FAILURE;
+        }
       }
       break;
     default:
@@ -56,15 +56,17 @@ exit_code addToDataSeg (LineInfo *line, DsType type, void *arr, size_t size)
   return SUCCESS;
 }
 
-void printDs (void)
+void print_data_segment (vector *data_segment, size_t curr_DC)
 {
   size_t i;
   char c;
-  for (i = 0; i < DC; ++i) {
-    if (data_seg[i].type == INT_TYPE) {
-      printf ("| %d ", data_seg[i].val);
+  DsWord *word;
+  for (i = 0; i < curr_DC; ++i) {
+    word = (DsWord *) get (data_segment, i);
+    if (word->type == INT_TYPE) {
+      printf ("| %d ", word->val);
     }
-    else if ((c = (char) data_seg[i].val) != '\0') { /* char */
+    else if ((c = (char) word->val) != '\0') { /* char */
       printf ("| %c ", c);
     }
     else { /* '\0' */
@@ -76,18 +78,90 @@ void printDs (void)
   }
 }
 
-void print_op_analyze(op_analyze *op){
+/****************** text segment *******************/
+
+vector *init_text_seg (size_t *curr_IC)
+{
+  *curr_IC = 100;
+  return create_vector (MACHINE_WORD_SIZE);
+}
+
+//don't take care of add registers!
+void *add_operand_word (vector *code_segment, Operand *operand)
+{
+  unsigned short int word;
+  vector *success_add = NULL;
+  Symbol *symbol = (Symbol *) operand->symbol;
+
+  switch (operand->add_mode) {
+    case IMM_ADD:
+      word = imm_word (operand->val);
+      break;
+    case DIRECT_ADD:
+      word = label_word (symbol->address, operand->seen); //todo
+      break;
+    case INDEX_ADD:
+      word = label_word (symbol->address, operand->seen);
+      success_add = push (code_segment, &word);
+      if (success_add) {
+        word = imm_word (operand->val);
+        success_add = push (code_segment, &word);
+      }
+      break;
+    case REG_ADD:
+      if (operand->type == SRC)
+        word = registers_word (operand->val, 0);
+      else //TARGET
+        word = registers_word (0, operand->val);
+      break;
+    case NONE_ADD:
+      break;
+  }
+  return success_add;
+}
+
+void *add_to_code_seg (vector *code_segment, op_analyze *op)
+{
+  unsigned short int word;
+  void *success_add = NULL;
+
+  //first word
+  word = first_word (op->propriety->opcode, op->src.add_mode, op->target
+      .add_mode);
+  success_add = push (code_segment, &word);
+
+  // both operand are register and they share the second word
+  if ((op->src.add_mode == REG_ADD) && (op->target.add_mode == REG_ADD)
+  && success_add){
+    word = registers_word (op->src.val, op->target.val);
+    success_add = push (code_segment, &word);
+  }
+
+  //src word
+  else if ((op->src.add_mode != NONE_ADD) && success_add) {
+    success_add = add_operand_word (code_segment, &op->src);
+  }
+  //target word
+  if ((op->target.add_mode != NONE_ADD) && success_add) {
+    success_add = add_operand_word (code_segment, &op->src);
+  }
+
+  return success_add;
+}
+
+void print_op_analyze (op_analyze *op)
+{
   char symbol_src[MAX_LINE_SIZE] = "?";
   char symbol_target[MAX_LINE_SIZE] = "?";
-  if (op->errors == TRUE){
+  if (op->errors == TRUE) {
     return;
   }
 
-  if (op->src.symbol != NULL){
+  if (op->src.symbol != NULL) {
     strcpy (symbol_src, op->src.symbol->word);
   }
 
-  if (op->target.symbol != NULL){
+  if (op->target.symbol != NULL) {
     strcpy (symbol_target, op->target.symbol->word);
   }
 

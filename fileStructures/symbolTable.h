@@ -28,12 +28,14 @@ typedef struct Symbol
     int val;
 } Symbol;
 
-extern LinkedList *symbols_table;
+//extern LinkedList *symbols_table;
 
-exit_code init_symbol_table(void);
+LinkedList* init_symbol_table(void);
 void *init_symbol (const void *data);
 void print_symbol (const char *word, const void *data, FILE *pf);
-exit_code add_symbol (const char *label, SymbolType type, size_t address, int
+exit_code add_symbol (LinkedList *symbol_table, const char *label, SymbolType
+type, size_t
+address, int
 isExtern, int val);
 
 
