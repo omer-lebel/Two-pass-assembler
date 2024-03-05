@@ -65,6 +65,12 @@ Bool valid_symbol_name2 (op_analyze *op, state curr_state)
     }
     return FALSE;
   }
+  if (curr_state == SRC_STATE){
+    strcpy (op->src.symbol_name, str);
+  }
+  if (curr_state == TARGET_STATE){
+    strcpy (op->target.symbol_name, str);
+  }
   return TRUE;
 }
 
@@ -113,12 +119,11 @@ Bool is_imm2 (op_analyze *op, LinkedList *symbol_table, int *imm)
 Bool is_data_symbol (op_analyze *op, LinkedList *symbol_table, Node **node)
 {
   Symbol *symbol;
-
   *node = findNode (symbol_table, op->line_info->token);
   if (*node) {
     symbol = (Symbol *) (*node)->data;
     // todo add test, maybe there is no need for that!?
-    if (symbol->type == DIRECTIVE) { /* .string  | .data | .extern */
+    if (symbol->type == DATA) { /* .string  | .data | .extern */
       return TRUE;
     }
     else {
@@ -183,13 +188,14 @@ Addressing_Mode get_addressing_mode (op_analyze *op, LinkedList *symbol_table,
     return is_imm2 (op, symbol_table, val) ? IMM_ADD : NONE_ADD;
   }
 
-  /*symbol*/ //todo think about where the error msg
-  if (is_data_symbol (op, symbol_table, p_node) || valid_symbol_name2 (op,
-                                                              curr_state)) {
+  /*symbol and index*/ //todo think about where the error msg
+//  if (is_data_symbol (op, symbol_table, p_node) || valid_symbol_name2 (op,
+//                                                              curr_state)) {
+  if (valid_symbol_name2 (op, curr_state)) {
 
     //check if it's label with index
     if (!index_indicate (op)){
-      return DIRECT_ADD;
+      return DIRECT_ADD; //only label
     }
     else{ //fount [
       lineTok (op->line_info); //move to [

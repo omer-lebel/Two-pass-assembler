@@ -3,7 +3,7 @@
 //
 
 #include "machineWord.h"
-
+#include <stdio.h>
 
 #define OPCODE_SHIFT 6
 #define ADD_MOD_SRC_SHIFT 4
@@ -54,7 +54,7 @@ unsigned short imm_word(int imm) {
   return machineWord;
 }
 
-unsigned short label_word(int label, int are) {
+unsigned short label_word(unsigned int label, int are) {
   // Create the machine word using bitwise operations
   unsigned short machineWord = 0;
 
@@ -67,7 +67,6 @@ unsigned short label_word(int label, int are) {
   return machineWord;
 }
 
-/*
 
 void printBinaryWord(unsigned short word) {
   int i;
@@ -75,4 +74,4 @@ void printBinaryWord(unsigned short word) {
     printf("%d", (word >> i) & 1);
   }
   printf("\n");
-}*/
+}

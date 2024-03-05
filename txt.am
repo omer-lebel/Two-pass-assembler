@@ -1,45 +1,12 @@
-mov r0
-.define def=+3
-INT: .data 5
-STR: .string "str"
+LABEL: mov r0, r2
+.define def=+404
+S0: .string "this is sO"
+L1: .data -1
+L2: .data 22
+L3: .data 333
+L5: .data -5555
 .extern EXT
-mov #+01, INT
-mov #-02, STR[2]
-mov #def, r3
-mov INT, STR
-mov STR, INT[def]
-mov EXT, r4
-mov xxx, xxx
-mov INT[def], STR
-mov STR[5], INT[def]
-mov EXT[3], r7
-mov xxx[2], xxx[def]
-invalid add mode
-mov #2, #3
-mov ,r0,r2
-mov r0,,r2
-mov r2 r3
-mov r0
-mov r2, r3, r4
-mov r2, r3,
-mov
-mov r2,
-mov #STR, r2,
-mov #!@94a, r2
-mov #zzz, r0
-mov # , r2
-mov r0 ,#
-mov r2, 2L
-mov ew!, r4
-mov .string, #3
-LABEL: .string "a"
-.define size=5
-mov r4, L[!@$]
-mov L[zzz], r3
-mov L[STR], r3
-mov r2, L[
-mov r2, L[3 a]
-mov L[,
-mov r2, L[4
-mov r2, L[]
-mov r2, L]
+mov #+01, L1
+mov #-02, S4[2]
+S4: .string "this is s4"
+LOOP: mov #-02, EXT[2]

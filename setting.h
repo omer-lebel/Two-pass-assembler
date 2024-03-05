@@ -12,12 +12,15 @@
 #include "utils/vector.h"
 #include "utils/linkedList.h"
 
-#define MAX_LINE_SIZE (80+1)
-#define MAX_TOKEN_SIZE (80+1)
+#define MAX_LINE_SIZE (80+2)
+#define MAX_TOKEN_SIZE (80+2)
 #define NUM_OF_OP 16
 #define NUM_OF_ADDRESSING_MODE 4
 #define MAX_CMD_NAME_LEN 3
 #define NUM_OF_SAVED_WORD sizeof(SavedWord) / sizeof(*SavedWord);
+
+#define MACHINE_WORD_SIZE 14
+#define INIT_IC 100
 
 /*todo change */
 typedef enum Bool
@@ -82,10 +85,10 @@ typedef struct file_analyze{
     LinkedList *macro_list;
     LinkedList *symbol_table;
     vector *data_segment;
-    vector *text_segment;
-    vector *second_pass_lines;
-    vector *entry_lines;
-    vector *extern_lines;
+    vector *code_segment;
+    vector *op_list;
+    vector *entry_list;
+    vector *extern_list;
     size_t IC;
     size_t DC;
     exit_code error;

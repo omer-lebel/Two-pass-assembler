@@ -23,6 +23,6 @@ add_executable(project___mama14
         preAssembler.c preAssembler.h
         firstPass.c firstPass.h
 
-        main.c utils/vector.c utils/vector.h machineWord.c machineWord.h file_analyze.c file_analyze.h fileStructures/pre_second.c fileStructures/pre_second.h)
+        main.c utils/vector.c utils/vector.h machineWord.c machineWord.h secondPass.c secondPass.h)
 
 

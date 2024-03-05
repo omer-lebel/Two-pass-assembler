@@ -16,7 +16,6 @@
 #define BOLD "\033[1m"
 #define REG "\033[0m"
 
-
 /*
 char* registers[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"};
 char* direction[] = {".data", ".string", ".entry", ".extern", ".define"};
@@ -25,20 +24,25 @@ char* cmd_type2[] = {"not", "clr", "inc", "dec", "jmp", "bne", "red", "prn","jsr
 char* cmd_type3[] = {"rts", "hlt"};
  */
 
+/*todo macro*/
+int isLabel (const char *str)
+{
+  return str[strlen (str) - 1] == ':';
+}
 
 int isSavedWord (const char *s)
 {
   int i;
-  for (i = 0; SavedWord[i][0] != '\0' ; i++) {
-    if (strcmp (s, SavedWord[i]) == 0)
-    {
+  for (i = 0; SavedWord[i][0] != '\0'; i++) {
+    if (strcmp (s, SavedWord[i]) == 0) {
       return TRUE;
     }
   }
   return FALSE;
 }
 
-Bool isAlphaNumeric(const char *str) {
+Bool isAlphaNumeric (const char *str)
+{
   while (*str) {
     if (!isalnum(*str)) {
       return FALSE;  /* Not alphanumeric */
@@ -48,55 +52,61 @@ Bool isAlphaNumeric(const char *str) {
   return TRUE;  /* All characters are alphanumeric */
 }
 
-
 /* todo check what is valid macro name*/
-int is_valid_mcr_name(char *s)
+int is_valid_mcr_name (char *s)
 {
-  for (; *s != '\0'; s++){
-    if (!isalnum(*s) && *s != '_'){
+  for (; *s != '\0'; s++) {
+    if (!isalnum(*s) && *s != '_') {
       return FALSE;
     }
   }
   return TRUE;
 }
 
-
+void trim_end (char *str)
+{
+  size_t i = strlen (str);
+  while (isspace(str[--i])) {}
+  NULL_TERMINATE(str, i + 1);
+}
 
 void lineTok (LineInfo *line)
 {
-  size_t j=0, i = 0;
-  char *p = (line->postfix);
-  char c;
+  size_t i = 0, j = 0;
+  char *p = line->postfix;
 
   /* Concatenate prefix and token */
-  strcat(line->prefix, line->token);
+  strcat (line->prefix, line->token);
   j = strlen (line->prefix);
 
   /* skip empty characters in postfix and write them in prefix */
-  for (; isspace(*p); j++, p++){
-    line->prefix[j] = *p;
+  while (isspace(*p)) {
+    line->prefix[j++] = *p++;
   }
-  NULL_TERMINATE(line->prefix,j);
+  NULL_TERMINATE(line->prefix, j);
 
-  /* find next token and update postfix: */
-  /*special case for a word consisting a special sign */
-  if ((c=*p) == ',' || c == '=' || c == '#' || c == '[' || c == ']') {
-    line->token[i] = c;
-    i++; p++;
+  /* find the next token: */
+  /* special case for a word consisting a special sign */
+  if (strchr (",=#[]", *p)) {
+    line->token[0] = *p;
+    NULL_TERMINATE(line->token, 1);
+    ++p;
   }
-  else{ /* coping word */
-    for (; (c=*p) != '\0' &&
-    !isspace(c) && c != ',' && c != '=' && c != '#' && c != '[' && c!= ']';
-           i++, p++) {
-      line->token[i] = c;
+  else { /* coping word */
+    while (*p != '\0' && !isspace(*p) && !strchr (",=#[]", *p)) {
+      line->token[i++] = *p++;
     }
+    NULL_TERMINATE(line->token, i);
   }
-  /* null terminate the token */
-  NULL_TERMINATE(line->token, i);
-  line->postfix = p;
+  /* update the postfix */
+//  strcpy (line->postfix, p); //todo debug why it's not working
+  for (i = 0; i <= strlen (p); ++i) {
+    line->postfix[i] = p[i];
+  }
 }
 
-void lineToPostfix(LineInfo *line) {
+void lineToPostfix (LineInfo *line)
+{
   /* concatenate prefix, token and postfix to recreate the original line */
   strcat (line->prefix, line->token);
   strcat (line->prefix, line->postfix);
@@ -108,22 +118,20 @@ void lineToPostfix(LineInfo *line) {
   RESET_STR(line->token);
 }
 
-
-
-void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
+void r_msg (char *type, char *color, char *msg_before, LineInfo *line, char
 *msg_after)
 {
   signed i;
 
   /* Print file and line number, error or warning type (fileNum:i error:) */
-  printf("%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
+  printf ("%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
 
   /* Print message context, token, and additional message */
-  if(IS_EMPTY(line->token)){
-    printf("%s\n", msg_before);
+  if (IS_EMPTY(line->token)) {
+    printf ("%s\n", msg_before);
   }
-  else{
-    printf("%s" BOLD "'%s'" REG "%s\n", msg_before, line->token, msg_after);
+  else {
+    printf ("%s" BOLD "'%s'" REG "%s\n", msg_before, line->token, msg_after);
   }
 
 
@@ -134,22 +142,23 @@ void r_msg(char* type, char*color, char* msg_before, LineInfo* line, char
 
   /* print an arrow pointing to the location of the token in the line
        |           ^~~~~~~~~                 */
-  printf(" %-2s |", " ");
-  for (i = 0; i < (int) strlen (line->prefix) ; i++){
-    printf(" ");
+  printf (" %-2s |", " ");
+  for (i = 0; i < (int) strlen (line->prefix); i++) {
+    printf (" ");
   }
-  printf(" %s^", color);
-    for (i = 0; i < (int) strlen (line->token) - 1; i++){
-      printf("%s~", color);
-    }
-  printf(RESET "\n");
+  printf (" %s^", color);
+  for (i = 0; i < (int) strlen (line->token) - 1; i++) {
+    printf ("%s~", color);
+  }
+  printf (RESET "\n");
 }
 
-
-void r_error(char* msg_before, LineInfo* line, char *msg_after){
-  r_msg("error", RED, msg_before,line, msg_after);
+void r_error (char *msg_before, LineInfo *line, char *msg_after)
+{
+  r_msg ("error", RED, msg_before, line, msg_after);
 }
 
-void r_warning(char* msg_before, LineInfo* line, char *msg_after){
-  r_msg("warning", YEL, msg_before,line, msg_after);
+void r_warning (char *msg_before, LineInfo *line, char *msg_after)
+{
+  r_msg ("warning", YEL, msg_before, line, msg_after);
 }

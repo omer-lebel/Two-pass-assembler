@@ -22,15 +22,17 @@
 
 
 typedef struct LineInfo{
-    char* file;
+    char* file; //todo delete!!
+    char prefix[MAX_LINE_SIZE];
+    char token[MAX_LINE_SIZE];
+    char postfix[MAX_LINE_SIZE];
     size_t num;
-    char *prefix;
-    char *token;
-    char *postfix;
 }LineInfo;
 
+int isLabel (const char *str);
 Bool isEmptyTok(char* token);
 Bool isAlphaNumeric(const char *str);
+void trim_end(char *str);
 void lineTok (LineInfo *line);
 void lineToPostfix(LineInfo *line);
 void r_error(char* msg_before, LineInfo* line, char *msg_after);

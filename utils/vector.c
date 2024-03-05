@@ -27,6 +27,25 @@ vector* create_vector(size_t elem_size) {
   return new_vector;
 }
 
+vector* create_n_vector(size_t elem_size, size_t n) {
+  vector* new_vector = (vector*)malloc(sizeof(vector));
+  if (!new_vector) {
+    return NULL;
+  }
+
+  new_vector->elements = malloc(n* elem_size);
+  if (!new_vector->elements) {
+    free(new_vector);
+    return NULL;
+  }
+
+  new_vector->size = 0;
+  new_vector->capacity = n;
+  new_vector->elem_size = elem_size;
+
+  return new_vector;
+}
+
 void* resize(vector * v) {
   void* tmp = realloc(v->elements, (2* v->capacity));
   if (!tmp) {

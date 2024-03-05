@@ -8,7 +8,7 @@
 #include "setting.h"
 #include "preAssembler.h"
 #include "firstPass.h"
-
+#include "secondPass.h"
 
 
 #define INPUT_IND 1
@@ -96,11 +96,11 @@ int main (int argc, char *argv[])
       return EXIT_FAILURE;
     }
 
-    /* -------------------- second ------------------ */
-    /*res = call_second (fileName, &no_error);
+    /*-------------------- second ------------------ */
+    res = secondPass (&file_analyze);
     if (res != EXIT_SUCCESS) {
       return EXIT_FAILURE;
-    }*/
+    }
   }
   return EXIT_SUCCESS;
 }
