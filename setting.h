@@ -35,6 +35,8 @@ typedef enum exit_code
 
 typedef enum Opcode
 {
+    NO_OPCODE = -1,
+
     /*first group - 2 operators*/
     MOV = 0,
     CMP = 1,

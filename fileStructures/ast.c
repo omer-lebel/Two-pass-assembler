@@ -9,10 +9,20 @@
 void init_op_analyze (op_analyze *op, Opcode opcode, LineInfo *line)
 {
   op->propriety = &op_propriety[opcode];
-  op->src.type = NONE_ADD;
-  op->target.type = NONE_ADD;
+  op->src.type = SRC;
+  op->target.type = TARGET;
   op->line_info = line;
   op->errors = FALSE;
+
+  Opcode o = opcode;
+  if (o == NOT || o == CLR || o == INC || o == DEC || o == JMP || o == BNE ||
+      o == RED || o == PRN || o == JSR){
+    op->src.add_mode = NONE_ADD;
+  }
+  if (o == RTS || o == HLT){
+    op->src.add_mode = NONE_ADD;
+    op->target.add_mode = NONE_ADD;
+  }
 }
 
 vector *init_op_list(void){
@@ -67,6 +77,7 @@ void print_operand(Operand *operand){
       printf ("<reg: r%d>\t", operand->val);
       break;
     case NONE_ADD:
+      printf ("           \t");
       break;
   }
 }

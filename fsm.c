@@ -12,16 +12,52 @@
 #define IS_COMMA(s) ((s) == ',')
 #define IMM_SIGN(s) ((s) == '#')
 #define IN_REG_BOUND(s) ((s) >= '0' && (s) <= '7')
-#define OPENING_INDEX_SIGN(s) (s == '[')
 
-/* mov */
-transition map_mov[] = {
+/* 2 operators map (mov, cmp, add, sub, lea) */
+transition two_operand_map[] = {
     {SRC_STATE,        &src_handler,        COMA_STATE},
     {COMA_STATE,       &comma_handler,      TARGET_STATE},
     {TARGET_STATE,     &target_handler,     EXTRA_TEXT_STATE},
     {EXTRA_TEXT_STATE, &extra_text_handler, END_STATE},
     {END_STATE, NULL,                       -1}
 };
+
+/* 1 operators map (not, clr, inc, dec, jmp, bne, red, prn, jsr)*/
+transition one_operand_map[] = {
+    {TARGET_STATE,     &target_handler,     EXTRA_TEXT_STATE},
+    {EXTRA_TEXT_STATE, &extra_text_handler, END_STATE},
+    {END_STATE, NULL,                       -1}
+};
+
+/* no operators map (rts, hlt)*/
+transition zero_operand_map[] = {
+    {EXTRA_TEXT_STATE, &extra_text_handler, END_STATE},
+    {END_STATE, NULL,                       -1}
+};
+
+
+transition* get_map(Opcode o){
+  //todo check about &
+  if (o == MOV || o == CMP || o == ADD || o == SUB || o == LEA){
+    return two_operand_map;
+  }
+  if (o == NOT || o == CLR || o == INC || o == DEC || o == JMP || o == BNE ||
+  o == RED || o == PRN || o == JSR){
+    return one_operand_map;
+  }
+  if (o == RTS || o == HLT){
+    return zero_operand_map;
+  }
+  return NULL;
+}
+/*
+ * {two_operand_map: mov, cmp, add, sub, lea}
+ * {on_operand_map: not, clr, inc, dec, jmp, bne, red, prn, jsr}
+ * {no operators map rts, hlt }
+ * {entry_extern_map: entry, extern}
+ * {str}
+ * {data}
+ */
 
 Bool is_reg (const char *str, int *val)
 {
@@ -174,8 +210,7 @@ Addressing_Mode get_addressing_mode (op_analyze *op, LinkedList *symbol_table,
 {
   char *token = op->line_info->token;
   int *val = (curr_state == SRC_STATE) ? &(op->src.val) : &(op->target.val);
-  Node **p_node = (curr_state == SRC_STATE) ? &(op->src.symbol)
-                                         : &(op->target.symbol);
+
 
   /*register*/
   if (is_reg (token, val)) {
@@ -302,15 +337,16 @@ state extra_text_handler (op_analyze *op, file_analyze *file, state next_state)
 
 int run_fsm (op_analyze *op, file_analyze *file_analyze)
 {
-  state next_state = map_mov[0].from, next;
+  transition *map = get_map(op->propriety->opcode);
+  state next_state = map[0].from, next;
   int i = 0;
 //  int stateIdx;
 
   while (next_state != END_STATE) {
     lineTok (op->line_info);
 //    stateIdx = get_state_idx (op_info->map, next_state);
-    next = map_mov[i].next;
-    next_state = map_mov[i].handler (op, file_analyze, next);
+    next = map[i].next;
+    next_state = map[i].handler (op, file_analyze, next);
     if (next_state == ERROR_STATE) {
       op->errors = TRUE;
       return FALSE;

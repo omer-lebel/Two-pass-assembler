@@ -113,7 +113,7 @@ exit_code second_line_process (op_analyze *op, LinkedList *symbol_table,
     }
   }
   //target has symbol
-  if (op->src.add_mode != NONE_ADD && res == SUCCESS) {
+  if (op->target.add_mode != NONE_ADD && res == SUCCESS) {
     if ((op->target.add_mode == DIRECT_ADD
          || op->target.add_mode == INDEX_ADD)) {
       res = symbol_handler_second_pass (&op->target, op->line_info,

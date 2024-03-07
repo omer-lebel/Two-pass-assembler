@@ -86,7 +86,7 @@ vector *init_code_seg (size_t IC)
 }
 
 
-//don't take care of add registers!
+//don't take care of add 2 registers!
 void *add_operand_word (vector *code_segment, Operand *operand)
 {
   unsigned short int word;

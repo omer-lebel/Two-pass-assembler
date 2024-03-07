@@ -1,76 +1,34 @@
-.extern EXT1
-.extern EXT2
+;STR: .string "s"
 
-L1: mov r0,EXT1
-;(3) - 100
+;mov #1, r3
 
-L2: mov EXT1, r0
-;(3) - 103
+;cmp r0, r2
 
-L3: mov EXT2, EXT2
-;(3) - 106
+;add r0, r2
 
-;mov #2,r2
-;HEY: .string "hello world"
-;.entry HEY
-;.entry INT
-;INT: .data 1,2,3,4,5
-;.entry X
+;sub r0, r2
 
+;not r2
 
+;clr STR
 
-;---- undeclared symbol
+;lea #11, r2
 
-;mov NONEXIST, r3
-;mov r3, NONEXIST
-;mov NONEXIST, NONEXIST
-;mov NONEXIST[3], r3
-;mov r3, NONEXIST[3]
-;mov NONEXIST[3], NONEXIST[3]
+;inc STR[2]
 
-;============== extern & entry =================
-;correct
-;.extern EX0
-;.entry ENT0
+;dec STR[-1]
 
-;contains non-alphanumeric char
-;.extern EX$1
-;.entry E-N-T-1
-;.extern E[NT
-;.entry EN,T
+;jmp r7
 
-;starts with a non-alphabetic char
-;.extern @EX2
-;.entry 2ENT
+;bne STR
 
-;already exist label (in string label)
-;L3: .string "d"
-;.extern L3
+;red STR[7]
 
-;already exist label (in extern label)
-;.extern E4
-;.extern E4
-;E4: .string "f"
+;prn #-3
 
-;meaningless label
-;EX5: .extern EX6
-;ENT6: .entry ENT6
+;jsr r0
 
-;saved word
-;.extern r0
-;.entry mov
+;rts
 
-;empty declaration
-;.extern
-;.entry
+;hlt
 
-;already exist label (in extern)
-;.extern E1
-;.entry E1
-
-;already exist label (in extern)
-;.entry E2
-;.extern E2
-
-;not exist label (in extern)
-;.entry ENT7

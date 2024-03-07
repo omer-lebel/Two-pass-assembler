@@ -429,12 +429,23 @@ exit_code extern_handler (LineInfo *line, const char *label, LinkedList
   return SUCCESS;
 }
 
+//todo get op_propriety ad arg???
+Opcode get_opcode(char* token){
+  int i;
+  for (i=0; i<NUM_OF_OP; ++i){
+    if (strcmp (token, op_propriety[i].name) == 0){
+      return op_propriety[i].opcode;
+    }
+  }
+  return NO_OPCODE;
+}
+
 /***** mov */
 exit_code
-mov_handler (LineInfo *line, const char *label, file_analyze *f)
+op_handler (LineInfo *line, const char *label, Opcode opcode, file_analyze *f)
 {
   op_analyze op;
-  init_op_analyze (&op, MOV, line);
+  init_op_analyze (&op, opcode, line);
 
   if (!run_fsm (&op, f)) {
     return ERROR;
@@ -515,7 +526,8 @@ exit_code else_handler (LineInfo *line, const char *label)
 exit_code first_process (file_analyze *f, LineInfo *line, char
 *label)
 {
-  exit_code res = SUCCESS;
+  exit_code res;
+  Opcode opcode;
 
   /* case: .string */
   if (strcmp (".define", line->token) == 0) {
@@ -548,8 +560,8 @@ exit_code first_process (file_analyze *f, LineInfo *line, char
   }
 
     /* case: operator */
-  else if (strcmp ("mov", line->token) == 0) {
-    res = mov_handler (line, label, f);
+  else if ((opcode = get_opcode (line->token)) != NO_OPCODE) {
+    res = op_handler (line, label, opcode, f);
   }
 
     /* case: else */
