@@ -17,7 +17,6 @@
 #define NUM_OF_OP 16
 #define NUM_OF_ADDRESSING_MODE 4
 #define MAX_CMD_NAME_LEN 3
-#define NUM_OF_SAVED_WORD sizeof(SavedWord) / sizeof(*SavedWord);
 
 #define MACHINE_WORD_SIZE 14
 #define INIT_IC 100

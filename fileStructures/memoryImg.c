@@ -124,12 +124,13 @@ void *add_operand_word (vector *code_segment, Operand *operand)
 
 void *add_to_code_seg (vector *code_segment, op_analyze *op)
 {
-  unsigned short int word;
+  unsigned short int word, scr_code, target_code;
   void *success_add = NULL;
 
   //first word
-  word = first_word (op->propriety->opcode, op->src.add_mode, op->target
-      .add_mode);
+  scr_code = (op->src.add_mode == NONE_ADD) ? 0 : op->src.add_mode;
+  target_code = (op->target.add_mode == NONE_ADD) ? 0 : op->target.add_mode;
+  word = first_word (op->propriety->opcode, scr_code, target_code);
   success_add = push (code_segment, &word);
 
   // both operand are register and they share the second word
@@ -153,6 +154,17 @@ void *add_to_code_seg (vector *code_segment, op_analyze *op)
   return success_add;
 }
 
+void print_code_segment_binary(vector* code_segment){
+  int i;
+  unsigned short int *word;
+  printf ("\n----------------- code segment -----------------\n");
+  for (i = 0; i < code_segment->size; ++i){
+    word = (unsigned short int*) get (code_segment, i);
+    printf("%04d\t", i+INIT_IC);
+    print_binary_word (*word);
+  }
+}
+
 void print_code_segment(vector* code_segment){
   int i;
   unsigned short int *word;
@@ -160,6 +172,6 @@ void print_code_segment(vector* code_segment){
   for (i = 0; i < code_segment->size; ++i){
     word = (unsigned short int*) get (code_segment, i);
     printf("%04d\t", i+INIT_IC);
-    printBinaryWord(*word);
+    print_special_base_word (*word);
   }
 }

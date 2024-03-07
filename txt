@@ -1,34 +1,23 @@
-;STR: .string "s"
+; file ps.as
+.entry LIST 
+.extern W 
+.define sz = 2 
+MAIN:	mov r3, LIST[sz]
+LOOP: 	jmp W 
+	    prn #-5
+    	mov STR[5], STR[2]
+	    sub r1, r4
+	    cmp K, #sz
+    	bne W
+L1: 	inc L3 
+.entry LOOP
+	bne LOOP 
+END:     hlt
+.define len = 4
+STR:     .string "abcdef"
+LIST:   .data 6, -9, len
+K:      .data 22
+.extern L3
 
-;mov #1, r3
-
-;cmp r0, r2
-
-;add r0, r2
-
-;sub r0, r2
-
-;not r2
-
-;clr STR
-
-;lea #11, r2
-
-;inc STR[2]
-
-;dec STR[-1]
-
-;jmp r7
-
-;bne STR
-
-;red STR[7]
-
-;prn #-3
-
-;jsr r0
-
-;rts
-
-;hlt
-
+;108 00 00 00 00 10 10 00 ****%%*
+;117 00 00 00 00 00 10 00 *****%*

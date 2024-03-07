@@ -58,41 +58,50 @@ void free_file_analyze2(file_analyze *f){
   memset(f, 0, sizeof(file_analyze));
 }
 
-
-void* extern_handler_second_pass(char *name, size_t address,
-                                     vector* extern_table){
-  size_t *last_use;
-  ExternSyb *extern_syb =  find_extern_syb(extern_table, name);
-  if (!extern_syb){
-    return add_to_extern_table (extern_table, name, address);
+size_t calc_extern_location (op_analyze *op, Operand_Type type){
+  int offset;
+  if (type == SRC || op->src.add_mode == NONE_ADD){
+    offset = 1;
   }
-  else{
-    last_use = get_tail (extern_syb->location);
-    if (*last_use == address){
-      return extern_syb;
-    }
-    else{
-      return add_location (extern_syb, address);
-    }
+  else if (op->src.add_mode != INDEX_ADD){
+    offset = 2;
   }
+  else{ //op->src.add_mode == INDEX_ADD
+    offset = 3;
+  }
+  return op->address + offset;
 }
 
-exit_code symbol_handler_second_pass (Operand *operand, LineInfo *line,
-                                      size_t address, LinkedList
-                                      *symbol_table, vector* extern_table)
+void* extern_handler_second_pass(op_analyze *op, Operand_Type type,
+                                     vector* extern_table){
+  Operand *operand = (type == SRC ? &op->src : &op->target);
+  ExternSyb *extern_syb = find_extern_syb(extern_table, operand->symbol_name);
+  size_t address = calc_extern_location(op, type);
+  if (!extern_syb){
+    return add_to_extern_table (extern_table, operand->symbol_name, address);
+  }
+  else{
+      return add_location (extern_syb, address);
+    }
+}
+
+
+exit_code symbol_handler_second_pass (op_analyze *op, Operand_Type type,
+                                      LinkedList* symbol_table,
+                                      vector* extern_table)
 {
   Node *node = NULL;
   Symbol *symbol = NULL;
+  Operand *operand = (type == SRC ? &op->src : &op->target);
   node = findNode (symbol_table, operand->symbol_name);
   if (!node) {
-    r_error ("undeclared symbol", line, ""); //todo bolt the error token
+    r_error ("undeclared symbol", op->line_info, ""); //todo bolt the error token
     return ERROR;
   }
 
   symbol = (Symbol *) node->data;
   if (symbol->are == EXTERNAL) {
-    if (!extern_handler_second_pass(operand->symbol_name, address,
-                                    extern_table)){
+    if (!extern_handler_second_pass(op, type, extern_table)){
       return MEMORY_ERROR;
     }
   }
@@ -108,17 +117,14 @@ exit_code second_line_process (op_analyze *op, LinkedList *symbol_table,
   //src has symbol
   if (op->src.add_mode != NONE_ADD) {
     if (op->src.add_mode == DIRECT_ADD || op->src.add_mode == INDEX_ADD) {
-      res = symbol_handler_second_pass (&op->src, op->line_info, op->address,
-                                        symbol_table, extern_table);
+      res = symbol_handler_second_pass (op, SRC, symbol_table, extern_table);
     }
   }
   //target has symbol
   if (op->target.add_mode != NONE_ADD && res == SUCCESS) {
     if ((op->target.add_mode == DIRECT_ADD
          || op->target.add_mode == INDEX_ADD)) {
-      res = symbol_handler_second_pass (&op->target, op->line_info,
-                                        op->address, symbol_table,
-                                        extern_table);
+      res = symbol_handler_second_pass (op, TARGET, symbol_table,extern_table);
     }
   }
 
@@ -203,6 +209,7 @@ int secondPass (file_analyze *f)
 
   print_extern_table (f->extern_table, f->file_name);
   print_entry_table (f->entry_table, f->file_name);
+  print_code_segment_binary (f->code_segment);
   print_code_segment (f->code_segment);
 
   free_file_analyze2 (f);

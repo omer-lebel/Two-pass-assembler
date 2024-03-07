@@ -4,6 +4,7 @@
 
 #include "machineWord.h"
 #include <stdio.h>
+#include "../setting.h"
 
 #define OPCODE_SHIFT 6
 #define ADD_MOD_SRC_SHIFT 4
@@ -68,10 +69,38 @@ unsigned short label_word(unsigned int label, int are) {
 }
 
 
-void printBinaryWord(unsigned short word) {
+void print_binary_word(unsigned short word) {
   int i;
-  for (i = 13; i >= 0; --i) {
+  for (i = MACHINE_WORD_SIZE - 1; i >= 0; --i) {
     printf("%d", (word >> i) & 1);
+  }
+  printf("\n");
+}
+
+void print_special_base_word(unsigned short binaryWord) {
+  int i;
+  char c;
+  unsigned int pair;
+  for (i = MACHINE_WORD_SIZE - 2 ; i >= 0; i -= 2) {
+    pair = (binaryWord >> i) & 0b11;
+    switch (pair) {
+      case 0:
+        c = '*';
+        break;
+      case 1:
+        c = '#';
+        break;
+      case 2:
+        c = '%';
+        break;
+      case 3:
+        c = '!';
+        break;
+      default:
+        c = '-';
+        break;
+    }
+    printf("%c", c);
   }
   printf("\n");
 }

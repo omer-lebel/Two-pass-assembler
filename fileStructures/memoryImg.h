@@ -45,6 +45,8 @@ vector* init_code_seg(size_t IC);
 
 void *add_to_code_seg (vector *code_segment, op_analyze *op);
 
+void print_code_segment_binary(vector* code_segment);
+
 void print_code_segment(vector* code_segment);
 
 

@@ -47,7 +47,7 @@ void init_assembler_setting ()
 
   init_op_propriety (CMP, "cmp",
                      IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
+                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
 
   init_op_propriety (ADD, "add",
                      IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
