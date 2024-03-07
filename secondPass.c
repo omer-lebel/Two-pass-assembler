@@ -24,6 +24,41 @@
  *      2. add into entry list
  */
 
+//todo think of better place? maybe main or setting
+void free_file_analyze2(file_analyze *f){
+
+  if (f->macro_list){
+    freeList (f->macro_list);
+  }
+
+  if (f->symbol_table){
+    freeList (f->symbol_table);
+  }
+
+  if (f->data_segment){
+    free_vector (f->data_segment);
+  }
+
+  if (f->code_segment){
+    free_vector (f->code_segment);
+  }
+
+  if (f->op_list){
+    free_op_list(f->op_list);
+  }
+
+  if (f->entry_table){
+    free_entry_table (f->entry_table);
+  }
+
+  if (f->extern_table){
+    free_extern_table(f->extern_table);
+  }
+
+  memset(f, 0, sizeof(file_analyze));
+}
+
+
 void* extern_handler_second_pass(char *name, size_t address,
                                      vector* extern_table){
   size_t *last_use;
@@ -43,23 +78,25 @@ void* extern_handler_second_pass(char *name, size_t address,
 }
 
 exit_code symbol_handler_second_pass (Operand *operand, LineInfo *line,
-                                      LinkedList *symbol_table, vector*
-                                      extern_table)
+                                      size_t address, LinkedList
+                                      *symbol_table, vector* extern_table)
 {
-  Symbol *symbol;
-  operand->symbol = findNode (symbol_table, operand->symbol_name);
-  if (!operand->symbol) {
+  Node *node = NULL;
+  Symbol *symbol = NULL;
+  node = findNode (symbol_table, operand->symbol_name);
+  if (!node) {
     r_error ("undeclared symbol", line, ""); //todo bolt the error token
     return ERROR;
   }
 
-  symbol = (Symbol *) operand->symbol;
+  symbol = (Symbol *) node->data;
   if (symbol->are == EXTERNAL) {
-    if (!extern_handler_second_pass(operand->symbol_name, symbol->address,
-                               extern_table)){
+    if (!extern_handler_second_pass(operand->symbol_name, address,
+                                    extern_table)){
       return MEMORY_ERROR;
     }
   }
+  operand->symbol = node;
   return SUCCESS;
 }
 
@@ -71,7 +108,7 @@ exit_code second_line_process (op_analyze *op, LinkedList *symbol_table,
   //src has symbol
   if (op->src.add_mode != NONE_ADD) {
     if (op->src.add_mode == DIRECT_ADD || op->src.add_mode == INDEX_ADD) {
-      res = symbol_handler_second_pass (&op->src, op->line_info,
+      res = symbol_handler_second_pass (&op->src, op->line_info, op->address,
                                         symbol_table, extern_table);
     }
   }
@@ -80,7 +117,8 @@ exit_code second_line_process (op_analyze *op, LinkedList *symbol_table,
     if ((op->target.add_mode == DIRECT_ADD
          || op->target.add_mode == INDEX_ADD)) {
       res = symbol_handler_second_pass (&op->target, op->line_info,
-                                        symbol_table, extern_table);
+                                        op->address, symbol_table,
+                                        extern_table);
     }
   }
 
@@ -93,10 +131,17 @@ exit_code second_line_process (op_analyze *op, LinkedList *symbol_table,
   return SUCCESS;
 }
 
-void *init_second_pass (file_analyze *file_analyze)
+//todo change
+exit_code init_second_pass (file_analyze *f)
 {
-  file_analyze->code_segment = init_code_seg (file_analyze->IC);
-  return file_analyze->code_segment;
+  f->code_segment = init_code_seg (f->IC);
+  f->extern_table = init_extern_table();
+
+  if (!f->code_segment || !f->extern_table){
+    free_file_analyze2 (f);
+    return MEMORY_ERROR;
+  }
+  return SUCCESS;
 }
 
 exit_code process_entry_table (vector *entry_table, LinkedList *symbol_table)
@@ -136,7 +181,7 @@ int secondPass (file_analyze *f)
   int i;
   op_analyze *op;
   exit_code res = SUCCESS;
-  if (!init_second_pass (f)) {
+  if (init_second_pass (f) == MEMORY_ERROR) {
     return EXIT_FAILURE; /* memory error; */
   }
 
@@ -156,17 +201,11 @@ int secondPass (file_analyze *f)
     res = process_entry_table (f->entry_table, f->symbol_table);
   }
 
-  print_extern_table (f->extern_table);
+  print_extern_table (f->extern_table, f->file_name);
   print_entry_table (f->entry_table, f->file_name);
   print_code_segment (f->code_segment);
 
-  freeList (f->symbol_table);
-  free_vector (f->data_segment);
-  free_vector (f->code_segment);
-  free_op_list (f->op_list);
-  free_entry_table (f->entry_table);
-  free_extern_table (f->entry_table);
-
+  free_file_analyze2 (f);
 
   return res == SUCCESS ? EXIT_SUCCESS : EXIT_FAILURE;
 }

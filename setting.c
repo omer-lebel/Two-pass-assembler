@@ -14,23 +14,6 @@ char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
                      "jsr", "rts", "hlt",
                      ""};
 
-void free_all(int num, ...) {
-  va_list args_list;
-  void* pointer;
-  int i;
-
-  va_start(args_list, num);
-
-  for (i = 0; i < num; ++i) {
-    pointer = va_arg(args_list, void*);
-    if (pointer != NULL) {
-      free(pointer);
-    }
-  }
-
-  va_end(args_list);
-}
-
 
 void init_op_propriety (Opcode opcode, char* op_name, ...)
 {

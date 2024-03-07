@@ -5,6 +5,16 @@
 #include "ast.h"
 
 /***************** directive_lines *******************/
+
+void init_op_analyze (op_analyze *op, Opcode opcode, LineInfo *line)
+{
+  op->propriety = &op_propriety[opcode];
+  op->src.type = NONE_ADD;
+  op->target.type = NONE_ADD;
+  op->line_info = line;
+  op->errors = FALSE;
+}
+
 vector *init_op_list(void){
   return create_vector (sizeof (op_analyze));
 }
@@ -66,6 +76,7 @@ void print_op_analyze (op_analyze *op, char* file_name)
   if (op->errors == TRUE) {
     return;
   }
+  printf ("%04lu\t", op->address);
   printf ("%s:%-2lu ", file_name, op->line_info->num);
   printf ("<op: %s>\t", op->propriety->name);
   printf ("<opcode: %d>\t", op->propriety->opcode);

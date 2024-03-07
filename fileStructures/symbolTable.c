@@ -70,7 +70,7 @@ exit_code add_symbol (LinkedList *symbol_table, const char *label,
   if (!new_symbol) {
     return MEMORY_ERROR; /* memory error */
   }
-  appendToTail (symbol_table, new_symbol);
+  appendSorted (symbol_table, new_symbol);
   return SUCCESS;
 }
 

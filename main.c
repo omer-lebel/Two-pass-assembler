@@ -15,8 +15,9 @@
 
 
 
-void init_new_file(file_analyze *file){
-  memset(file, 0, sizeof(file_analyze));
+void init_file_analyze(file_analyze *f, char* file_name){
+  memset(f, 0, sizeof(file_analyze));
+  strcpy (f->file_name, file_name);
 }
 
 int call_pre (file_analyze *file)
@@ -69,7 +70,6 @@ int call_first (file_analyze *file)
 
 int main (int argc, char *argv[])
 {
-  char fileName[100];
   int res, i;
   exit_code no_error = SUCCESS;
   file_analyze file_analyze;
@@ -82,8 +82,7 @@ int main (int argc, char *argv[])
   }
 
   for (i = INPUT_IND; i<argc; i++) {
-    strcpy(file_analyze.file_name, argv[i]);
-    strcpy (fileName, argv[i]);
+    init_file_analyze(&file_analyze, argv[i]);
     /* -------------------- pre ------------------- */
     res = call_pre (&file_analyze);
     if (res != EXIT_SUCCESS) {

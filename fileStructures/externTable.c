@@ -42,20 +42,19 @@ ExternSyb *find_extern_syb (vector *extern_table, char *name)
   return NULL;
 }
 
-void print_extern_table (vector *extern_table)
+void print_extern_table (vector *extern_table, char *file_name)
 {
   int i, j;
   ExternSyb *ext;
-  size_t *address;
+  size_t *line_num;
   printf ("\n----------------- extern table -----------------\n");
   for (i = 0; i < extern_table->size; ++i) {
     ext = (ExternSyb *) get (extern_table, i);
     for (j = 0; j < ext->location->size; ++j){
-      address = (size_t*) get (ext->location, j);
-      printf ("%s\t %lu", ext->name, *address);
+      line_num = (size_t*) get (ext->location, j);
+      printf ("%s\t %04lu\n", ext->name, *line_num);
     }
   }
-  free_vector (extern_table);
 }
 
 void free_extern_table (vector *extern_table)

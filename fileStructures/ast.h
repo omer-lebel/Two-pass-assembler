@@ -20,7 +20,7 @@ typedef struct Operand
 {
     Operand_Type type;
     Addressing_Mode add_mode;
-    Node *symbol; //todo delete
+    Node *symbol;
     char symbol_name[MAX_LINE_SIZE];
     int val; /*imm or reg num*/
 } Operand;
@@ -31,11 +31,13 @@ typedef struct op_analyze
     Operand src;
     Operand target;
     LineInfo *line_info;
-    Bool errors;
+    size_t address;
+    Bool errors; //todo delete?
 
 } op_analyze;
 
 /****************** op list *******************/
+void init_op_analyze (op_analyze *op, Opcode opcode, LineInfo *line);
 vector *init_op_list(void);
 op_analyze *add_to_op_list(vector* op_list, op_analyze *op);
 size_t calc_op_size(op_analyze *op);

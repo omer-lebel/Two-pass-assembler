@@ -23,7 +23,7 @@ size_t* add_location(ExternSyb *extern_syb, size_t address);
 
 ExternSyb* find_extern_syb(vector* extern_table, char* name);
 
-void print_extern_table (vector *extern_table);
+void print_extern_table (vector *extern_table, char *file_name);
 
 void free_extern_table(vector* extern_table);
 

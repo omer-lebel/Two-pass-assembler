@@ -13,28 +13,40 @@
 
 /****************** pass helpers *******************/
 
-int init_first_pass (LineInfo *line, char *file_name, file_analyze *f)
+void free_file_analyze1(file_analyze *f){
+
+  if (f->macro_list){
+    freeList (f->macro_list);
+  }
+
+  if (f->symbol_table){
+    freeList (f->symbol_table);
+  }
+
+  if (f->data_segment){
+    free_vector (f->data_segment);
+  }
+
+  if (f->op_list){
+    free_op_list(f->op_list);
+  }
+
+  if (f->entry_table){
+    free_entry_table (f->entry_table);
+  }
+
+  memset(f, 0, sizeof(file_analyze));
+}
+
+
+exit_code init_first_pass (LineInfo *line, char *file_name, file_analyze *f)
 {
   f->symbol_table = init_symbol_table ();
-  if (!f->symbol_table) {
-    return MEMORY_ERROR;
-  }
-
   f->data_segment = init_data_seg (&f->DC);
-  if (!f->data_segment) {
-    free_all (1, f->symbol_table);
-    return MEMORY_ERROR;
-  }
-
   f->op_list = init_op_list ();
-  if (!f->op_list) {
-    free_all (2, f->symbol_table, f->data_segment);
-    return MEMORY_ERROR;
-  }
-
   f->entry_table = init_entry_table ();
-  if (!f->entry_table) {
-    free_all (3, f->symbol_table, f->data_segment, f->op_list);
+  if (!f->symbol_table || !f->data_segment || !f->op_list || !f->entry_table) {
+    free_file_analyze1(f);
     return MEMORY_ERROR;
   }
 
@@ -418,38 +430,30 @@ exit_code extern_handler (LineInfo *line, const char *label, LinkedList
 }
 
 /***** mov */
-void init_op_analyze (op_analyze *op, Opcode opcode, LineInfo *line)
-{
-  op->propriety = &op_propriety[opcode];
-  op->src.symbol = NULL; //todo check why need
-  op->target.symbol = NULL;
-  op->line_info = line;
-  op->errors = FALSE;
-}
-
 exit_code
-mov_handler (LineInfo *line, const char *label, file_analyze *file_analyze)
+mov_handler (LineInfo *line, const char *label, file_analyze *f)
 {
   op_analyze op;
-  exit_code res = SUCCESS;
   init_op_analyze (&op, MOV, line);
 
-  if (!run_fsm (&op, file_analyze)) {
+  if (!run_fsm (&op, f)) {
     return ERROR;
   }
 
-  if (!add_to_op_list (file_analyze->op_list, &op)) {
+  op.address = f->IC + INIT_IC;
+  if (!add_to_op_list (f->op_list, &op)) {
     return MEMORY_ERROR;
   }
 
   if (!IS_EMPTY(label)) {
-    if (add_symbol (file_analyze->symbol_table, label, OPERATION,
-                    file_analyze->IC, RELOCATABLE, 0) == MEMORY_ERROR) {
+    if (add_symbol (f->symbol_table, label, OPERATION,
+                    f->IC, RELOCATABLE, 0) == MEMORY_ERROR) {
       return MEMORY_ERROR;
     }
   }
   /*print_op_analyze(&op);*/
-  file_analyze->IC += calc_op_size (&op);
+
+  f->IC += calc_op_size (&op);
   return SUCCESS;
 }
 

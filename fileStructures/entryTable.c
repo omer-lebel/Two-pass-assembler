@@ -41,8 +41,7 @@ void print_entry_table(vector* entry_table, char *file_name){
   for (i=0; i < entry_table->size; ++i){
     entry_syb = (EntrySyb*) get (entry_table, i);
     printf ("%04u\t %s\t", entry_syb->address, entry_syb->name);
-    printf ("\t%s:%lu\n", file_name, entry_syb->line_info->num); //todo
-    // delete
+    printf ("\t%s:%lu\n", file_name, entry_syb->line_info->num); //todo delete
   }
 }
 
