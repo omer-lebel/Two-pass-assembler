@@ -34,6 +34,7 @@ Bool isEmptyTok(char* token);
 Bool isAlphaNumeric(const char *str);
 void trim_end(char *str);
 void lineTok (LineInfo *line);
+void copy_line_info(LineInfo *dst, LineInfo *src);
 void lineToPostfix(LineInfo *line);
 void r_error(char* msg_before, LineInfo* line, char *msg_after);
 void r_warning(char* msg_before, LineInfo* line, char *msg_after);

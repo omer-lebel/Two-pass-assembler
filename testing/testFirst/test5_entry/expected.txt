@@ -1,0 +1,65 @@
+input.am:3  error: 'EX$1' contains non-alphanumeric characters
+ 3  | .extern EX$1
+    |         ^~~~
+input.am:4  error: 'E-N-T-1' contains non-alphanumeric characters
+ 4  | .entry E-N-T-1
+    |        ^~~~~~~
+input.am:5  error: extraneous text '[' after directive
+ 5  | .extern E[NT
+    |          ^
+input.am:6  error: extraneous text ',' after directive
+ 6  | .entry EN,T
+    |          ^
+input.am:7  error: '@EX2' starts with a non-alphabetic character
+ 7  | .extern @EX2
+    |         ^~~~
+input.am:8  error: '2ENT' starts with a non-alphabetic character
+ 8  | .entry 2ENT
+    |        ^~~~
+input.am:10 error: redeclaration of 'L3'
+ 10 | .extern L3
+    |         ^~
+input.am:12 warning: 'E4' has already declared in earlier line
+ 12 | .extern E4
+    |         ^~
+input.am:13 error: redeclaration of 'E4:'
+ 13 | E4: .string "f"
+    | ^~~
+input.am:14 warning: ignored label 'EX5:' before '.extern'
+ 14 | EX5: .extern EX6
+    | ^~~~
+input.am:15 warning: ignored label 'ENT6:' before '.entry'
+ 15 | ENT6: .entry ENT6
+    | ^~~~~
+input.am:16 error: 'r0' is a reserved keyword that cannot be used as an identifier
+ 16 | .extern r0
+    |         ^~
+input.am:17 error: 'mov' is a reserved keyword that cannot be used as an identifier
+ 17 | .entry mov
+    |        ^~~
+input.am:18 error: ' ' empty external declaration
+ 18 | .extern
+    |        ^
+input.am:19 error: ' ' empty entry declaration
+ 19 | .entry
+    |       ^
+
+----------------- ast list ---------------------
+
+----------------- data segment -----------------
+| d |   |
+
+----------------- entry table ------------------
+2        ENT0
+15       ENT6
+21       E
+----------------- symbol table -----------------
+ EX0              0      directive       external
+ L3               100    directive       not external
+ E4               0      directive       external
+ EX6              0      directive       external
+ E                0      directive       external
+
+----------------- code segment -----------------
+
+Process finished with exit code 0

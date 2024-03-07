@@ -30,7 +30,7 @@ typedef enum Bool
 
 typedef enum exit_code
 {
-    SUCCESS = 0, ERROR = 1, FAILURE = 2
+    SUCCESS = 0, ERROR = 1, MEMORY_ERROR = 2
 }exit_code;
 
 typedef enum Opcode
@@ -87,13 +87,14 @@ typedef struct file_analyze{
     vector *data_segment;
     vector *code_segment;
     vector *op_list;
-    vector *entry_list;
-    vector *extern_list;
+    vector *entry_table;
+    vector *extern_table;
     size_t IC;
     size_t DC;
     exit_code error;
 }file_analyze;
 
+void free_all(int num, ...);
 
 void init_assembler_setting ();
 

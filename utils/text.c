@@ -87,7 +87,7 @@ void lineTok (LineInfo *line)
 
   /* find the next token: */
   /* special case for a word consisting a special sign */
-  if (strchr (",=#[]", *p)) {
+  if (*p && strchr (",=#[]", *p)) {
     line->token[0] = *p;
     NULL_TERMINATE(line->token, 1);
     ++p;
@@ -103,6 +103,13 @@ void lineTok (LineInfo *line)
   for (i = 0; i <= strlen (p); ++i) {
     line->postfix[i] = p[i];
   }
+}
+
+void copy_line_info(LineInfo *dst, LineInfo *src){
+  strcpy(dst->prefix, src->prefix);
+  strcpy(dst->token, src->token);
+  strcpy(dst->postfix, src->postfix);
+  dst->num = src->num;
 }
 
 void lineToPostfix (LineInfo *line)

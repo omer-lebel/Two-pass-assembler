@@ -1,7 +1,13 @@
 /*
  Created by OMER on 1/15/2024.
 */
+#include "setting.h"
 #include "firstPass.h"
+#include "utils/text.h"
+#include "fileStructures/symbolTable.h"
+#include "fileStructures/memoryImg.h"
+#include "fileStructures/ast.h"
+#include "fileStructures/entryTable.h"
 
 #include "fsm.h"
 
@@ -11,20 +17,25 @@ int init_first_pass (LineInfo *line, char *file_name, file_analyze *f)
 {
   f->symbol_table = init_symbol_table ();
   if (!f->symbol_table) {
-    return FAILURE; /* memory error */
+    return MEMORY_ERROR;
   }
 
   f->data_segment = init_data_seg (&f->DC);
   if (!f->data_segment) {
-    free (f->symbol_table);
-    return FAILURE; /* memory error */
+    free_all (1, f->symbol_table);
+    return MEMORY_ERROR;
   }
 
   f->op_list = init_op_list ();
   if (!f->op_list) {
-    free (f->symbol_table);
-    free (f->data_segment);
-    return FAILURE;
+    free_all (2, f->symbol_table, f->data_segment);
+    return MEMORY_ERROR;
+  }
+
+  f->entry_table = init_entry_table ();
+  if (!f->entry_table) {
+    free_all (3, f->symbol_table, f->data_segment, f->op_list);
+    return MEMORY_ERROR;
   }
 
   /* line info */
@@ -66,11 +77,6 @@ exit_code valid_symbol_name (LineInfo *line, char *str, LinkedList
   if (isSavedWord (str)) {
     r_error ("", line, " is a reserved keyword that cannot be used as an "
                        "identifier");
-    return ERROR;
-  }
-  if (findNode (symbol_table, str)) {
-    /* todo maybe add line num */
-    r_error ("", line, " has already declared in earlier line");
     return ERROR;
   }
   return SUCCESS;
@@ -167,9 +173,8 @@ str_handler (LineInfo *line, const char *label, file_analyze *file_analyze)
   }
   else { /*add to symbol table */
     if (add_symbol (file_analyze->symbol_table, label, DATA,
-                    file_analyze->DC, RELOCATABLE, 0) ==
-        FAILURE) {
-      return FAILURE; /* memory error */
+                    file_analyze->DC, RELOCATABLE, 0) == MEMORY_ERROR) {
+      return MEMORY_ERROR;
     }
   }
   /* add to data segment */
@@ -274,9 +279,8 @@ data_handler (LineInfo *line, char *label, file_analyze *file_analyze)
   }
   else { /*add to symbol table */
     if (add_symbol (file_analyze->symbol_table, label, DATA,
-                    file_analyze->DC, RELOCATABLE, 0) ==
-        FAILURE) {
-      return FAILURE; /* memory error */
+                    file_analyze->DC, RELOCATABLE, 0) == MEMORY_ERROR) {
+      return MEMORY_ERROR;
     }
   }
   /* add to data segment */
@@ -317,6 +321,10 @@ exit_code define_handler (LineInfo *line, const char *label, LinkedList
     /* (not saved word && not abc123 && or not new name) */
     return ERROR;
   }
+  if (findNode (symbol_table, name)) {
+    r_error ("redeclaration of ", line, "");
+    return ERROR;
+  }
 
   /*equal sign*/
   lineTok (line);
@@ -354,8 +362,8 @@ exit_code define_handler (LineInfo *line, const char *label, LinkedList
   /*add to table list*/
   /*todo val of define?!?! */
   if (add_symbol (symbol_table, name, DEFINE, 0, RELOCATABLE, (int) res) ==
-      FAILURE) {
-    return FAILURE; /* memory error */
+      MEMORY_ERROR) {
+    return MEMORY_ERROR;
   }
   return SUCCESS;
 }
@@ -364,29 +372,47 @@ exit_code define_handler (LineInfo *line, const char *label, LinkedList
 exit_code extern_handler (LineInfo *line, const char *label, LinkedList
 *symbol_table)
 {
-  char *symbol = line->token;
+  Node *node = NULL;
+  Symbol *symbol;
+  char *ext_label = line->token;
   if (IS_EMPTY (line->token)) {
     strcat (line->token, " "); /*add token to msg error*/
     r_error ("", line, " empty external declaration");
     return ERROR;
   }
 
-  if (valid_symbol_name (line, symbol, symbol_table) == ERROR) {
+  if (valid_symbol_name (line, ext_label, symbol_table) == ERROR) {
     return ERROR;
   }
+  node = findNode (symbol_table, ext_label);
+  if (node) {
+    symbol = (Symbol *) node->data;
+    if (symbol->are != EXTERNAL) {
+      r_error ("redeclaration of ", line, "");
+      return ERROR;
+    }
+    else {
+      r_warning ("", line, " has already declared in earlier line");
+    }
+  }
+
   if (!IS_EMPTY(line->postfix)) {
     lineTok (line);
     r_error ("extraneous text ", line, " after directive");
     return ERROR;
   }
-  if (add_symbol (symbol_table, symbol, DATA, 0, EXTERNAL, 0) ==
-      FAILURE) {
-    return FAILURE; /* memory error */
+  //if it's new extern declaration
+  if (!node) {
+    if (add_symbol (symbol_table, ext_label, DATA, 0, EXTERNAL, 0) ==
+        MEMORY_ERROR) {
+      return MEMORY_ERROR;
+    }
   }
+
   if (!IS_EMPTY(label)) {
     lineToPostfix (line); /*get the fist tok again for the error msg */
     lineTok (line);
-    r_warning ("ignored label", line, "before '.extern'");
+    r_warning ("ignored label ", line, " before '.extern'");
   }
   return SUCCESS;
 }
@@ -412,108 +438,175 @@ mov_handler (LineInfo *line, const char *label, file_analyze *file_analyze)
     return ERROR;
   }
 
-  file_analyze->IC += calc_op_size (&op);
   if (!add_to_op_list (file_analyze->op_list, &op)) {
-    return FAILURE; //memory
+    return MEMORY_ERROR;
   }
 
   if (!IS_EMPTY(label)) {
-    if (add_symbol (file_analyze->symbol_table, label, OPERATION, 0,
-                    RELOCATABLE, 0) == FAILURE) {
-      return FAILURE; /* memory error */
+    if (add_symbol (file_analyze->symbol_table, label, OPERATION,
+                    file_analyze->IC, RELOCATABLE, 0) == MEMORY_ERROR) {
+      return MEMORY_ERROR;
     }
   }
   /*print_op_analyze(&op);*/
+  file_analyze->IC += calc_op_size (&op);
   return SUCCESS;
 }
 
+/*** entry */
+exit_code entry_handler (LineInfo *line, const char *label,
+                         vector *entry_table, LinkedList *symbol_table)
+{
+  char *ent_name = line->token;
+  if (IS_EMPTY (line->token)) {
+    strcat (line->token, " "); /*add token to msg error*/
+    r_error ("", line, " empty entry declaration");
+    return ERROR;
+  }
 
+  if (valid_symbol_name (line, ent_name, symbol_table) == ERROR) {
+    return ERROR;
+  }
+  if (!IS_EMPTY(line->postfix)) {
+    lineTok (line);
+    r_error ("extraneous text ", line, " after directive");
+    return ERROR;
+  }
+  if (!is_new_entry_symbol (entry_table, ent_name)){
+    r_warning ("", line, " has already declared in earlier line");
+  }
+  else{ //add to entry list
+    if (!add_to_entry_table (entry_table, ent_name, line, 0)) {
+      return MEMORY_ERROR;
+    }
+  }
+
+  if (!IS_EMPTY(label)) {
+    lineToPostfix (line); /*get the fist tok again for the error msg */
+    lineTok (line);
+    r_warning ("ignored label ", line, " before '.entry'");
+  }
+  return SUCCESS;
+}
+
+/**** else */
+exit_code else_handler (LineInfo *line, const char *label)
+{
+  char *first_word = line->token;
+  //if it's valid symbol name, but with no ':'
+  if (IS_EMPTY(label) && isalpha(first_word[0]) && isAlphaNumeric
+      (first_word) && !isSavedWord (first_word)) {
+    r_error ("expected ':' after ", line, "");
+  }
+  else {
+    r_error ("undefined: ", line, "");
+  }
+  return ERROR;
+}
 
 
 /****************** process function *******************/
 /*todo add empty line after label*/
 
-exit_code f_processLine (file_analyze *file_analyze, LineInfo *line, char
+exit_code first_process (file_analyze *f, LineInfo *line, char
 *label)
 {
   exit_code res = SUCCESS;
-  op_analyze op;
 
   /* case: .string */
   if (strcmp (".define", line->token) == 0) {
     lineTok (line);
-    res = define_handler (line, label, file_analyze->symbol_table);
+    res = define_handler (line, label, f->symbol_table);
     /*nothing*/
   }
 
     /* case: .entry */
   else if (strcmp (".entry", line->token) == 0) {
-    /*todo nothing ?*/
+    lineTok (line);
+    res = entry_handler (line, label, f->entry_table, f->symbol_table);
   }
 
     /* case: .extern */
   else if (strcmp (".extern", line->token) == 0) {
     lineTok (line);
-    res = extern_handler (line, label, file_analyze->symbol_table);
-    /*nothing*/
+    res = extern_handler (line, label, f->symbol_table);
   }
 
     /* case: .string */
   else if (strcmp (".string", line->token) == 0) {
     get_data_tok (line);
-    res = str_handler (line, label, file_analyze);
+    res = str_handler (line, label, f);
   }
 
     /* case: .data */
   else if (strcmp (".data", line->token) == 0) {
-    res = data_handler (line, label, file_analyze);
+    res = data_handler (line, label, f);
   }
 
+    /* case: operator */
   else if (strcmp ("mov", line->token) == 0) {
-    res = mov_handler (line, label, file_analyze);
+    res = mov_handler (line, label, f);
+  }
+
+    /* case: else */
+  else {
+    res = else_handler (line, label);
   }
   return res;
+
+}
+
+exit_code label_handler (LineInfo *line, char *label, LinkedList *symbol_table)
+{
+  strcpy (label, line->token);
+  NULL_TERMINATE(label, strlen (label) - 1); /* remove ":" */
+  if (valid_symbol_name (line, label, symbol_table) == ERROR) {
+    return ERROR;
+  }
+  if (findNode (symbol_table, label)) {
+    r_error ("redeclaration of ", line, "");
+    return ERROR;
+  }
+  lineTok (line);
+  return SUCCESS;
 }
 
 /****************** main function *******************/
 
-int firstPass (FILE *input_file, file_analyze *file_analyze)
+int firstPass (FILE *input_file, file_analyze *f)
 {
   char label[MAX_LINE_SIZE] = "";
   LineInfo line;
   exit_code res;
 
-  if (init_first_pass (&line, file_analyze->file_name, file_analyze)
-      == FAILURE) {
+  if (init_first_pass (&line, f->file_name, f) == MEMORY_ERROR) {
     return EXIT_FAILURE; /* memory error; */
   }
 
   while (fgets (line.postfix, MAX_LINE_SIZE, input_file)) {
     restartLine (&line, label);
-
     lineTok (&line);
+
     if (isLabel (line.token)) {
-      strcpy (label, line.token);
-      NULL_TERMINATE(label, strlen (label) - 1); /* remove ":" */
-      if (valid_symbol_name (&line, label, file_analyze->symbol_table)
-          == ERROR) {
-        file_analyze->error += ERROR; /*todo bit?*/
+      res = label_handler (&line, label, f->symbol_table);
+      if (res != SUCCESS) {
+        f->error += res;
         continue;
       }
-      lineTok (&line);
-      res = f_processLine (file_analyze, &line, label);
+      res = first_process (f, &line, label);
     }/* endIf label */
     else {
-      res = f_processLine (file_analyze, &line, label);
+      res = first_process (f, &line, label);
     }
 
-    if (res == FAILURE) {
+    if (res == MEMORY_ERROR) {
       break;
     }
-    file_analyze->error += res;
+    f->error += res;
   }
-  print_op_list (file_analyze->op_list, file_analyze->file_name);
-  print_data_segment (file_analyze->data_segment, file_analyze->DC);
+  print_op_list (f->op_list, f->file_name);
+  print_data_segment (f->data_segment, f->DC);
+  /*print_entry_table (f->entry_table, f->file_name);*/
   /*printList (file_analyze->symbol_table, stdout);*/
 
   return EXIT_SUCCESS;

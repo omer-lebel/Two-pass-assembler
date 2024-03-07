@@ -1,80 +1,64 @@
-LABEL: mov r0, r2
-;============== mov =================
-.define def=+404
-;mov r0, INT[def]
-
-S0: .string "this is sO"
-L1: .data -1
-L2: .data 22
-L3: .data 333
-L5: .data -5555
-.extern EXT
-
-;-------------------------- imm as src
-mov #+01, L1
-;0100    0000 0000 00 01 00 (3)
-;0101    000000000001 00
-;0102    000001111010 10
-
-mov #-02, S4[2]
-;0103    0000 0000 00 10 00 (4)
-;0104    111111111110 00
-;0105    000001111110 10
-;0106    000000000010 00
-
-S4: .string "this is s4"
-
-LOOP: mov #-02, EXT[2]
-;0107    0000 0000 00 10 00 (4)
-;0108    111111111110 00
-;0109    000000000000 01
-;0110    000000000010 00
-
-;mov #def, r7
-;0107 0000 0000 00 11 00 (3)
-;0108    000110010100 00
-;0109    000000000111 00
-
-;------------------------- label as src
-;mov INT, STR
-; 0000 0000 01 01 00 (3)
-
-;mov STR, INT[def]
-; 0000 0000 01 10 00 (4)
-
-;mov xxx, xxx
-; 0000 0000 01 10 00 ___
-
-;mov EXT, r7
-; 0000 0000 01 01 00 (3)
+mov #2,r2
+HEY: .string "hello world"
+.entry HEY
+.entry INT
+INT: .data 1,2,3,4,5
+.entry X
+X: mov r0,r2
 
 
+;---- undeclared symbol
 
+;mov NONEXIST, r3
+;mov r3, NONEXIST
+;mov NONEXIST, NONEXIST
+;mov NONEXIST[3], r3
+;mov r3, NONEXIST[3]
+;mov NONEXIST[3], NONEXIST[3]
 
-; ------------------------- index as src
-;mov INT[def], STR
-; 0000 0000 10 01 00 (4)
+;============== extern & entry =================
+;correct
+;.extern EX0
+;.entry ENT0
 
-;mov STR[5], INT[def]
-; 0000 0000 10 10 00 (5)
+;contains non-alphanumeric char
+;.extern EX$1
+;.entry E-N-T-1
+;.extern E[NT
+;.entry EN,T
 
-;mov xxx[2], xxx[def]
-; 0000 0000 10 10 00 ___
+;starts with a non-alphabetic char
+;.extern @EX2
+;.entry 2ENT
 
-;mov EXT[3], r7
-; 0000 0000 10 11 00 (4)
+;already exist label (in string label)
+;L3: .string "d"
+;.extern L3
 
+;already exist label (in extern label)
+;.extern E4
+;.extern E4
+;E4: .string "f"
 
-; ------------------- reg as src
-;mov r0, STR
-; 0000 0000 11 01 00 (3)
+;meaningless label
+;EX5: .extern EX6
+;ENT6: .entry ENT6
 
-;mov r1, INT[def]
-; 0000 0000 11 10 00 (4)
+;saved word
+;.extern r0
+;.entry mov
 
-;mov r3, xxx[def]
-; 0000 0000 00 10 00 ___
+;empty declaration
+;.extern
+;.entry
 
-;mov r2, r7
-; 0000 0000 11 11 00 (2)
-; 0000 00 010 111 00 (2)
+;already exist label (in extern)
+;.extern E1
+;.entry E1
+
+;already exist label (in extern)
+;.entry E2
+;.extern E2
+
+;not exist label (in extern)
+;.entry ENT7

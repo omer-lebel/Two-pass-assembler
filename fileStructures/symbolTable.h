@@ -28,8 +28,6 @@ typedef struct Symbol
     int val;
 } Symbol;
 
-//extern LinkedList *symbols_table;
-
 LinkedList *init_symbol_table (void);
 void *init_symbol (const void *data);
 void print_symbol (const char *word, const void *data, FILE *pf);

@@ -5,10 +5,8 @@
 
 #ifndef _SECOND_PASS_H_
 #define _SECOND_PASS_H_
-#include "utils/text.h"
-#include "fileStructures/symbolTable.h"
-#include "fileStructures/memoryImg.h"
+#include "setting.h"
 
-int secondPass (file_analyze *file_analyze);
+int secondPass (file_analyze *f);
 
 #endif //_SECOND_PASS_H_

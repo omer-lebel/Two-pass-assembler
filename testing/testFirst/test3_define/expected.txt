@@ -8,37 +8,37 @@ input.am:5  error: 'jmp' is a reserved keyword that cannot be used as an identif
  5  | .define jmp = 2
     |         ^~~
 input.am:7  error: 'd3&' contains non-alphanumeric characters
- 7  | .define d3&=1
+ 6  | .define d3&=1
     |         ^~~
 input.am:8  error: '!4d' starts with a non-alphabetic character
- 8  | .define !4d =7
+ 7  | .define !4d =7
     |         ^~~
 input.am:9  error: 'd0' has already declared in earlier line
- 9  | .define d0=2
+ 8  | .define d0=2
     |         ^~
 input.am:11 error: 's' has already declared in earlier line
- 11 | .define s=3
+ 10 | .define s=3
     |         ^
 input.am:13 error: 'e' has already declared in earlier line
- 13 | .define e=3
+ 12 | .define e=3
     |         ^
 input.am:14 error: expected '=' before numeric token, but got ' '
- 14 | .define d3 
+ 13 | .define d3
     |           ^
 input.am:15 error: expected '=' before numeric token, but got '3'
- 15 | .define d3 3
+ 14 | .define d3 3
     |            ^
 input.am:16 error: expected numeric expression after '=' but got ' '
- 16 | .define d4= 
+ 15 | .define d4=
     |            ^
 input.am:17 error: 'x' is not a valid numeric expression
- 17 | .define d4=x
+ 16 | .define d4=x
     |            ^
 input.am:18 error: '1000000000' exceeds integer bounds [-(2^14-1), 2^13-1]
- 18 | .define d5= 1000000000
+ 17 | .define d5= 1000000000
     |             ^~~~~~~~~~
 input.am:19 error: '-100000000' exceeds integer bounds [-(2^14-1), 2^13-1]
- 19 | .define d6= -100000000
+ 18 | .define d6= -100000000
     |             ^~~~~~~~~~
 | h | e | y |   |
  d0               0      define          not external    1    

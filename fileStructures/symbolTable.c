@@ -68,7 +68,7 @@ exit_code add_symbol (LinkedList *symbol_table, const char *label,
 
   new_symbol = createNode (symbol_table, label, &symbol_data);
   if (!new_symbol) {
-    return FAILURE; /* memory error */
+    return MEMORY_ERROR; /* memory error */
   }
   appendToTail (symbol_table, new_symbol);
   return SUCCESS;

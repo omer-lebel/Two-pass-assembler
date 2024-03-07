@@ -19,6 +19,15 @@ input.am:10 error: '-800000000' exceeds integer bounds [-(2^14-1), 2^13-1]
 input.am:11 error: ' 'empty integer initializer
  11 | D9: .data 
     |          ^
+input.am:12 error: expected ',' before '11'
+ 12 | D10: .data 10 11
+    |               ^~
+input.am:13 error: expected ',' before '-13'
+ 13 | D11: .data +11, 12 -13, 14
+    |                    ^~~
+input.am:14 error: expected ',' before 'z'
+ 14 | D12: .data -12 z, 13
+    |                ^
 input.am:15 error: expected integer before ','token
  15 | D13: .data 13,,14, -15, len
     |               ^

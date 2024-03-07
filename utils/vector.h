@@ -20,6 +20,8 @@ vector* create_n_vector(size_t elem_size, size_t n);
 
 void* get(vector * v, size_t index);
 
+void* get_tail(vector * v);
+
 void* push(vector * v, void* element);
 
 void free_vector(vector* v);

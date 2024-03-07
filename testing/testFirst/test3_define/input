@@ -12,7 +12,8 @@ L: .define d2 = 0
 ;=========== non valid name:
 ;saved word
 .define jmp = 2
-not saved word && not abc123 && or not new name
+
+;---- not saved word && not abc123 && or not new name
 
 ;not abc123
 .define d3&=1

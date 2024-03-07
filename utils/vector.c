@@ -63,6 +63,13 @@ void* get(vector * v, size_t index){
   return v->elements + (index * v->elem_size);
 }
 
+void* get_tail(vector * v){
+  if (v->size == 0){ //vector is empty
+    return NULL;
+  }
+  return v->elements + ((v->size - 1) * v->elem_size);
+}
+
 void* push(vector * v, void* element) {
   void* p_new_elem;
 
