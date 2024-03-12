@@ -12,7 +12,7 @@ char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
                      "mov", "cmp", "add", "sub", "lea",
                      "not", "clr", "inc", "dec", "jmp", "bne", "red", "prn",
                      "jsr", "rts", "hlt",
-                     ""};
+                     "mcr", "endmcr", ""};
 
 
 void init_op_propriety (Opcode opcode, char* op_name, ...)

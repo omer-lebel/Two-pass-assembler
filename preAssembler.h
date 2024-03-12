@@ -38,11 +38,12 @@ typedef struct mcrData
  * Preprocesses the input file by expanding macros and removing empty lines
  * and comment lines
  *
+ * @param file_name The name of rhe input file to be preprocessed.
  * @param input The input file to be preprocessed.
  * @param output The output file to store the preprocessed content.
  * @return Returns EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
-int preAssembler (FILE *input, FILE *output);
+int preAssembler (char* file_name, FILE *input, FILE *output);
 
 /**
  * Processes a line of the input file.
@@ -55,19 +56,28 @@ int preAssembler (FILE *input, FILE *output);
  *  @param curr_mcr Pointer to current macro if inside a definition, otherwise NULL.
  * @return Returns TRUE on success, FALSE on failure.
  */
-int p_processLine (FILE *output, LinkedList *mcr_list, char *line,
-                   int line_num, char* first_word, Node **curr_mcr);
+int p_processLine (FILE *output, LinkedList *mcr_list, LineInfo *line_info,
+                   Node **curr_mcr);
+
+exit_code mcr_handler(LinkedList *mcr_list, Node **mcr_node, LineInfo *line);
+
+exit_code endmcr_handler(Node **curr_mcr,  LineInfo *line);
+
+exit_code write_to_am_file (FILE *am_file, LineInfo *line, LinkedList
+*mcr_list);
 
 /**
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  * Adds a macro definition to the macro's linked list.
  *
  * @param mcr_list The linked list containing macro definitions.
  * @param mcr_name The name of the macro to be added.
  * @return Returns a pointer to the added node on success, NULL on failure.
  */
-Node *addMcr (LinkedList *mcr_list, char *mcr_name);
+Node *addMcr (LinkedList *mcr_list, LineInfo *line);
 
 /**
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  * Checks the validity of a macro name.
  *
  * @param mcr_list The linked list containing macro definitions.
@@ -78,7 +88,7 @@ Node *addMcr (LinkedList *mcr_list, char *mcr_name);
  * - Cannot be a reserved word of the language. \n
  * - Can contain only letters, numbers, and '_'. \n
  */
-int isValidMcr (LinkedList *mcr_list, char *mcr_name);
+Bool isValidMcr (LinkedList *macro_list, LineInfo *line);
 
 /**
  * Writes a line to the output file, handling macro expansions.
@@ -106,13 +116,14 @@ void p_writeLine (FILE *output, char *line, LinkedList *mcr_list,
 void *init_mcrData (const void *data);
 
 /**
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  * Adds content of the macro to the macro data structure.
  *
  * @param mcr_data pointer to the macro data structure to add content to.
  * @param content The content to be added.
  * @return Returns TRUE on success, FALSE on failure.
  */
-int add_content (mcrData *mcr_data, char *content);
+exit_code add_content (mcrData *mcr_data, char *content);
 
 /**
  * Prints macro data structure information.

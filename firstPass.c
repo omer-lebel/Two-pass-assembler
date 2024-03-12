@@ -576,6 +576,10 @@ int firstPass (FILE *input_file, file_analyze *f)
     /* postfix contain the whole line without the trim chars */
     lineTok (&line);
 
+    if(IS_EMPTY(line.token)){
+      continue;
+    }
+
     if (isLabel (line.token)) {
       res = label_handler (&line, label, f->symbol_table);
       if (res != SUCCESS) {

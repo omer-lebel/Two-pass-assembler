@@ -1,13 +1,1 @@
-
-mov r0, r2,
-test number 1:
-line1
-mcr2 def
-mcr mcrName
-    content1
-    content2
-endmcr
-line3
-call for mcr4
-mcrName
-end7
+mov #1, #%

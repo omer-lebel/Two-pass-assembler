@@ -40,7 +40,7 @@ int call_pre (file_analyze *file)
   }
 
   //running preAssembler
-  res = preAssembler (src_file, am_file);
+  res = preAssembler (file->file_name, src_file, am_file);
   fclose (src_file);
   fclose (am_file);
 
@@ -73,7 +73,7 @@ int main (int argc, char *argv[])
   init_assembler_setting ();
 
   if (argc <= 1) {
-    printf ("must give at least one file to process\n");
+    printf ("error: must give at least one file to process\n");
     return EXIT_FAILURE;
   }
 
@@ -81,8 +81,8 @@ int main (int argc, char *argv[])
     init_file_analyze (&file_analyze, argv[i]);
     /* -------------------- pre ------------------- */
     res = call_pre (&file_analyze);
-    if (res != EXIT_SUCCESS) {
-      return EXIT_FAILURE;
+    if (res != SUCCESS) {
+      return res;
     }
 
     /* ------------------- first ----------------- */

@@ -73,7 +73,7 @@ exit_code valid_identifier (LineInfo *line, char *name, Bool print_err)
 
 void trim_end (char *str)
 {
-  size_t i = strlen (str);
+  int i = (int) strlen (str);
   while (isspace(str[--i])) {}
   NULL_TERMINATE(str, i + 1);
 }

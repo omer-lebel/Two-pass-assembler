@@ -1,96 +1,138 @@
 #include "preAssembler.h"
 
 #define IS_COMMENT(s) ((s)[0] == ';')
-#define IS_MCR_DEF(s) (strcmp((s), "mcr") == 0)
-#define IS_MCR_END(s) (strcmp((s), "endmcr") == 0)
-#define DELIM " \t\r\n"
 
-
-int preAssembler (FILE *input, FILE *output)
+exit_code preAssembler (char *file_name, FILE *input, FILE *output)
 {
-  char line[MAX_LINE_SIZE], line_copy[MAX_LINE_SIZE];
-  char *first_word = NULL;
   Node *curr_mcr = NULL;
-  int line_num = 1;
+  LineInfo line_info;
+  line_info.file = file_name;
+  line_info.num = 0;
+  exit_code res = SUCCESS;
+
   LinkedList *mcr_list = createList (init_mcrData, print_mcrData, free_mcrData);
   if (!mcr_list) {
-    return EXIT_FAILURE; /* memory error */
+    return MEMORY_ERROR;
   }
 
-  while (fgets (line, MAX_LINE_SIZE, input)) {
-    strcpy (line_copy, line);
-    first_word = strtok (line_copy, DELIM);
-
-    if (!p_processLine (output, mcr_list, line, line_num, first_word,
-                        &curr_mcr)) {
-      freeList (mcr_list);
-      return EXIT_FAILURE;
-    }
+  while (res == SUCCESS && fgets (line_info.postfix, MAX_LINE_SIZE, input)) {
+    restartLine (&line_info);
+    res = p_processLine (output, mcr_list, &line_info, &curr_mcr);
   }
 /*  printList (mcr_list, stdout); */
   freeList (mcr_list);
-  return EXIT_SUCCESS;
+  return res;
 }
 
-
-int p_processLine (FILE *output, LinkedList *mcr_list, char *line,
-                   int line_num, char* first_word, Node **curr_mcr)
+exit_code
+p_processLine (FILE *output, LinkedList *mcr_list, LineInfo *line_info,
+               Node **curr_mcr)
 {
-  char* mcr_name = NULL;
+  exit_code res = SUCCESS;
+  char first_word[MAX_LINE_SIZE];
+  lineTok (line_info);
+  strcpy (first_word, line_info->token);
 
-  if (first_word == NULL || IS_COMMENT (first_word)) {
-    return TRUE;
+  if (IS_EMPTY(first_word) || IS_COMMENT (first_word)) {
+    fputc ('\n', output);
   }
-  else if (IS_MCR_DEF (first_word)) {
-    mcr_name = strtok (NULL, DELIM);
-    *curr_mcr = addMcr (mcr_list, mcr_name);
-    if (*curr_mcr == NULL) {
-      return FALSE; /* memory error or non-valid name for the mcr */
-    }
+  else if (strcmp (first_word, "mcr") == 0) { /* mcr start */
+    res = mcr_handler (mcr_list, curr_mcr, line_info);
   }
-  else if (IS_MCR_END (first_word)) {
-    if (*curr_mcr){
-      *curr_mcr = NULL;
-    }
-    else{
-      //printf(error);
-    }
+  else if (strcmp (first_word, "endmcr") == 0) { /* mcr end */
+    res = endmcr_handler (curr_mcr, line_info);
   }
-  else if (*curr_mcr) { /* inside a mcr content */
-    add_content ((*curr_mcr)->data, line);
+  else if (*curr_mcr) { /* mcr content */
+      lineToPostfix (line_info);
+      res = add_content ((*curr_mcr)->data, line_info->postfix);
   }
   else { /* regular line */
-    p_writeLine (output, line, mcr_list, first_word);
+      res = write_to_am_file (output, line_info, mcr_list);
   }
-  return TRUE;
+  return res;
 }
 
-Node *addMcr (LinkedList *mcr_list, char *mcr_name)
+Bool extraneous_text (LineInfo *line)
 {
-  Node *mcr_node = NULL;
-  if (!isValidMcr (mcr_list, mcr_name)) {
-    return NULL; /*not valid */
+  if (!IS_EMPTY(line->postfix)) {
+    lineTok (line);
+    r_error ("extraneous text ", line, "");
+    return TRUE;
   }
-  mcr_node = createNode (mcr_list, mcr_name, NULL);
-  if (!mcr_node) {
-    return NULL; /* memory error */
-  }
-  appendSorted (mcr_list, mcr_node);
-  return mcr_node;
+  return FALSE;
 }
 
-int isValidMcr (LinkedList *macro_list, char *macro_name)
+exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LineInfo *line)
 {
+  char *mcr_name = line->token;
+
+  lineTok (line);
+  trim_end (line->postfix);
+
+  if (!isValidMcr (mcr_list, line)) {
+    return ERROR;
+  }
+  if (extraneous_text (line)) { /* mcr MCR xxx */
+    return ERROR;
+  }
+  *mcr_node = createNode (mcr_list, mcr_name, NULL);
+  if (!(*mcr_node)) {
+    return MEMORY_ERROR;
+  }
+  appendSorted (mcr_list, *mcr_node);
+  return SUCCESS;
+}
+
+exit_code endmcr_handler (Node **curr_mcr, LineInfo *line)
+{
+  trim_end (line->postfix);
+  if (!(*curr_mcr)) {
+    r_error ("unexpected ", line, "");
+    return ERROR;
+  }
+  else if (extraneous_text (line)) {
+    return ERROR;
+  }
+  *curr_mcr = NULL;
+  return SUCCESS;
+}
+
+exit_code write_to_am_file (FILE *am_file, LineInfo *line,
+                            LinkedList *mcr_list)
+{
+  /* checks if it's a mcr, and print its content */
+  Node *mcr_node = findNode (mcr_list, line->token);
+  if (mcr_node) {
+    trim_end (line->postfix);
+    if (extraneous_text (line)) {
+      return ERROR;
+    }
+    mcrData *mcr_data = (mcrData *) mcr_node->data;
+    fprintf (am_file, "%s", mcr_data->content);
+  }
+  /* if it not a mcr, print the line */
+  else {
+    lineToPostfix (line);
+    fprintf (am_file, "%s", line->postfix);
+  }
+  return SUCCESS;
+}
+
+Bool isValidMcr (LinkedList *macro_list, LineInfo *line)
+{
+  char *mcr_name = line->token;
   /* macro does not have a name */
-  if (macro_name == NULL) {
+  if (IS_EMPTY(mcr_name)) {
+    r_error ("", line, " empty macro declaration");
     return FALSE;
   }
   /* cant use this name for macro */
-  if (!valid_identifier(NULL, macro_name, FALSE)) {
+  if (!valid_identifier (line, mcr_name, TRUE)) {
     return FALSE;
   }
   /*already exist macro; */
-  if (findNode (macro_list, macro_name)) {
+  if (findNode (macro_list, mcr_name)) {
+    r_error ("redeclaration of ", line, "");
     return FALSE;
   }
   return TRUE;
@@ -134,12 +176,11 @@ void *init_mcrData (const void *data)
   return new_data;
 }
 
-int add_content (mcrData *macro_data, char *content)
+exit_code add_content (mcrData *macro_data, char *content)
 {
-/*  static int i = 1; */
   char *tmp = NULL;
   size_t new_capacity;
-  size_t new_total = macro_data->total + strlen(content) + 1;
+  size_t new_total = macro_data->total + strlen (content) + 1;
 
   /* resize content array if needed */
   if (new_total > macro_data->capacity) {
@@ -147,15 +188,15 @@ int add_content (mcrData *macro_data, char *content)
     tmp = (char *) realloc (macro_data->content, (new_capacity
                                                   * sizeof (char)));
     if (!tmp) {
-      return FALSE;
+      return MEMORY_ERROR;
     }
     macro_data->content = tmp;
     macro_data->capacity = new_capacity;
   }
-  strcat(macro_data->content, content);
+  strcat (macro_data->content, content);
   macro_data->total = new_total;
 /*  printf ("\n%d) curr mcr content is:\n %s", i++, macro_data->content); */
-  return TRUE;
+  return SUCCESS;
 }
 
 void print_mcrData (const char *word, const void *data, FILE *pf)
