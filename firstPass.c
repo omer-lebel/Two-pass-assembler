@@ -12,6 +12,12 @@
 #include "fsm.h"
 
 /****************** pass helpers *******************/
+/*todo macro*/
+int isLabel (const char *str)
+{
+  return str[strlen (str) - 1] == ':';
+}
+
 
 void free_file_analyze1(file_analyze *f){
 
@@ -57,42 +63,8 @@ exit_code init_first_pass (LineInfo *line, char *file_name, file_analyze *f)
   return SUCCESS;
 }
 
-void restartLine (LineInfo *line_info, char *label)
-{
-  line_info->num++;
-  RESET_STR(label);
-  RESET_STR(line_info->prefix);
-  RESET_STR(line_info->token);
-  /* postfix contain the whole line without the trim chars */
-  trim_end (line_info->postfix);
-}
-
 /****************** handler & validation function *******************/
 
-
-/***** label */
-
-
-/* todo change function name */
-exit_code valid_symbol_name (LineInfo *line, char *str, LinkedList
-*symbol_table)
-{
-  if (!isalpha(str[0])) {
-    r_error ("", line, " starts with a non-alphabetic character");
-    return ERROR;
-  }
-  if (!isAlphaNumeric (str)) {
-    r_error ("", line, " contains non-alphanumeric characters");
-    return ERROR;
-  }
-  /* todo check */
-  if (isSavedWord (str)) {
-    r_error ("", line, " is a reserved keyword that cannot be used as an "
-                       "identifier");
-    return ERROR;
-  }
-  return SUCCESS;
-}
 
 /***** string */
 void get_data_tok (LineInfo *line)
@@ -329,7 +301,7 @@ exit_code define_handler (LineInfo *line, const char *label, LinkedList
     r_error ("no value given in define directive ", line, "");
     return ERROR;
   }
-  if (valid_symbol_name (line, name, symbol_table) == ERROR) {
+  if (valid_identifier(line, name, TRUE) == ERROR) {
     /* (not saved word && not abc123 && or not new name) */
     return ERROR;
   }
@@ -393,7 +365,7 @@ exit_code extern_handler (LineInfo *line, const char *label, LinkedList
     return ERROR;
   }
 
-  if (valid_symbol_name (line, ext_label, symbol_table) == ERROR) {
+  if (valid_identifier(line, ext_label, TRUE) == ERROR) {
     return ERROR;
   }
   node = findNode (symbol_table, ext_label);
@@ -479,7 +451,7 @@ exit_code entry_handler (LineInfo *line, const char *label,
     return ERROR;
   }
 
-  if (valid_symbol_name (line, ent_name, symbol_table) == ERROR) {
+  if (valid_identifier(line, ent_name, TRUE) == ERROR) {
     return ERROR;
   }
   if (!IS_EMPTY(line->postfix)) {
@@ -576,14 +548,13 @@ exit_code label_handler (LineInfo *line, char *label, LinkedList *symbol_table)
 {
   strcpy (label, line->token);
   NULL_TERMINATE(label, strlen (label) - 1); /* remove ":" */
-  if (valid_symbol_name (line, label, symbol_table) == ERROR) {
+  if (valid_identifier(line, label, TRUE) == ERROR) {
     return ERROR;
   }
   if (findNode (symbol_table, label)) {
     r_error ("redeclaration of ", line, "");
     return ERROR;
   }
-  lineTok (line);
   return SUCCESS;
 }
 
@@ -600,7 +571,9 @@ int firstPass (FILE *input_file, file_analyze *f)
   }
 
   while (fgets (line.postfix, MAX_LINE_SIZE, input_file)) {
-    restartLine (&line, label);
+    restartLine (&line);
+    trim_end (line.postfix);
+    /* postfix contain the whole line without the trim chars */
     lineTok (&line);
 
     if (isLabel (line.token)) {
@@ -609,6 +582,7 @@ int firstPass (FILE *input_file, file_analyze *f)
         f->error += res;
         continue;
       }
+      lineTok (&line);
       res = first_process (f, &line, label);
     }/* endIf label */
     else {

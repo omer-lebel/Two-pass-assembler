@@ -24,11 +24,6 @@ char* cmd_type2[] = {"not", "clr", "inc", "dec", "jmp", "bne", "red", "prn","jsr
 char* cmd_type3[] = {"rts", "hlt"};
  */
 
-/*todo macro*/
-int isLabel (const char *str)
-{
-  return str[strlen (str) - 1] == ':';
-}
 
 int isSavedWord (const char *s)
 {
@@ -52,15 +47,28 @@ Bool isAlphaNumeric (const char *str)
   return TRUE;  /* All characters are alphanumeric */
 }
 
-/* todo check what is valid macro name*/
-int is_valid_mcr_name (char *s)
+exit_code valid_identifier (LineInfo *line, char *name, Bool print_err)
 {
-  for (; *s != '\0'; s++) {
-    if (!isalnum(*s) && *s != '_') {
-      return FALSE;
+  if (!isalpha(name[0])) {
+    if (print_err){
+      r_error ("", line, " starts with a non-alphabetic character");
     }
+    return ERROR;
   }
-  return TRUE;
+  if (!isAlphaNumeric (name)) {
+    if (print_err){
+      r_error ("", line, " contains non-alphanumeric characters");
+    }
+    return ERROR;
+  }
+  if (isSavedWord (name)) {
+    if (print_err){
+      r_error ("", line, " is a reserved keyword that cannot be used as an "
+                         "identifier");
+    }
+    return ERROR;
+  }
+  return SUCCESS;
 }
 
 void trim_end (char *str)
@@ -103,6 +111,13 @@ void lineTok (LineInfo *line)
   for (i = 0; i <= strlen (p); ++i) {
     line->postfix[i] = p[i];
   }
+}
+
+void restartLine (LineInfo *line_info)
+{
+  line_info->num++;
+  RESET_STR(line_info->prefix);
+  RESET_STR(line_info->token);
 }
 
 void copy_line_info(LineInfo *dst, LineInfo *src){

@@ -38,9 +38,6 @@ int p_processLine (FILE *output, LinkedList *mcr_list, char *line,
 {
   char* mcr_name = NULL;
 
-  line_num++; /*todo add line error*/
-
-
   if (first_word == NULL || IS_COMMENT (first_word)) {
     return TRUE;
   }
@@ -52,7 +49,12 @@ int p_processLine (FILE *output, LinkedList *mcr_list, char *line,
     }
   }
   else if (IS_MCR_END (first_word)) {
-    *curr_mcr = NULL;
+    if (*curr_mcr){
+      *curr_mcr = NULL;
+    }
+    else{
+      //printf(error);
+    }
   }
   else if (*curr_mcr) { /* inside a mcr content */
     add_content ((*curr_mcr)->data, line);
@@ -84,12 +86,7 @@ int isValidMcr (LinkedList *macro_list, char *macro_name)
     return FALSE;
   }
   /* cant use this name for macro */
-  if (isSavedWord (macro_name)) {
-    return FALSE;
-  }
-  /*name contain chars thar are not numbers or ABC */
-  /*todo check if needed */
-  if (!is_valid_mcr_name (macro_name)) {
+  if (!valid_identifier(NULL, macro_name, FALSE)) {
     return FALSE;
   }
   /*already exist macro; */

@@ -29,7 +29,7 @@ typedef enum Bool
 
 typedef enum exit_code
 {
-    SUCCESS = 0, ERROR = 1, MEMORY_ERROR = 2
+    MEMORY_ERROR = -1, ERROR = 0, SUCCESS = 1
 }exit_code;
 
 typedef enum Opcode
@@ -82,9 +82,9 @@ typedef enum Register
 } Register;
 
 typedef struct file_analyze{
-    char file_name[1000]; /* todo */
-    LinkedList *macro_list;
-    LinkedList *symbol_table;
+    char file_name[1000]; /* todo change size*/
+    LinkedList *macro_list; //delete?
+    LinkedList *symbol_table; //
     vector *data_segment;
     vector *code_segment;
     vector *op_list;
@@ -92,6 +92,7 @@ typedef struct file_analyze{
     vector *extern_table;
     size_t IC;
     size_t DC;
+
     exit_code error;
 }file_analyze;
 

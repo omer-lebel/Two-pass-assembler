@@ -13,16 +13,8 @@ void init_op_analyze (op_analyze *op, Opcode opcode, LineInfo *line)
   op->target.type = TARGET;
   op->line_info = line;
   op->errors = FALSE;
-
-  Opcode o = opcode;
-  if (o == NOT || o == CLR || o == INC || o == DEC || o == JMP || o == BNE ||
-      o == RED || o == PRN || o == JSR){
-    op->src.add_mode = NONE_ADD;
-  }
-  if (o == RTS || o == HLT){
-    op->src.add_mode = NONE_ADD;
-    op->target.add_mode = NONE_ADD;
-  }
+  op->src.add_mode = NONE_ADD;
+  op->target.add_mode = NONE_ADD;
 }
 
 vector *init_op_list(void){

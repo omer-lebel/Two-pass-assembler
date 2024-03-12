@@ -10,13 +10,11 @@
 #include "firstPass.h"
 #include "secondPass.h"
 
-
 #define INPUT_IND 1
 
-
-
-void init_file_analyze(file_analyze *f, char* file_name){
-  memset(f, 0, sizeof(file_analyze));
+void init_file_analyze (file_analyze *f, char *file_name)
+{
+  memset (f, 0, sizeof (file_analyze));
   strcpy (f->file_name, file_name);
 }
 
@@ -71,9 +69,7 @@ int call_first (file_analyze *file)
 int main (int argc, char *argv[])
 {
   int res, i;
-  exit_code no_error = SUCCESS;
   file_analyze file_analyze;
-
   init_assembler_setting ();
 
   if (argc <= 1) {
@@ -81,8 +77,8 @@ int main (int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  for (i = INPUT_IND; i<argc; i++) {
-    init_file_analyze(&file_analyze, argv[i]);
+  for (i = INPUT_IND; i < argc; ++i) {
+    init_file_analyze (&file_analyze, argv[i]);
     /* -------------------- pre ------------------- */
     res = call_pre (&file_analyze);
     if (res != EXIT_SUCCESS) {
@@ -100,6 +96,11 @@ int main (int argc, char *argv[])
     if (res != EXIT_SUCCESS) {
       return EXIT_FAILURE;
     }
+
+    /*-------------------- output ------------------ */
+    //write to files
+
+
   }
   return EXIT_SUCCESS;
 }

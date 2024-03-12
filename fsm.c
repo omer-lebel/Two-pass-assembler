@@ -35,17 +35,17 @@ transition zero_operand_map[] = {
     {END_STATE, NULL,                       -1}
 };
 
-
-transition* get_map(Opcode o){
+transition *get_map (Opcode o)
+{
   //todo check about &
-  if (o == MOV || o == CMP || o == ADD || o == SUB || o == LEA){
+  if (o == MOV || o == CMP || o == ADD || o == SUB || o == LEA) {
     return two_operand_map;
   }
   if (o == NOT || o == CLR || o == INC || o == DEC || o == JMP || o == BNE ||
-  o == RED || o == PRN || o == JSR){
+      o == RED || o == PRN || o == JSR) {
     return one_operand_map;
   }
-  if (o == RTS || o == HLT){
+  if (o == RTS || o == HLT) {
     return zero_operand_map;
   }
   return NULL;
@@ -77,39 +77,6 @@ Bool is_int2 (op_analyze *op, int *imm)
   return IS_EMPTY(end_ptr);
 }
 
-/*check that it's a valid name for symbol*/
-Bool valid_symbol_name2 (op_analyze *op, state curr_state)
-{
-  char *str = op->line_info->token;
-
-  if (!isalpha(str[0])) {
-    if (curr_state != TARGET_STATE && curr_state != SRC_STATE) { /* 2L: .string "a" */
-      r_error ("", op->line_info, " starts with a non-alphabetic character");
-    }
-    return FALSE;
-  }
-  if (!isAlphaNumeric (str)) {
-    if (curr_state != TARGET_STATE && curr_state != SRC_STATE) { /* L!L: .string "a" */
-      r_error ("", op->line_info, " contains non-alphanumeric characters");
-    }
-    return FALSE;
-  }
-  if (isSavedWord (str)) { /* mov: .string "a" */
-    if (curr_state != TARGET_STATE && curr_state != SRC_STATE) {
-      r_error ("", op->line_info, " is a reserved keyword that cannot be used "
-                                  "as an identifier");
-    }
-    return FALSE;
-  }
-  if (curr_state == SRC_STATE){
-    strcpy (op->src.symbol_name, str);
-  }
-  if (curr_state == TARGET_STATE){
-    strcpy (op->target.symbol_name, str);
-  }
-  return TRUE;
-}
-
 Bool is_define (op_analyze *op, LinkedList *symbol_table, int *imm)
 {
   Node *node;
@@ -130,9 +97,9 @@ Bool is_define (op_analyze *op, LinkedList *symbol_table, int *imm)
       return FALSE;
     }
   }
-  /* mov r0 #zzz | mov L[zzz], r0 (when 'zzz' in undefined) */
-  if (valid_symbol_name2 (op, SRC_STATE)){
-    r_error ("",op->line_info, " undeclared (first use here)");
+  /* mov r0, #zzz | mov L[zzz], r0 (when 'zzz' in undefined) */
+  if (valid_identifier (op->line_info, token, FALSE)) {
+    r_error ("", op->line_info, " undeclared");
     return FALSE;
   }
   /* mov r0 #3!a |  mov r0 L[***] | mov r0 L[] | mov #, r0 */
@@ -166,38 +133,40 @@ Bool is_data_symbol (op_analyze *op, LinkedList *symbol_table, Node **node)
       // LABEL: mov r1, r2
       // move #2, LABEL
       r_warning ("expected directive label, but label", op->line_info,
-               "is of invalid type");
+                 "is of invalid type");
     }
   }
   return FALSE;
 }
 
-Bool index_indicate(op_analyze *op){
+Bool index_indicate (op_analyze *op)
+{
   char *str = op->line_info->postfix;
 
   // check that next token start with [
-  while (*str && isspace(*str) && *str != '['){
+  while (*str && isspace(*str) && *str != '[') {
     str++;
   }
-  if (*str != '['){
+  if (*str != '[') {
     return FALSE;
   }
   return TRUE;
 }
 
-Bool is_index(op_analyze *op, LinkedList *symbol_table, int *val){
+Bool is_index (op_analyze *op, LinkedList *symbol_table, int *val)
+{
   char *token = op->line_info->token;
-  if (!is_imm2 (op, symbol_table, val)) { /* mov r0 LABEL[#$] */
+  if (!is_imm2 (op, symbol_table, val)) { /* mov r0 LABEL[&*$] */
     return FALSE;
   }
 
   //check the ] sign
   lineTok (op->line_info);
-  if (IS_EMPTY(token)){ /* mov r0, L[1 */
+  if (IS_EMPTY(token)) { /* mov r0, L[1 */
     r_error ("expected ']'", op->line_info, "");
     return FALSE;
   }
-  if (strcmp (token, "]") != 0){ /* mov r0, L[1 k] */
+  if (strcmp (token, "]") != 0) { /* mov r0, L[1 k] */
     r_error ("expected ']' before", op->line_info, "");
     return FALSE;
   }
@@ -210,7 +179,8 @@ Addressing_Mode get_addressing_mode (op_analyze *op, LinkedList *symbol_table,
 {
   char *token = op->line_info->token;
   int *val = (curr_state == SRC_STATE) ? &(op->src.val) : &(op->target.val);
-
+  char *symbol_name = (curr_state == SRC_STATE) ? (op->src.symbol_name) :
+      (op->target.symbol_name);
 
   /*register*/
   if (is_reg (token, val)) {
@@ -223,40 +193,43 @@ Addressing_Mode get_addressing_mode (op_analyze *op, LinkedList *symbol_table,
     return is_imm2 (op, symbol_table, val) ? IMM_ADD : NONE_ADD;
   }
 
-  /*symbol and index*/ //todo think about where the error msg
-//  if (is_data_symbol (op, symbol_table, p_node) || valid_symbol_name2 (op,
-//                                                              curr_state)) {
-  if (valid_symbol_name2 (op, curr_state)) {
+  /*symbol and index*/
+  if (valid_identifier(op->line_info, token, FALSE)) {
+    strcpy (symbol_name, token);
 
-    //check if it's label with index
-    if (!index_indicate (op)){
-      return DIRECT_ADD; //only label
+    /*label*/
+    if (!index_indicate (op)) {
+      return DIRECT_ADD;
     }
-    else{ //fount [
+
+    /*index*/
+    else { //fount [
       lineTok (op->line_info); //move to [
       lineTok (op->line_info); //move to imm
-      return is_index(op, symbol_table, val) ? INDEX_ADD : NONE_ADD;
+      return is_index (op, symbol_table, val) ? INDEX_ADD : NONE_ADD;
     }
   }
+
   r_error ("", op->line_info, " invalid operand");
   return NONE_ADD;
 }
 
 Bool valid_add_mode (op_analyze *op, state operand)
 {
-  if (operand == SRC_STATE && op->propriety->src_modes[op->src.add_mode]) {
-    return TRUE;
+  if (operand == SRC_STATE) {
+    if (op->propriety->src_modes[op->src.add_mode]) {
+      return TRUE;
+    }
   }
-  else if (op->propriety->target_modes[op->target.add_mode]) { /*target*/
-    return TRUE;
+  else { /*operand == TARGET_STATE*/
+    if (op->propriety->target_modes[op->target.add_mode]) {
+      return TRUE;
+    }
   }
-
-  else {
-    r_error ("passing ", op->line_info, " is invalid addressing mode to "
-                                     "function");
-    return FALSE;
+  r_error ("passing ", op->line_info, " is invalid addressing mode to "
+                                        "function");
+  return FALSE;
   }
-}
 
 state operand_handler (op_analyze *op, LinkedList *symbol_table, state
 curr_state, state next_state)
@@ -337,7 +310,7 @@ state extra_text_handler (op_analyze *op, file_analyze *file, state next_state)
 
 int run_fsm (op_analyze *op, file_analyze *file_analyze)
 {
-  transition *map = get_map(op->propriety->opcode);
+  transition *map = get_map (op->propriety->opcode);
   state next_state = map[0].from, next;
   int i = 0;
 //  int stateIdx;
@@ -355,37 +328,3 @@ int run_fsm (op_analyze *op, file_analyze *file_analyze)
   }
   return TRUE;
 }
-
-
-
-
-
-
-
-
-
-
-//Bool is_define_imm(char* str, int* val);
-//
-//Bool is_imm(char* str, int* val);
-//
-//Bool is_index(char* str, int* val);
-//
-//Bool is_label(char* str, int* val);
-//
-//exit_code get_src_add_mode();
-//
-//exit_code get_target_add_mode();
-
-
-
-
-//state src_handler(LineInfo *line);
-//
-//state target_handler(LineInfo *line);
-//
-//state comma_handler(LineInfo *line);
-//
-//state extra_text_handler();
-//
-//exit_code run_fsm();

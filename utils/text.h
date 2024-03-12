@@ -30,10 +30,12 @@ typedef struct LineInfo{
 }LineInfo;
 
 int isLabel (const char *str);
-Bool isEmptyTok(char* token);
+int isSavedWord(const char *s);
 Bool isAlphaNumeric(const char *str);
+exit_code valid_identifier (LineInfo *line, char *name, Bool print_err);
 void trim_end(char *str);
 void lineTok (LineInfo *line);
+void restartLine (LineInfo *line_info);
 void copy_line_info(LineInfo *dst, LineInfo *src);
 void lineToPostfix(LineInfo *line);
 void r_error(char* msg_before, LineInfo* line, char *msg_after);
@@ -49,10 +51,6 @@ void r_warning(char* msg_before, LineInfo* line, char *msg_after);
  * reach end of string.
  */
 char *newToken (char *line, char *token);
-
-int isSavedWord(const char *s);
-
-int is_valid_mcr_name(char *s);
 
 
 #endif /* _TEXT_H_ */
