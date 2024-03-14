@@ -1,9 +1,0 @@
-test number 5
-1 line
-mcr .data
-    this is a saved word
-end mcr
-2 call for the mcr
-.data
-3 line
-end

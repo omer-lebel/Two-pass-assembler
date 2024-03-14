@@ -2,22 +2,38 @@
 
 #define IS_COMMENT(s) ((s)[0] == ';')
 
-exit_code preAssembler (char *file_name, FILE *input, FILE *output)
+exit_code preAssembler (char *file_name, FILE *input, FILE *output,
+                        exit_code *error_flag)
 {
   Node *curr_mcr = NULL;
-  LineInfo line_info;
-  line_info.file = file_name;
-  line_info.num = 0;
   exit_code res = SUCCESS;
-
+  Bool overflow = FALSE;
+  LineInfo line_info;
   LinkedList *mcr_list = createList (init_mcrData, print_mcrData, free_mcrData);
+
   if (!mcr_list) {
     return MEMORY_ERROR;
   }
+  line_info.file = file_name;
+  line_info.num = 0;
 
-  while (res == SUCCESS && fgets (line_info.postfix, MAX_LINE_SIZE, input)) {
+  while (res == SUCCESS && get_line(input, line_info.postfix,
+                                    MAX_LINE_LENGTH, &overflow)) {
     restartLine (&line_info);
     res = p_processLine (output, mcr_list, &line_info, &curr_mcr);
+    if (overflow){
+      r_error ("line length is more than 80 characters", &line_info, "");
+      *error_flag += ERROR;
+    }
+  }
+
+  /* check that mcr flag is off at EOF */
+  if (res == SUCCESS && curr_mcr != NULL) {
+    trim_end (line_info.postfix);
+    r_error ("reached EOF in the middle of macro definition. Expected "
+             "'endmcr'",
+             &line_info, "");
+    res = ERROR;
   }
 /*  printList (mcr_list, stdout); */
   freeList (mcr_list);
@@ -29,7 +45,7 @@ p_processLine (FILE *output, LinkedList *mcr_list, LineInfo *line_info,
                Node **curr_mcr)
 {
   exit_code res = SUCCESS;
-  char first_word[MAX_LINE_SIZE];
+  char first_word[MAX_LINE_LENGTH];
   lineTok (line_info);
   strcpy (first_word, line_info->token);
 
@@ -43,11 +59,11 @@ p_processLine (FILE *output, LinkedList *mcr_list, LineInfo *line_info,
     res = endmcr_handler (curr_mcr, line_info);
   }
   else if (*curr_mcr) { /* mcr content */
-      lineToPostfix (line_info);
-      res = add_content ((*curr_mcr)->data, line_info->postfix);
+    lineToPostfix (line_info);
+    res = add_content ((*curr_mcr)->data, line_info->postfix);
   }
   else { /* regular line */
-      res = write_to_am_file (output, line_info, mcr_list);
+    res = write_to_am_file (output, line_info, mcr_list);
   }
   return res;
 }
@@ -64,10 +80,15 @@ Bool extraneous_text (LineInfo *line)
 
 exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LineInfo *line)
 {
-  char *mcr_name = line->token;
-
-  lineTok (line);
+  char *mcr_name;
   trim_end (line->postfix);
+
+  if (*mcr_node != NULL) {
+    r_error ("", line, ": nested macro definition is not allowed ");
+    return ERROR;
+  }
+  lineTok (line);
+  mcr_name = line->token;
 
   if (!isValidMcr (mcr_list, line)) {
     return ERROR;
@@ -100,6 +121,7 @@ exit_code endmcr_handler (Node **curr_mcr, LineInfo *line)
 exit_code write_to_am_file (FILE *am_file, LineInfo *line,
                             LinkedList *mcr_list)
 {
+  mcrData *mcr_data;
   /* checks if it's a mcr, and print its content */
   Node *mcr_node = findNode (mcr_list, line->token);
   if (mcr_node) {
@@ -107,10 +129,10 @@ exit_code write_to_am_file (FILE *am_file, LineInfo *line,
     if (extraneous_text (line)) {
       return ERROR;
     }
-    mcrData *mcr_data = (mcrData *) mcr_node->data;
+    mcr_data = (mcrData *) mcr_node->data;
     fprintf (am_file, "%s", mcr_data->content);
   }
-  /* if it not a mcr, print the line */
+    /* if it not a mcr, print the line */
   else {
     lineToPostfix (line);
     fprintf (am_file, "%s", line->postfix);
@@ -123,34 +145,26 @@ Bool isValidMcr (LinkedList *macro_list, LineInfo *line)
   char *mcr_name = line->token;
   /* macro does not have a name */
   if (IS_EMPTY(mcr_name)) {
-    r_error ("", line, " empty macro declaration");
+    r_error ("", line, "empty macro declaration");
     return FALSE;
   }
-  /* cant use this name for macro */
-  if (!valid_identifier (line, mcr_name, TRUE)) {
+
+  if (!isalpha(mcr_name[0])) {
+    r_error ("", line, " starts with a non-alphabetic character");
     return FALSE;
   }
+  if (isSavedWord (mcr_name)) {
+    r_error ("", line, " is a reserved keyword that cannot be used as an "
+                       "identifier");
+    return FALSE;
+  }
+
   /*already exist macro; */
   if (findNode (macro_list, mcr_name)) {
     r_error ("redeclaration of ", line, "");
     return FALSE;
   }
   return TRUE;
-}
-
-void p_writeLine (FILE *output, char *line, LinkedList *mcr_list,
-                  char *first_word)
-{
-  /* checks if it's a mcr, and print its content */
-  Node *mcr_node = findNode (mcr_list, first_word);
-  if (mcr_node != NULL) {
-    mcrData *mcr_data = (mcrData *) mcr_node->data;
-    fprintf (output, "%s", mcr_data->content);
-  }
-    /* if it not a mcr, print the line */
-  else {
-    fprintf (output, "%s", line);
-  }
 }
 
 /* *************************************************
@@ -163,16 +177,16 @@ void *init_mcrData (const void *data)
   if (!new_data) {
     return NULL;
   }
-  new_data->content = (char *) malloc (sizeof (char) * MAX_LINE_SIZE);
+  new_data->content = (char *) malloc (sizeof (char) * MAX_LINE_LENGTH);
   if (!new_data->content) {
     free (new_data);
     return NULL;
   }
   RESET_STR(new_data->content);
   new_data->total = 0;
-  new_data->capacity = MAX_LINE_SIZE;
+  new_data->capacity = MAX_LINE_LENGTH;
 
-  (void) data; /*todo becouse I dont use the param*/
+  (void) data; /* todo because I don't use the param */
   return new_data;
 }
 
@@ -195,7 +209,6 @@ exit_code add_content (mcrData *macro_data, char *content)
   }
   strcat (macro_data->content, content);
   macro_data->total = new_total;
-/*  printf ("\n%d) curr mcr content is:\n %s", i++, macro_data->content); */
   return SUCCESS;
 }
 

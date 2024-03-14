@@ -21,7 +21,7 @@ typedef enum ARE
 
 typedef struct Symbol
 {
-    //todo cahbge into union of types and address/val
+    /* todo change into union of types and address/val */
     size_t address;
     SymbolType type;
     Bool isEntry;

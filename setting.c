@@ -112,3 +112,25 @@ void init_assembler_setting ()
                      NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD);
 
 }
+
+FILE* open_file(char* file_name, const char *extension, const char *mode){
+  FILE *tmp;
+  size_t len = strlen (file_name);
+  strcat(file_name, extension);
+  tmp = fopen (file_name, mode);
+  if (!tmp){
+    printf ("error while opening '%s'\n", file_name);
+    return NULL;
+  }
+  else{
+    file_name[len] = '\0'; /* remove extension */
+    return tmp;
+  }
+}
+
+void remove_file(char* file_name, const char *extension){
+  size_t len = strlen (file_name);
+  strcat(file_name, extension);
+  remove(file_name);
+  file_name[len] = '\0'; /* remove extension */
+}

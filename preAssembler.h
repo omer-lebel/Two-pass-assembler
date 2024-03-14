@@ -35,6 +35,7 @@ typedef struct mcrData
 
 
 /**
+ * !!!!!!!!!!!!!!!!!!!!!!
  * Preprocesses the input file by expanding macros and removing empty lines
  * and comment lines
  *
@@ -43,9 +44,11 @@ typedef struct mcrData
  * @param output The output file to store the preprocessed content.
  * @return Returns EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
-int preAssembler (char* file_name, FILE *input, FILE *output);
+exit_code preAssembler (char *file_name, FILE *input, FILE *output,
+                        exit_code *overflow);
 
 /**
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!
  * Processes a line of the input file.
  *
  * @param output The output file to store the processed content.
@@ -56,8 +59,9 @@ int preAssembler (char* file_name, FILE *input, FILE *output);
  *  @param curr_mcr Pointer to current macro if inside a definition, otherwise NULL.
  * @return Returns TRUE on success, FALSE on failure.
  */
-int p_processLine (FILE *output, LinkedList *mcr_list, LineInfo *line_info,
-                   Node **curr_mcr);
+exit_code
+p_processLine (FILE *output, LinkedList *mcr_list, LineInfo *line_info,
+               Node **curr_mcr);
 
 exit_code mcr_handler(LinkedList *mcr_list, Node **mcr_node, LineInfo *line);
 

@@ -7,11 +7,11 @@
 #define _MEMORY_IMG_H_
 
 #include "../setting.h"
-#include "../utils/text.h"
 #include "../utils/vector.h"
-#include "../fileStructures/symbolTable.h"
+#include "../utils/text.h"
+#include "../utils/machineWord.h"
 #include "../fileStructures/ast.h"
-
+#include "../fileStructures/symbolTable.h"
 
 
 /****************** data segment *******************/
@@ -48,6 +48,9 @@ void *add_to_code_seg (vector *code_segment, op_analyze *op);
 void print_code_segment_binary(vector* code_segment);
 
 void print_code_segment(vector* code_segment);
+
+void print_memory_img(vector* code_segment, vector* data_segment,
+                      FILE *stream);
 
 
 #endif /*_MEMORY_IMG_H_ */

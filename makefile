@@ -1,73 +1,44 @@
-.PHONY: clean all testPre testFirst
+.PHONY: clean
 
 CC=gcc
 CFLAGS = -Wall -Wextra -Wvla -ansi -pedantic
-HUJI = -Wextra -Wall -Wvla -std=c99
+#HUJI = -Wextra -Wall -Wvla -std=c99
+
+OBJECTS =  vector.o linkedList.o setting.o machineWord.o text.o \
+		symbolTable.o ast.o externTable.o entryTable.o memoryImg.o \
+		preAssembler.o fsm.o firstPass.o secondPass.o
+
+assembler: main.o
+	$(CC) $(CFLAGS) main.o $(OBJECTS) -o assembler
 
 
-all: testFirst
+# Define rules for building object files from utils
+%.o: utils/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-################## pre assembler test ##################
+# Define rules for building object files from fileStructures
+%.o: fileStructures/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-testPre: preAssembler
-	./testing/testPre/testPre.sh
+# Define rules for building object files from source files
+%.o: %.c
+	$(CC) $(CFLAGS) $< -c -o $@
 
-preAssembler: testPre.o preAssembler.o text.o linkedList.o
-	$(CC) $(CFLAGS) testPre.o preAssembler.o text.o linkedList.o -o preAssembler
+# Dependencies
+main.o: $(OBJECTS)
+secondPass.o: memoryImg.o externTable.o entryTable.o #text.o setting.o linkedList.o vector.o symbolTable.o ast.o
+firstPass.o: ast.o fsm.o entryTable.o # text.o setting.o linkedList.o vector.o symbolTable.o memoryImg.o
+fsm.o: text.o symbolTable.o memoryImg.o #setting linkedList.o
+preAssembler.o: text.o linkedList.o #setting.o
+memoryImg.o: machineWord.o symbolTable.o ast.o #setting.o text.o vector.o machineWord.o symbolTable.o vector.o ast.o
+externTable.o: setting.o #vector.o
+entryTable.o: text.o #setting.o vector.o
+ast.o: text.o #setting.o linkedList.o
+symbolTable.o: setting.o #linkedList.o
+text.o: setting.o
+machineWord.o: setting.o
+setting.o: linkedList.o vector.o
 
-testPre.o: ./testing/testPre/testPre.c
-	$(CC) $(CFLAGS) -c ./testing/testPre/testPre.c -o testPre.o
-
-
-
-################## first pass test ##################
-testFirst: firstPass
-	./testing/testFirst/testFirst.sh
-
-firstPass: testFirst.o firstPass.o fsm.o preAssembler.o text.o linkedList.o symbolTable.o memoryImg.o setting.o
-	$(CC) $(CFLAGS) testFirst.o firstPass.o fsm.o preAssembler.o text.o linkedList.o symbolTable.o memoryImg.o setting.o -o firstPass
-
-testFirst.o: testing/testFirst/testFirst.c
-	$(CC) $(CFLAGS) -c testing/testFirst/testFirst.c -o testFirst.o
-
-
-################## generic #######################
-setting.o: setting.c setting.h
-	$(CC) $(CFLAGS) -c setting.c
-
-################## utils #######################
-
-linkedList.o: utils/linkedList.c utils/linkedList.h setting.h
-	$(CC) $(CFLAGS) -c utils/linkedList.c
-
-text.o: utils/text.c utils/text.h setting.h
-	$(CC) $(CFLAGS) -c utils/text.c
-
-fsm.o: fsm.c fsm.h fileStructures/symbolTable.c fileStructures/memoryImg.h utils/text.h setting.h
-	$(CC) $(HUJI) -c fsm.c
-
-################## file structures #######################
-
-symbolTable.o: fileStructures/symbolTable.c fileStructures/symbolTable.h utils/linkedList.h setting.h
-	$(CC) $(CFLAGS) -c fileStructures/symbolTable.c
-
-memoryImg.o: fileStructures/memoryImg.c fileStructures/memoryImg.h utils/text.h setting.h
-	$(CC) $(CFLAGS) -c fileStructures/memoryImg.c
-
-################## program running #######################
-
-preAssembler.o: preAssembler.c preAssembler.h utils/text.h utils/linkedList.h
-	$(CC) $(CFLAGS) -c preAssembler.c
-
-firstPass.o: firstPass.c firstPass.h fileStructures/symbolTable.h fileStructures/memoryImg.h
-	$(CC) $(CFLAGS) -c firstPass.c
-
-
-
-
-
-
-
-
+# Clean rule
 clean:
-	rm -f *.o preAssembler firstPass
+	rm -f *.o assembler

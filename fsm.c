@@ -37,7 +37,7 @@ transition zero_operand_map[] = {
 
 transition *get_map (Opcode o)
 {
-  //todo check about &
+  /* todo check about & */
   if (o == MOV || o == CMP || o == ADD || o == SUB || o == LEA) {
     return two_operand_map;
   }
@@ -65,7 +65,6 @@ Bool is_reg (const char *str, int *val)
     *val = CHAR_TO_INT(str[1]);
     return TRUE;
   }
-  *val = INVALID_REG;
   return FALSE;
 }
 
@@ -110,7 +109,7 @@ Bool is_define (op_analyze *op, LinkedList *symbol_table, int *imm)
 
 Bool is_imm2 (op_analyze *op, LinkedList *symbol_table, int *imm)
 {
-  // mov r0, #_ | mov r0, label[_ */
+  /*  mov r0, #_ | mov r0, label[_ */
   if (IS_EMPTY(op->line_info->token)) {
     r_error ("expected numeric value or defined constant",
              op->line_info, "");
@@ -125,13 +124,13 @@ Bool is_data_symbol (op_analyze *op, LinkedList *symbol_table, Node **node)
   *node = findNode (symbol_table, op->line_info->token);
   if (*node) {
     symbol = (Symbol *) (*node)->data;
-    // todo add test, maybe there is no need for that!?
+    /*  todo add test, maybe there is no need for that!? */
     if (symbol->type == DATA) { /* .string  | .data | .extern */
       return TRUE;
     }
     else {
-      // LABEL: mov r1, r2
-      // move #2, LABEL
+      /*  LABEL: mov r1, r2 */
+      /*  move #2, LABEL */
       r_warning ("expected directive label, but label", op->line_info,
                  "is of invalid type");
     }
@@ -143,7 +142,7 @@ Bool index_indicate (op_analyze *op)
 {
   char *str = op->line_info->postfix;
 
-  // check that next token start with [
+  /*  check that next token start with [ */
   while (*str && isspace(*str) && *str != '[') {
     str++;
   }
@@ -160,7 +159,7 @@ Bool is_index (op_analyze *op, LinkedList *symbol_table, int *val)
     return FALSE;
   }
 
-  //check the ] sign
+  /* check the ] sign */
   lineTok (op->line_info);
   if (IS_EMPTY(token)) { /* mov r0, L[1 */
     r_error ("expected ']'", op->line_info, "");
@@ -203,9 +202,9 @@ Addressing_Mode get_addressing_mode (op_analyze *op, LinkedList *symbol_table,
     }
 
     /*index*/
-    else { //fount [
-      lineTok (op->line_info); //move to [
-      lineTok (op->line_info); //move to imm
+    else { /* fount [ */
+      lineTok (op->line_info); /* move to [ */
+      lineTok (op->line_info); /* move to imm */
       return is_index (op, symbol_table, val) ? INDEX_ADD : NONE_ADD;
     }
   }
@@ -254,7 +253,7 @@ curr_state, state next_state)
   if (curr_state == SRC_STATE) {
     op->src.add_mode = add_mode;
   }
-  else { //target
+  else { /* target */
     op->target.add_mode = add_mode;
   }
 
@@ -277,6 +276,7 @@ state src_handler (op_analyze *op, file_analyze *file, state next_state)
 
 state comma_handler (op_analyze *op, file_analyze *file, state next_state)
 {
+  /* unused param */
   char *token = op->line_info->token;
   if (IS_COMMA(*token)) {
     return next_state;
@@ -287,6 +287,7 @@ state comma_handler (op_analyze *op, file_analyze *file, state next_state)
   else { /*mov r0 r2*/
     r_error ("missing comma before ", op->line_info, "");
   }
+  file->error+= ERROR; /*todo done only veacuse it's unused... */
   return ERROR_STATE;
 }
 
@@ -303,6 +304,7 @@ state extra_text_handler (op_analyze *op, file_analyze *file, state next_state)
     strcat (op->line_info->token, op->line_info->postfix);
     NULL_TERMINATE(op->line_info->postfix, 0);
     r_error ("unexpected text after end of the command: ", op->line_info, "");
+    file->error+= ERROR; /*todo done only veacuse it's unused... */
     return ERROR_STATE;
   }
   return next_state; /*end state*/
@@ -313,11 +315,11 @@ int run_fsm (op_analyze *op, file_analyze *file_analyze)
   transition *map = get_map (op->propriety->opcode);
   state next_state = map[0].from, next;
   int i = 0;
-//  int stateIdx;
+/*   int stateIdx; */
 
   while (next_state != END_STATE) {
     lineTok (op->line_info);
-//    stateIdx = get_state_idx (op_info->map, next_state);
+/*     stateIdx = get_state_idx (op_info->map, next_state); */
     next = map[i].next;
     next_state = map[i].handler (op, file_analyze, next);
     if (next_state == ERROR_STATE) {

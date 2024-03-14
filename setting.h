@@ -12,14 +12,14 @@
 #include "utils/vector.h"
 #include "utils/linkedList.h"
 
-#define MAX_LINE_SIZE (80+2)
+#define MAX_LINE_LENGTH (80+2)
 #define MAX_TOKEN_SIZE (80+2)
 #define NUM_OF_OP 16
 #define NUM_OF_ADDRESSING_MODE 4
 #define MAX_CMD_NAME_LEN 3
 
 #define MACHINE_WORD_SIZE 14
-#define INIT_IC 100
+#define IC_START 100
 
 /*todo change */
 typedef enum Bool
@@ -29,7 +29,7 @@ typedef enum Bool
 
 typedef enum exit_code
 {
-    MEMORY_ERROR = -1, ERROR = 0, SUCCESS = 1
+    SUCCESS = 0, ERROR = 1, MEMORY_ERROR = 2
 }exit_code;
 
 typedef enum Opcode
@@ -76,29 +76,27 @@ typedef struct Op_Propriety
     Bool target_modes[NUM_OF_ADDRESSING_MODE];
 } Op_Propriety;
 
-typedef enum Register
-{
-    R0 = 0, R1, R2, R3, R4, R5, R6, R7, INVALID_REG=-1
-} Register;
 
 typedef struct file_analyze{
     char file_name[1000]; /* todo change size*/
-    LinkedList *macro_list; //delete?
-    LinkedList *symbol_table; //
+    LinkedList *symbol_table;
     vector *data_segment;
     vector *code_segment;
     vector *op_list;
     vector *entry_table;
     vector *extern_table;
-    size_t IC;
+    size_t IC; /* todo change to unsigned */
     size_t DC;
 
-    exit_code error;
+    unsigned error;
 }file_analyze;
 
-void free_all(int num, ...);
 
 void init_assembler_setting ();
+
+FILE* open_file(char* file_name, const char *extension, const char *mode);
+void remove_file(char* file_name, const char *extension);
+/* todo change place */
 
 extern Op_Propriety op_propriety[NUM_OF_OP];
 extern char *SavedWord[];

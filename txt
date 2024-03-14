@@ -1,1 +1,2 @@
-mov #1, #%
+mcr omer
+    mov r2,r3

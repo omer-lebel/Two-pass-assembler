@@ -60,14 +60,14 @@ void* get(vector * v, size_t index){
   if (index > v->size){
     return NULL; /* index out of range */
   }
-  return v->elements + (index * v->elem_size);
+  return ((char*) v->elements) + (index * v->elem_size);
 }
 
 void* get_tail(vector * v){
-  if (v->size == 0){ //vector is empty
+  if (v->size == 0){ /* vector is empty */
     return NULL;
   }
-  return v->elements + ((v->size - 1) * v->elem_size);
+  return ((char*) v->elements) + ((v->size - 1) * v->elem_size);
 }
 
 void* push(vector * v, void* element) {
@@ -83,7 +83,7 @@ void* push(vector * v, void* element) {
     }
   }
   /* Copy the element into the list */
-  p_new_elem = v->elements + (v->size*v->elem_size);
+  p_new_elem = ((char*) v->elements) + (v->size*v->elem_size);
   memcpy(p_new_elem , element, v->elem_size);
   v->size++;
   return p_new_elem;

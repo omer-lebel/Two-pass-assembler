@@ -1,8 +1,6 @@
 /*
  Created by OMER on 1/24/2024.
 */
-
-
 #include "symbolTable.h"
 
 
@@ -70,7 +68,7 @@ exit_code add_symbol (LinkedList *symbol_table, const char *label,
   if (!new_symbol) {
     return MEMORY_ERROR; /* memory error */
   }
-  appendToTail(symbol_table, new_symbol); //todo sorted?
+  appendToTail(symbol_table, new_symbol); /* todo sorted? */
   return SUCCESS;
 }
 
@@ -82,7 +80,7 @@ void update_data_symbol_addresses(LinkedList *symbol_table, size_t IC)
   {
     symbol = (Symbol*) node->data;
     if (symbol->type != DEFINE && symbol->are != EXTERNAL){
-      symbol->address += INIT_IC;
+      symbol->address += IC_START;
       if (symbol->type == DATA){
         symbol->address += IC;
       }

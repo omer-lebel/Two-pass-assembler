@@ -1,6 +1,7 @@
-//
-// Created by OMER on 3/6/2024.
-//
+/*
+ Created by OMER on 3/6/2024.
+*/
+
 
 #include "ast.h"
 
@@ -32,20 +33,20 @@ op_analyze *add_to_op_list(vector* op_list, op_analyze *op){
 }
 
 size_t calc_op_size(op_analyze *op){
-  size_t res = 1; //for the first word
+  size_t res = 1; /*for the first word */
   Addressing_Mode mode;
 
-  //special case of 2 registers that share the same word
+  /*special case of 2 registers that share the same word */
   if (op->src.add_mode == REG_ADD && op->target.add_mode == REG_ADD){
     res+=1;
   }
   else{
-    //word for src operand
+    /*word for src operand */
     mode = op->src.add_mode;
     if (mode != NONE_ADD){
       res += (mode == INDEX_ADD ? 2 : 1);
     }
-    //word for target operand
+    /*word for target operand */
     mode = op->target.add_mode;
     if (mode != NONE_ADD){
       res += (mode == INDEX_ADD ? 2 : 1);
@@ -89,9 +90,9 @@ void print_op_analyze (op_analyze *op, char* file_name)
 }
 
 void print_op_list(vector *op_list, char* file_name){
-  printf ("\n----------------- ast list ---------------------\n");
-  int i;
+  size_t i;
   op_analyze *op;
+  printf ("\n----------------- ast list ---------------------\n");
   for (i=0; i<op_list->size; ++i){
     op = (op_analyze*) get (op_list, i);
     print_op_analyze (op, file_name);
@@ -99,7 +100,7 @@ void print_op_list(vector *op_list, char* file_name){
 }
 
 void free_op_list(vector *op_list){
-  int i;
+  size_t i;
   op_analyze *op;
   for (i=0; i<op_list->size; ++i){
     op = (op_analyze*) get(op_list,i);

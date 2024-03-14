@@ -1,6 +1,7 @@
-//
-// Created by OMER on 3/6/2024.
-//
+/*
+ Created by OMER on 3/6/2024.
+*/
+
 
 #ifndef _AST_H_
 #define _AST_H_
@@ -21,7 +22,7 @@ typedef struct Operand
     Operand_Type type;
     Addressing_Mode add_mode;
     Node *symbol;
-    char symbol_name[MAX_LINE_SIZE];
+    char symbol_name[MAX_LINE_LENGTH];
     int val; /*imm or reg num*/
 } Operand;
 
@@ -32,7 +33,7 @@ typedef struct op_analyze
     Operand target;
     LineInfo *line_info;
     size_t address;
-    Bool errors; //todo delete?
+    Bool errors; /* todo delete? */
 
 } op_analyze;
 
@@ -45,4 +46,4 @@ void print_op_analyze(op_analyze *op, char* file_name);
 void print_op_list(vector *op_list, char* file_name);
 void free_op_list(vector *op_list);
 
-#endif //_AST_H_
+#endif /* _AST_H_ */

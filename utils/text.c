@@ -16,16 +16,7 @@
 #define BOLD "\033[1m"
 #define REG "\033[0m"
 
-/*
-char* registers[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"};
-char* direction[] = {".data", ".string", ".entry", ".extern", ".define"};
-char* cmd_type1[] = {"mov", "cmp", "add", "sub", "lea"};
-char* cmd_type2[] = {"not", "clr", "inc", "dec", "jmp", "bne", "red", "prn","jsr"};
-char* cmd_type3[] = {"rts", "hlt"};
- */
-
-
-int isSavedWord (const char *s)
+Bool isSavedWord (const char *s)
 {
   int i;
   for (i = 0; SavedWord[i][0] != '\0'; i++) {
@@ -47,28 +38,28 @@ Bool isAlphaNumeric (const char *str)
   return TRUE;  /* All characters are alphanumeric */
 }
 
-exit_code valid_identifier (LineInfo *line, char *name, Bool print_err)
+Bool valid_identifier (LineInfo *line, char *name, Bool print_err)
 {
   if (!isalpha(name[0])) {
-    if (print_err){
+    if (print_err) {
       r_error ("", line, " starts with a non-alphabetic character");
     }
-    return ERROR;
+    return FALSE;
   }
   if (!isAlphaNumeric (name)) {
-    if (print_err){
+    if (print_err) {
       r_error ("", line, " contains non-alphanumeric characters");
     }
-    return ERROR;
+    return FALSE;
   }
   if (isSavedWord (name)) {
-    if (print_err){
+    if (print_err) {
       r_error ("", line, " is a reserved keyword that cannot be used as an "
                          "identifier");
     }
-    return ERROR;
+    return FALSE;
   }
-  return SUCCESS;
+  return TRUE;
 }
 
 void trim_end (char *str)
@@ -76,6 +67,31 @@ void trim_end (char *str)
   int i = (int) strlen (str);
   while (isspace(str[--i])) {}
   NULL_TERMINATE(str, i + 1);
+}
+
+char *get_line (FILE *file, char *buffer, size_t buff_size, Bool *overflow)
+{
+  size_t i = 0;
+  int c;
+  *overflow = FALSE;
+
+  while ((c = fgetc (file)) != EOF && i < buff_size - 1) {
+    buffer[i++] = (char) c;
+    if (c == '\n') {
+      break;
+    }
+  }
+  buffer[i] = '\0';
+
+  /* Check if the remaining characters are all spaces */
+  while (c != EOF && c != '\n') {
+    if (!isspace(c)) {
+      *overflow = TRUE;
+    }
+    c = fgetc (file);
+  }
+
+  return (i != 0) ? buffer : NULL;
 }
 
 void lineTok (LineInfo *line)
@@ -107,7 +123,7 @@ void lineTok (LineInfo *line)
     NULL_TERMINATE(line->token, i);
   }
   /* update the postfix */
-//  strcpy (line->postfix, p); //todo debug why it's not working
+/*  strcpy (line->postfix, p); */ /* todo debug why it's not working */
   for (i = 0; i <= strlen (p); ++i) {
     line->postfix[i] = p[i];
   }
@@ -120,10 +136,11 @@ void restartLine (LineInfo *line_info)
   RESET_STR(line_info->token);
 }
 
-void copy_line_info(LineInfo *dst, LineInfo *src){
-  strcpy(dst->prefix, src->prefix);
-  strcpy(dst->token, src->token);
-  strcpy(dst->postfix, src->postfix);
+void copy_line_info (LineInfo *dst, LineInfo *src)
+{
+  strcpy (dst->prefix, src->prefix);
+  strcpy (dst->token, src->token);
+  strcpy (dst->postfix, src->postfix);
   dst->num = src->num;
 }
 
@@ -144,13 +161,17 @@ void r_msg (char *type, char *color, char *msg_before, LineInfo *line, char
 *msg_after)
 {
   signed i;
-
   /* Print file and line number, error or warning type (fileNum:i error:) */
   printf ("%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
 
   /* Print message context, token, and additional message */
   if (IS_EMPTY(line->token)) {
-    printf ("%s\n", msg_before);
+    if (IS_EMPTY(msg_before)) {
+      printf ("%s\n", msg_after);
+    }
+    else {
+      printf ("%s\n", msg_before);
+    }
   }
   else {
     printf ("%s" BOLD "'%s'" REG "%s\n", msg_before, line->token, msg_after);

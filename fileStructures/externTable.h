@@ -10,7 +10,7 @@
 #include "../utils/vector.h"
 
 typedef struct ExternUse{
-    char name[MAX_LINE_SIZE];
+    char name[MAX_LINE_LENGTH];
     vector *location;
 }ExternSyb;
 
@@ -23,7 +23,7 @@ size_t* add_location(ExternSyb *extern_syb, size_t address);
 
 ExternSyb* find_extern_syb(vector* extern_table, char* name);
 
-void print_extern_table (vector *extern_table, char *file_name);
+void print_extern_table (vector *extern_table, FILE *file);
 
 void free_extern_table(vector* extern_table);
 
@@ -31,4 +31,4 @@ void free_extern_table(vector* extern_table);
 
 
 
-#endif //_EXTERN_TABLE_H_
+#endif /* _EXTERN_TABLE_H_ */

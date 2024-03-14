@@ -1,6 +1,7 @@
-//
-// Created by OMER on 3/6/2024.
-//
+/*
+ Created by OMER on 3/6/2024.
+*/
+
 
 #include "externTable.h"
 
@@ -31,7 +32,7 @@ size_t *add_location (ExternSyb *extern_syb, size_t address)
 
 ExternSyb *find_extern_syb (vector *extern_table, char *name)
 {
-  int i;
+  size_t i;
   ExternSyb *tmp;
   for (i = 0; i < extern_table->size; ++i) {
     tmp = (ExternSyb *) get (extern_table, i);
@@ -42,24 +43,27 @@ ExternSyb *find_extern_syb (vector *extern_table, char *name)
   return NULL;
 }
 
-void print_extern_table (vector *extern_table, char *file_name)
+void print_extern_table (vector *extern_table, FILE *stream)
 {
-  int i, j;
+  size_t i, j;
   ExternSyb *ext;
   size_t *line_num;
-  printf ("\n----------------- extern table -----------------\n");
   for (i = 0; i < extern_table->size; ++i) {
     ext = (ExternSyb *) get (extern_table, i);
-    for (j = 0; j < ext->location->size; ++j){
-      line_num = (size_t*) get (ext->location, j);
-      printf ("%s\t %04lu\n", ext->name, *line_num);
+    for (j = 0; j < ext->location->size; ++j) {
+      line_num = (size_t *) get (ext->location, j);
+      fprintf (stream, "%s\t%04lu", ext->name, *line_num);
+      if ((i < extern_table->size - 1) ||
+          (i == extern_table->size - 1 && (j < ext->location->size - 1))) {
+        fputc ('\n', stream);
+      }
     }
   }
 }
 
 void free_extern_table (vector *extern_table)
 {
-  int i;
+  size_t i;
   ExternSyb *tmp;
   for (i = 0; i < extern_table->size; ++i) {
     tmp = (ExternSyb *) get (extern_table, i);
