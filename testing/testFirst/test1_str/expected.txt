@@ -1,24 +1,21 @@
-input.am:3  error: 'S0:' has already declared in earlier line
- 3  | S0: .string "hey"
+txt:9  error: redeclaration of 'S0:'
+ 9  | S0: .string "hey"
     | ^~~
-input.am:4  error: ' ' empty string initialization
- 4  | S1: .string 
+txt:12 error: empty string initialization
+ 12 | S1: .string
     |            ^
-input.am:5  error: missing opening " character in 'a"'
- 5  | S2: .string a"
+txt:15 error: missing opening " character in 'a"'
+ 15 | S2: .string a"
     |             ^~
-input.am:6  error: extraneous text 'b"' after terminating " character
- 6  | S3: .string "a"b"
-    |                ^~
-input.am:7  error: extraneous text 'b' after terminating " character
- 7  | S4: .string "a"b
-    |                ^
-input.am:8  error: missing terminating " character in '"a'
- 8  | S5: .string "a
-    |             ^~
-input.am:9  warning: '.string' variables may be inaccessible without label
- 9  | .string "b"
+txt:18 error: missing terminating " character in '"a" b'
+ 18 | S3: .string "a" b
+    |             ^~~~~
+txt:21 error: missing terminating " character in '"abc'
+ 21 | S4: .string "abc
+    |             ^~~~
+txt:22 error: missing terminating " character in '"ab"c'
+ 22 | S5: .string "ab"c
+    |             ^~~~~
+txt:25 warning: '.string' variables may be inaccessible without label
+ 25 | .string "b"
     | ^~~~~~~
-| h | e | l | l | o |   | w | o | r | l | d | ! |   | 1 | 2 | 3 |   |   | b |   |
- S                0      directive       not external   
- S0               17     directive       not external   

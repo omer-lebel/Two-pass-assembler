@@ -13,7 +13,7 @@
 typedef struct EntrySyb
 {
     char name[MAX_LINE_LENGTH];
-    LineInfo *line_info;
+    LinePart *line_info;
     unsigned int address;
 } EntrySyb;
 
@@ -21,8 +21,8 @@ void* init_entry_table(void);
 
 Bool is_new_entry_symbol(vector* entry_table, char *new_ent);
 
-EntrySyb* add_to_entry_table(vector* entry_table, char *name, LineInfo
-*line,size_t address);
+EntrySyb* add_to_entry_table(vector* entry_table, char *name, LinePart
+*line, size_t address);
 
 void print_entry_table(vector* entry_table, FILE *stream);
 

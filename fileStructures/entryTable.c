@@ -24,13 +24,13 @@ Bool is_new_entry_symbol (vector *entry_table, char *new_ent)
 }
 
 EntrySyb *add_to_entry_table (vector *entry_table, char *name,
-                              LineInfo *line, size_t address)
+                              LinePart *line, size_t address)
 {
   EntrySyb entry_syb;
   strcpy (entry_syb.name, name);
   entry_syb.address = address;
   /* coping line info */
-  entry_syb.line_info = malloc (sizeof (LineInfo));
+  entry_syb.line_info = malloc (sizeof (LinePart));
   if (!entry_syb.line_info) {
     return NULL;
   }

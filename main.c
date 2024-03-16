@@ -34,10 +34,9 @@ exit_code init_file_analyze (file_analyze *f, char *file_name,
 
 int main (int argc, char *argv[])
 {
-  int res, i;
+  int res, i, len;
   file_analyze file_analyze;
   FILE *src_file, *am_file;
-  init_assembler_setting ();
 
   if (argc <= 1) {
     printf ("error: must give at least one file to process\n");
@@ -46,6 +45,7 @@ int main (int argc, char *argv[])
 
   for (i = INPUT_IND; i < argc && res != MEMORY_ERROR ; ++i) {
     res = init_file_analyze (&file_analyze, argv[i], &src_file, &am_file);
+    len = (int) strlen (argv[i]);
     /* -------------------- pre ------------------- */
     if (res == SUCCESS){
       res = preAssembler (argv[i], src_file, am_file, &file_analyze.error);
@@ -57,11 +57,14 @@ int main (int argc, char *argv[])
     }
     else if (res == SUCCESS){
       rewind (am_file);
+      strcat(file_analyze.file_name, ".am");
       res = firstPass (am_file, &file_analyze);
       fclose (am_file);
+      NULL_TERMINATE(file_analyze.file_name, len);
 
       /*-------------------- second ------------------ */
       if (res != MEMORY_ERROR){
+
         res = secondPass (&file_analyze);
       }
     }

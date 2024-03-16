@@ -11,37 +11,36 @@ Bool isLabel (const char *str)
   return str[strlen (str) - 1] == ':';
 }
 
+void free_file_analyze1 (file_analyze *f)
+{
 
-void free_file_analyze1(file_analyze *f){
-
-  if (f->symbol_table){
+  if (f->symbol_table) {
     freeList (f->symbol_table);
   }
 
-  if (f->data_segment){
+  if (f->data_segment) {
     free_vector (f->data_segment);
   }
 
-  if (f->op_list){
-    free_op_list(f->op_list);
+  if (f->op_list) {
+    free_op_list (f->op_list);
   }
 
-  if (f->entry_table){
+  if (f->entry_table) {
     free_entry_table (f->entry_table);
   }
 
-  memset(f, 0, sizeof(file_analyze));
+  memset (f, 0, sizeof (file_analyze));
 }
 
-
-exit_code init_first_pass (LineInfo *line, char *file_name, file_analyze *f)
+exit_code init_first_pass (LinePart *line, char *file_name, file_analyze *f)
 {
   f->symbol_table = init_symbol_table ();
   f->data_segment = init_data_seg (&f->DC);
   f->op_list = init_op_list ();
   f->entry_table = init_entry_table ();
   if (!f->symbol_table || !f->data_segment || !f->op_list || !f->entry_table) {
-    free_file_analyze1(f);
+    free_file_analyze1 (f);
     return MEMORY_ERROR;
   }
 
@@ -55,92 +54,44 @@ exit_code init_first_pass (LineInfo *line, char *file_name, file_analyze *f)
 /****************** handler & validation function *******************/
 
 
-/***** string */
-void get_data_tok (LineInfo *line)
+Bool valid_str (LinePart *line)
 {
-  size_t j, i = 0;
-  char *p = (line->postfix);
+  char *str = line->token;
+  size_t len = strlen (line->token);
 
-  /* Concatenate prefix and token */
-  strcat (line->prefix, line->token);
-  j = strlen (line->prefix);
-
-  /* skip empty characters in postfix and write them in prefix */
-  for (; isspace(*p); j++, p++) {
-    line->prefix[j] = *p;
-  }
-  NULL_TERMINATE(line->prefix, j);
-
-  /* copy opening " (if exist) */
-  if (*p == '"') {
-    line->token[i] = '"';
-    p++;
-    i++;
-  }
-
-  /* copy content between */
-  for (; *p && *p != '"'; i++, p++) {
-    line->token[i] = *p;
-  }
-
-  /* copy ending " (if exist) */
-  if (*p == '"') {
-    line->token[i] = '"';
-    p++;
-    i++;
-  }
-
-  NULL_TERMINATE(line->token, i);
-  strcpy (line->postfix, p);
-}
-
-Bool is_str (LineInfo *line)
-{
-  char *start = line->token;
-  size_t len = strlen (start);
-  char *end = start + len - 1;
-
-  if (IS_EMPTY (line->token)) { /* .string _ */
-    strcat (line->token, " "); /*add token to msg error*/
-    r_error ("", line, " empty string initialization");
+  if (IS_EMPTY (str)) { /* .string _ */
+    r_error ("empty string declaration", line, "");
     return FALSE;
   }
-  if (*start != '"') { /* .string a" */
+  if (str[0] != '"') { /* .string a" */
     r_error ("missing opening \" character in ", line, "");
     return FALSE;
   }
-  if (*end != '"') { /*.string "a */
+  if (len == 1 || str[len - 1] != '"') { /*.string " || .string "abc   */
     r_error ("missing terminating \" character in ", line, "");
-    return FALSE;
-  }
-  if (!IS_EMPTY(line->postfix)) {
-    lineTok (line);
-    r_error ("extraneous text ", line, " after terminating \" character");
     return FALSE;
   }
   return TRUE;
 }
 
 exit_code
-str_handler (LineInfo *line, const char *label, file_analyze *file_analyze)
+str_handler (LinePart *line, const char *label, file_analyze *file_analyze)
 {
-  char str[MAX_TOKEN_SIZE];
+  char str[MAX_LINE_LENGTH];
   size_t len;
-  if (!is_str (line)) {
+  /* get the whole string into token */
+  strcat (line->token, line->postfix);
+  NULL_TERMINATE(line->postfix, 0);
+
+  if (!valid_str (line)) {
     return ERROR;
   }
-  strcpy (str, line->token);
+  strcpy (str, line->token + 1);
   len = strlen (str);
   NULL_TERMINATE(str, --len); /* remove '"' char */
 
-  if (!IS_EMPTY(line->postfix)) { /* L: .string "a" xxx */
-    lineTok (line);
-    r_error ("extraneous text ", line, " after directive");
-    return ERROR;
-  }
-
   if (IS_EMPTY(label)) { /* .string "a" */
-    lineToPostfix (line); /*get the fist tok again for the error msg */
+    lineToPostfix (line); /*get the first tok again for the error msg */
     lineTok (line);
     r_warning ("", line, " variables may be inaccessible without label");
   }
@@ -152,13 +103,13 @@ str_handler (LineInfo *line, const char *label, file_analyze *file_analyze)
   }
   /* add to data segment */
   return add_to_data_seg (file_analyze->data_segment, &file_analyze->DC, line,
-                          CHAR_TYPE, (str + 1), len);
+                          CHAR_TYPE, str, len + 1);
 }
 
 
 /***** data */
 /*get not null string*/
-int is_int (LineInfo *line, long int *res)
+int is_int (LinePart *line, long int *res)
 {
   char *end_ptr = NULL;
   *res = strtol (line->token, &end_ptr, 10);
@@ -168,7 +119,7 @@ int is_int (LineInfo *line, long int *res)
   return TRUE;
 }
 
-Bool is_imm (LineInfo *line, int *res, LinkedList *symbol_table)
+Bool is_imm (LinePart *line, int *res, LinkedList *symbol_table)
 {
   long int tmp = 0;
   Node *node;
@@ -191,10 +142,10 @@ Bool is_imm (LineInfo *line, int *res, LinkedList *symbol_table)
   /*check if it's a integer */
   if (!is_int (line, &tmp)) {
     if (tmp > MAX_INT || tmp < MIN_INT) {
-      r_error ("", line, " exceeds integer bounds [-(2^14-1), 2^13-1]");
+      r_error ("", line, " exceeds integer bounds [-(2^13-1), 2^13-1]");
     }
     else {
-      r_error ("", line, " undeclared (first use in this directive)");
+      r_error ("", line, " undeclared");
     }
     return FALSE;
   }
@@ -203,17 +154,17 @@ Bool is_imm (LineInfo *line, int *res, LinkedList *symbol_table)
 }
 
 exit_code
-data_handler (LineInfo *line, char *label, file_analyze *file_analyze)
+data_handler (LinePart *line, char *label, file_analyze *file_analyze)
 {
   int tmp = 0;
   size_t i = 0;
-  int arr[100] = {0}; /*todo*/
+  int arr[MAX_DATA_ARR_LENGTH] = {0};
 
   /* get first int */
   lineTok (line);
   if (IS_EMPTY(line->token)) { /* .data _ */
-    strcat (line->token, " "); /*add token to msg error*/
-    r_error ("", line, "empty integer initializer");
+    strcat (line->token, ""); /*add token to msg error*/
+    r_error ("\"empty integer initializer\"", line, "");
     return ERROR;
   }
   if (!is_imm (line, &tmp, file_analyze->symbol_table)) { /* .data xxx */
@@ -221,7 +172,6 @@ data_handler (LineInfo *line, char *label, file_analyze *file_analyze)
   }
   arr[i++] = tmp;
   lineTok (line);
-/*  printf("val of data: %d\n", tmp); */
 
   /* get comma + next int */
   while (!IS_EMPTY(line->token)) {
@@ -268,7 +218,7 @@ data_handler (LineInfo *line, char *label, file_analyze *file_analyze)
 
 /***** define */
 
-exit_code define_handler (LineInfo *line, const char *label, LinkedList
+exit_code define_handler (LinePart *line, const char *label, LinkedList
 *symbol_table)
 {
   long int res = 0;
@@ -286,11 +236,10 @@ exit_code define_handler (LineInfo *line, const char *label, LinkedList
 
   /*define symbol name*/
   if (IS_EMPTY(name)) { /* .define _ */
-    strcat (line->token, " "); /*add token to msg error*/
-    r_error ("no value given in define directive ", line, "");
+    r_error ("empty define declaration ", line, "");
     return ERROR;
   }
-  if (!valid_identifier(line, name, TRUE)) {
+  if (!valid_identifier (line, name, TRUE)) {
     /* (not saved word && not abc123 && or not new name) */
     return ERROR;
   }
@@ -342,7 +291,7 @@ exit_code define_handler (LineInfo *line, const char *label, LinkedList
 }
 
 /***** extern */
-exit_code extern_handler (LineInfo *line, const char *label, LinkedList
+exit_code extern_handler (LinePart *line, const char *label, LinkedList
 *symbol_table)
 {
   Node *node = NULL;
@@ -354,7 +303,7 @@ exit_code extern_handler (LineInfo *line, const char *label, LinkedList
     return ERROR;
   }
 
-  if (!valid_identifier(line, ext_label, TRUE)) {
+  if (!valid_identifier (line, ext_label, TRUE)) {
     return ERROR;
   }
   node = findNode (symbol_table, ext_label);
@@ -391,19 +340,20 @@ exit_code extern_handler (LineInfo *line, const char *label, LinkedList
 }
 
 /* todo get op_propriety ad arg??? */
-Opcode get_opcode(char* token){
+Opcode get_opcode (char *token)
+{
   int i;
-  for (i=0; i<NUM_OF_OP; ++i){
-    if (strcmp (token, op_propriety[i].name) == 0){
-      return op_propriety[i].opcode;
+  for (i = 0; i < NUM_OF_OP; ++i) {
+    if (strcmp (token, op_names[i]) == 0) {
+      return i;
     }
   }
   return NO_OPCODE;
 }
 
-/***** mov */
+/***** operator */
 exit_code
-op_handler (LineInfo *line, const char *label, Opcode opcode, file_analyze *f)
+op_handler (LinePart *line, const char *label, Opcode opcode, file_analyze *f)
 {
   op_analyze op;
   init_op_analyze (&op, opcode, line);
@@ -430,7 +380,7 @@ op_handler (LineInfo *line, const char *label, Opcode opcode, file_analyze *f)
 }
 
 /*** entry */
-exit_code entry_handler (LineInfo *line, const char *label,
+exit_code entry_handler (LinePart *line, const char *label,
                          vector *entry_table)
 {
   char *ent_name = line->token;
@@ -440,7 +390,7 @@ exit_code entry_handler (LineInfo *line, const char *label,
     return ERROR;
   }
 
-  if (!valid_identifier(line, ent_name, TRUE)) {
+  if (!valid_identifier (line, ent_name, TRUE)) {
     return ERROR;
   }
   if (!IS_EMPTY(line->postfix)) {
@@ -448,10 +398,10 @@ exit_code entry_handler (LineInfo *line, const char *label,
     r_error ("extraneous text ", line, " after directive");
     return ERROR;
   }
-  if (!is_new_entry_symbol (entry_table, ent_name)){
+  if (!is_new_entry_symbol (entry_table, ent_name)) {
     r_warning ("", line, " has already declared in earlier line");
   }
-  else{ /* add to entry list */
+  else { /* add to entry list */
     if (!add_to_entry_table (entry_table, ent_name, line, 0)) {
       return MEMORY_ERROR;
     }
@@ -466,7 +416,7 @@ exit_code entry_handler (LineInfo *line, const char *label,
 }
 
 /**** else */
-exit_code else_handler (LineInfo *line, const char *label)
+exit_code else_handler (LinePart *line, const char *label)
 {
   char *first_word = line->token;
   /* if it's valid symbol name, but with no ':' */
@@ -484,13 +434,13 @@ exit_code else_handler (LineInfo *line, const char *label)
 /****************** process function *******************/
 /*todo add empty line after label*/
 
-exit_code first_process (file_analyze *f, LineInfo *line, char
+exit_code first_process (file_analyze *f, LinePart *line, char
 *label)
 {
   exit_code res;
   Opcode opcode;
 
-  /* case: .string */
+  /* case: .define */
   if (strcmp (".define", line->token) == 0) {
     lineTok (line);
     res = define_handler (line, label, f->symbol_table);
@@ -511,7 +461,7 @@ exit_code first_process (file_analyze *f, LineInfo *line, char
 
     /* case: .string */
   else if (strcmp (".string", line->token) == 0) {
-    get_data_tok (line);
+    lineTok (line);
     res = str_handler (line, label, f);
   }
 
@@ -533,11 +483,11 @@ exit_code first_process (file_analyze *f, LineInfo *line, char
 
 }
 
-exit_code label_handler (file_analyze *f, LineInfo *line, char *label)
+exit_code label_handler (file_analyze *f, LinePart *line, char *label)
 {
   strcpy (label, line->token);
   NULL_TERMINATE(label, strlen (label) - 1); /* remove ":" */
-  if (!valid_identifier(line, label, TRUE)) {
+  if (!valid_identifier (line, label, TRUE)) {
     return ERROR;
   }
   if (findNode (f->symbol_table, label)) {
@@ -553,18 +503,19 @@ exit_code label_handler (file_analyze *f, LineInfo *line, char *label)
 exit_code firstPass (FILE *input_file, file_analyze *f)
 {
   char label[MAX_LINE_LENGTH] = "";
-  LineInfo line;
+  LinePart line;
   exit_code res;
 
   res = init_first_pass (&line, f->file_name, f);
 
-  while (fgets (line.postfix, MAX_LINE_LENGTH, input_file) && res != MEMORY_ERROR) {
+  while (fgets (line.postfix, MAX_LINE_LENGTH, input_file)
+         && res != MEMORY_ERROR) {
     restartLine (&line);
-    NULL_TERMINATE(label,0);
+    NULL_TERMINATE(label, 0);
     trim_end (line.postfix);
     lineTok (&line);
 
-    if(IS_EMPTY(line.token)){
+    if (IS_EMPTY(line.token)) {
       continue;
     }
     else if (isLabel (line.token)) {

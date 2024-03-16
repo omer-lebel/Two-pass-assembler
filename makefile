@@ -9,7 +9,7 @@ OBJECTS =  vector.o linkedList.o setting.o machineWord.o text.o \
 		preAssembler.o fsm.o firstPass.o secondPass.o
 
 assembler: main.o
-	$(CC) $(CFLAGS) main.o $(OBJECTS) -o assembler
+	$(CC) $(CFLAGS) *.o -o assembler
 
 
 # Define rules for building object files from utils

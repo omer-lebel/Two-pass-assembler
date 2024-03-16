@@ -86,7 +86,7 @@ exit_code symbol_handler_second_pass (op_analyze *op, Operand_Type type,
   Operand *operand = (type == SRC ? &op->src : &op->target);
   node = findNode (symbol_table, operand->symbol_name);
   if (!node) {
-    r_error ("undeclared symbol", op->line_info, ""); 
+    r_error ("undeclared symbol", op->line_part, "");
     /* todo bolt the error token */
     return ERROR;
   }

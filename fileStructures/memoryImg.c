@@ -15,7 +15,7 @@ vector *init_data_seg (size_t *DC)
 }
 
 exit_code add_to_data_seg (vector *data_segment, size_t *DC,
-                           LineInfo *line, DsType type, void *arr, size_t size)
+                           LinePart *line, DsType type, void *arr, size_t size)
 {
   DsWord word;
   int *intArr;
@@ -125,7 +125,7 @@ void *add_to_code_seg (vector *code_segment, op_analyze *op)
   /* first word */
   scr_code = (op->src.add_mode == NONE_ADD) ? 0 : op->src.add_mode;
   target_code = (op->target.add_mode == NONE_ADD) ? 0 : op->target.add_mode;
-  word = first_word (op->propriety->opcode, scr_code, target_code);
+  word = first_word (op->opcode, scr_code, target_code);
   success_add = push (code_segment, &word);
 
   /*  both operand are register and they share the second word */

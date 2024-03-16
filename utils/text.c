@@ -38,7 +38,7 @@ Bool isAlphaNumeric (const char *str)
   return TRUE;  /* All characters are alphanumeric */
 }
 
-Bool valid_identifier (LineInfo *line, char *name, Bool print_err)
+Bool valid_identifier (LinePart *line, char *name, Bool print_err)
 {
   if (!isalpha(name[0])) {
     if (print_err) {
@@ -94,7 +94,7 @@ char *get_line (FILE *file, char *buffer, size_t buff_size, Bool *overflow)
   return (i != 0) ? buffer : NULL;
 }
 
-void lineTok (LineInfo *line)
+void lineTok (LinePart *line)
 {
   size_t i = 0, j = 0;
   char *p = line->postfix;
@@ -111,13 +111,16 @@ void lineTok (LineInfo *line)
 
   /* find the next token: */
   /* special case for a word consisting a special sign */
-  if (*p && strchr (",=#[]", *p)) {
+  if (*p && strchr (",=]", *p)) {
     line->token[0] = *p;
     NULL_TERMINATE(line->token, 1);
     ++p;
   }
   else { /* coping word */
-    while (*p != '\0' && !isspace(*p) && !strchr (",=#[]", *p)) {
+    while (*p != '\0' && !isspace(*p) && !strchr ("[,=]", *p)) {
+      line->token[i++] = *p++;
+    }
+    if (*p == '['){
       line->token[i++] = *p++;
     }
     NULL_TERMINATE(line->token, i);
@@ -129,14 +132,14 @@ void lineTok (LineInfo *line)
   }
 }
 
-void restartLine (LineInfo *line_info)
+void restartLine (LinePart *line_info)
 {
   line_info->num++;
   RESET_STR(line_info->prefix);
   RESET_STR(line_info->token);
 }
 
-void copy_line_info (LineInfo *dst, LineInfo *src)
+void copy_line_info (LinePart *dst, LinePart *src)
 {
   strcpy (dst->prefix, src->prefix);
   strcpy (dst->token, src->token);
@@ -144,7 +147,7 @@ void copy_line_info (LineInfo *dst, LineInfo *src)
   dst->num = src->num;
 }
 
-void lineToPostfix (LineInfo *line)
+void lineToPostfix (LinePart *line)
 {
   /* concatenate prefix, token and postfix to recreate the original line */
   strcat (line->prefix, line->token);
@@ -157,7 +160,7 @@ void lineToPostfix (LineInfo *line)
   RESET_STR(line->token);
 }
 
-void r_msg (char *type, char *color, char *msg_before, LineInfo *line, char
+void r_msg (char *type, char *color, char *msg_before, LinePart *line, char
 *msg_after)
 {
   signed i;
@@ -196,12 +199,12 @@ void r_msg (char *type, char *color, char *msg_before, LineInfo *line, char
   printf (RESET "\n");
 }
 
-void r_error (char *msg_before, LineInfo *line, char *msg_after)
+void r_error (char *msg_before, LinePart *line, char *msg_after)
 {
   r_msg ("error", RED, msg_before, line, msg_after);
 }
 
-void r_warning (char *msg_before, LineInfo *line, char *msg_after)
+void r_warning (char *msg_before, LinePart *line, char *msg_after)
 {
   r_msg ("warning", YEL, msg_before, line, msg_after);
 }

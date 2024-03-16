@@ -2,10 +2,7 @@
  Created by OMER on 1/23/2024.
 */
 
-
 #include "setting.h"
-
-Op_Propriety op_propriety[NUM_OF_OP];
 
 char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
                      ".data", ".string", ".entry", ".extern", ".define",
@@ -14,123 +11,71 @@ char *SavedWord[] = {"r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7",
                      "jsr", "rts", "hlt",
                      "mcr", "endmcr", ""};
 
+char *op_names[NUM_OF_OP] = {"mov", "cmp", "add", "sub", "not", "clr",
+                             "lea", "inc", "dec", "jmp", "bne", "red",
+                             "prn","jsr", "rts", "hlt"};
 
-void init_op_propriety (Opcode opcode, char* op_name, ...)
+unsigned int param_types[NUM_OF_OP][3] =
+    {{MOV, all_mode,       symbol_n_index_n_reg}, /* | 1111 | 0111 | */
+     {CMP, all_mode,       all_mode},             /* | 1111 | 1111 | */
+     {ADD, all_mode,       symbol_n_index_n_reg}, /* | 1111 | 0111 | */
+     {SUB, all_mode,       symbol_n_index_n_reg}, /* | 1111 | 0111 | */
+     {NOT, no_operand,     symbol_n_index_n_reg}, /* |   -  | 0111 | */
+     {CLR, no_operand,     symbol_n_index_n_reg}, /* |   -  | 0111 | */
+     {LEA, symbol_n_index, symbol_n_index_n_reg}, /* | 0110 | 0111 | */
+     {INC, no_operand,     symbol_n_index_n_reg}, /* |   -  | 0111 | */
+     {DEC, no_operand,     symbol_n_index_n_reg}, /* |   -  | 0111 | */
+     {JMP, no_operand,     symbol_n_reg},         /* |   -  | 0101 | */
+     {BNE, no_operand,     symbol_n_reg},         /* |   -  | 0101 | */
+     {RED, no_operand,     symbol_n_index_n_reg}, /* |   -  | 0111 | */
+     {PRN, no_operand,     all_mode},             /* |   -  | 1111 | */
+     {JSR, no_operand,     symbol_n_reg},         /* |   -  | 0101 | */
+     {INC, no_operand,     no_operand},           /* |   -  |   -  | */
+     {INC, no_operand,     no_operand}};          /* |   -  |   -  | */
+
+/*  --------------------------------------------------------------------
+  * |      operator      |      scr operand      |    target operand     |
+  * |--------------------|-----------------------|-----------------------|
+  * |   addressing mode  | imm | sym | ind | reg | imm | sym | ind | reg |
+  * |--------------------|-----+-----+-----+-----|-----+-----+-----+-----|
+  * |    mov, add, sub   |     |  X  |  X  |  X  |     |  X  |  X  |  X  |
+  * |--------------------|-----+-----+-----+-----|-----+-----+-----+-----|
+  * |        cmp         |  X  |  X  |  X  |  X  |     |  X  |  X  |  X  |
+  * |--------------------|-----+-----+-----+-----|-----+-----+-----+-----|
+  * |        lea         |     |  X  |  X  |     |  X  |  X  |  X  |  X  |
+  * |--------------------|-----+-----+-----+-----|-----+-----+-----+-----|
+  * | not, clr, inc, dec |                       |  X  |  X  |  X  |  X  |
+  * |--------------------|-----+-----+-----+-----|-----+-----+-----+-----|
+  * |    jmp, bne, jsr   |                       |     |  X  |     |  X  |
+  * |--------------------|-----+-----+-----+-----|-----+-----+-----+-----|
+  * |        red         |                       |     |  X  |     |  X  |
+  * |--------------------|-----+-----+-----+-----|-----+-----+-----+-----|
+  * |        prn         |                       |  X  |  X  |  X  |  X  |
+  * |--------------------|-----+-----+-----+-----|-----+-----+-----+-----|
+  * |     rts, hlt       |                       |                       |
+  * ----------------------------------------------------------------------
+  * */
+
+FILE *open_file (char *file_name, const char *extension, const char *mode)
 {
-  int i;
-  va_list args; /* point to each unnamed arg in turn */
-  Addressing_Mode mode;
-  Op_Propriety *op = &op_propriety[opcode];
-
-  op->opcode = opcode;
-  strcpy (op->name, op_name);
-
-  va_start(args, op_name); /* args point to the first unnamed arg */
-  for (i = 0 ; i < 4 ; i++){
-    mode = va_arg(args, Addressing_Mode); /* to the next unnamed arg */
-    op->src_modes[i] = (mode != NONE_ADD);
-  }
-  for (i = 0 ; i < 4 ; i++){
-    mode = va_arg(args, Addressing_Mode); /* to the next unnamed arg */
-    op->target_modes[i] = (mode != NONE_ADD);
-  }
-  va_end(args);
-}
-
-void init_assembler_setting ()
-{
-  /* ----------------- first group - 2 operands ----------------- */
-
-  init_op_propriety (MOV, "mov",
-                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (CMP, "cmp",
-                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
-                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (ADD, "add",
-                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (SUB, "sub",
-                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (LEA, "lea",
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, NONE_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-
-  /* ----------------- second group - 1 operators ----------------- */
-
-  init_op_propriety (NOT, "not",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (CLR, "clr",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (INC, "inc",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (DEC, "dec",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (JMP, "jmp",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, DIRECT_ADD, NONE_ADD, REG_ADD);
-
-  init_op_propriety (BNE, "bne",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, DIRECT_ADD, NONE_ADD, REG_ADD);
-
-  init_op_propriety (RED, "red",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (PRN, "prn",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     IMM_ADD, DIRECT_ADD, INDEX_ADD, REG_ADD);
-
-  init_op_propriety (JSR, "jsr",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, DIRECT_ADD, NONE_ADD, REG_ADD);
-
-
-  /* ----------------- third group - NONE_MODE operators ----------------- */
-
-  init_op_propriety (RTS, "rts",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD);
-
-  init_op_propriety (HLT, "hlt",
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD,
-                     NONE_ADD, NONE_ADD, NONE_ADD, NONE_ADD);
-
-}
-
-FILE* open_file(char* file_name, const char *extension, const char *mode){
   FILE *tmp;
   size_t len = strlen (file_name);
-  strcat(file_name, extension);
+  strcat (file_name, extension);
   tmp = fopen (file_name, mode);
-  if (!tmp){
+  if (!tmp) {
     printf ("error while opening '%s'\n", file_name);
     return NULL;
   }
-  else{
+  else {
     file_name[len] = '\0'; /* remove extension */
     return tmp;
   }
 }
 
-void remove_file(char* file_name, const char *extension){
+void remove_file (char *file_name, const char *extension)
+{
   size_t len = strlen (file_name);
-  strcat(file_name, extension);
-  remove(file_name);
+  strcat (file_name, extension);
+  remove (file_name);
   file_name[len] = '\0'; /* remove extension */
 }

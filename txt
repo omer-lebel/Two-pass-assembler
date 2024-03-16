@@ -1,2 +1,22 @@
-mcr omer
-    mov r2,r3
+mov SRT[3], r3
+mov #z!zz, r3
+;============== mov =================
+.define def=+3
+INT: .data 5
+STR: .string "str"
+.extern EXT
+
+
+;------ errors in index
+LABEL: .string "a"
+.define size=5
+
+mov r4, L[!@$]
+mov L[zzz], r3
+mov L[LABEL], r3
+mov r2, L[
+mov r2, L[3 a]
+mov L[,
+mov r2, L[4
+mov r2, L[]
+mov r2, L]

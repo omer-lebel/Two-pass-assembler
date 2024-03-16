@@ -8,7 +8,7 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output,
   Node *curr_mcr = NULL;
   exit_code res = SUCCESS;
   Bool overflow = FALSE;
-  LineInfo line_info;
+  LinePart line_info;
   LinkedList *mcr_list = createList (init_mcrData, print_mcrData, free_mcrData);
 
   if (!mcr_list) {
@@ -41,7 +41,7 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output,
 }
 
 exit_code
-p_processLine (FILE *output, LinkedList *mcr_list, LineInfo *line_info,
+p_processLine (FILE *output, LinkedList *mcr_list, LinePart *line_info,
                Node **curr_mcr)
 {
   exit_code res = SUCCESS;
@@ -68,7 +68,7 @@ p_processLine (FILE *output, LinkedList *mcr_list, LineInfo *line_info,
   return res;
 }
 
-Bool extraneous_text (LineInfo *line)
+Bool extraneous_text (LinePart *line)
 {
   if (!IS_EMPTY(line->postfix)) {
     lineTok (line);
@@ -78,7 +78,7 @@ Bool extraneous_text (LineInfo *line)
   return FALSE;
 }
 
-exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LineInfo *line)
+exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LinePart *line)
 {
   char *mcr_name;
   trim_end (line->postfix);
@@ -104,7 +104,7 @@ exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LineInfo *line)
   return SUCCESS;
 }
 
-exit_code endmcr_handler (Node **curr_mcr, LineInfo *line)
+exit_code endmcr_handler (Node **curr_mcr, LinePart *line)
 {
   trim_end (line->postfix);
   if (!(*curr_mcr)) {
@@ -118,7 +118,7 @@ exit_code endmcr_handler (Node **curr_mcr, LineInfo *line)
   return SUCCESS;
 }
 
-exit_code write_to_am_file (FILE *am_file, LineInfo *line,
+exit_code write_to_am_file (FILE *am_file, LinePart *line,
                             LinkedList *mcr_list)
 {
   mcrData *mcr_data;
@@ -140,7 +140,7 @@ exit_code write_to_am_file (FILE *am_file, LineInfo *line,
   return SUCCESS;
 }
 
-Bool isValidMcr (LinkedList *macro_list, LineInfo *line)
+Bool isValidMcr (LinkedList *macro_list, LinePart *line)
 {
   char *mcr_name = line->token;
   /* macro does not have a name */

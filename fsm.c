@@ -11,6 +11,8 @@
 #define CHAR_TO_INT(c) ((c) - '0')
 #define IS_COMMA(s) ((s) == ',')
 #define IMM_SIGN(s) ((s) == '#')
+#define OPEN_INDEX_SIGN(s) (s[strlen(s)-1] == '[')
+#define CLOSE_INDEX_SIGN(s) (s[strlen(s)-1] == ']')
 #define IN_REG_BOUND(s) ((s) >= '0' && (s) <= '7')
 
 /* 2 operators map (mov, cmp, add, sub, lea) */
@@ -37,7 +39,6 @@ transition zero_operand_map[] = {
 
 transition *get_map (Opcode o)
 {
-  /* todo check about & */
   if (o == MOV || o == CMP || o == ADD || o == SUB || o == LEA) {
     return two_operand_map;
   }
@@ -50,14 +51,6 @@ transition *get_map (Opcode o)
   }
   return NULL;
 }
-/*
- * {two_operand_map: mov, cmp, add, sub, lea}
- * {on_operand_map: not, clr, inc, dec, jmp, bne, red, prn, jsr}
- * {no operators map rts, hlt }
- * {entry_extern_map: entry, extern}
- * {str}
- * {data}
- */
 
 Bool is_reg (const char *str, int *val)
 {
@@ -68,19 +61,19 @@ Bool is_reg (const char *str, int *val)
   return FALSE;
 }
 
-Bool is_int2 (op_analyze *op, int *imm)
+Bool is_int2 (op_analyze *op, char *token, int *imm)
 {
   char *end_ptr = NULL;
   /*todo check about long*/
-  *imm = (int) strtol (op->line_info->token, &end_ptr, 10);
+  *imm = (int) strtol (token, &end_ptr, 10);
   return IS_EMPTY(end_ptr);
 }
 
-Bool is_define (op_analyze *op, LinkedList *symbol_table, int *imm)
+Bool is_define (op_analyze *op, char *token, LinkedList *symbol_table,
+                int* imm)
 {
   Node *node;
   Symbol *symbol;
-  char *token = op->line_info->token;
 
   node = findNode (symbol_table, token);
   if (node) {
@@ -91,179 +84,146 @@ Bool is_define (op_analyze *op, LinkedList *symbol_table, int *imm)
     }
 
     else { /* mov r0 STR | mov L[STR], r0 */
+      /* todo maybe add the # to the prefix. print: #label*/
       r_error ("expected numeric value or defined constant, but got label ",
-               op->line_info, "");
+               op->line_part, "");
       return FALSE;
     }
   }
   /* mov r0, #zzz | mov L[zzz], r0 (when 'zzz' in undefined) */
-  if (valid_identifier (op->line_info, token, FALSE)) {
-    r_error ("", op->line_info, " undeclared");
+  if (valid_identifier (op->line_part, token, FALSE)) {
+    r_error ("", op->line_part, " undeclared");
     return FALSE;
   }
   /* mov r0 #3!a |  mov r0 L[***] | mov r0 L[] | mov #, r0 */
   r_error ("expected numeric value or defined constant, but got: ",
-           op->line_info, "");
+           op->line_part, "");
   return FALSE;
 }
 
-Bool is_imm2 (op_analyze *op, LinkedList *symbol_table, int *imm)
+Bool is_imm2 (op_analyze *op, char *token, LinkedList *symbol_table, int *imm)
 {
   /*  mov r0, #_ | mov r0, label[_ */
-  if (IS_EMPTY(op->line_info->token)) {
-    r_error ("expected numeric value or defined constant",
-             op->line_info, "");
+  if (IS_EMPTY(token)) {
+    r_error ("expected numeric value or defined constant after ",
+             op->line_part, "");
     return FALSE;
   }
-  return is_int2 (op, imm) || is_define (op, symbol_table, imm);
+  return is_int2 (op, token ,imm) || is_define (op, token, symbol_table, imm);
 }
 
-Bool is_data_symbol (op_analyze *op, LinkedList *symbol_table, Node **node)
-{
-  Symbol *symbol;
-  *node = findNode (symbol_table, op->line_info->token);
-  if (*node) {
-    symbol = (Symbol *) (*node)->data;
-    /*  todo add test, maybe there is no need for that!? */
-    if (symbol->type == DATA) { /* .string  | .data | .extern */
-      return TRUE;
-    }
-    else {
-      /*  LABEL: mov r1, r2 */
-      /*  move #2, LABEL */
-      r_warning ("expected directive label, but label", op->line_info,
-                 "is of invalid type");
-    }
-  }
-  return FALSE;
-}
 
-Bool index_indicate (op_analyze *op)
-{
-  char *str = op->line_info->postfix;
-
-  /*  check that next token start with [ */
-  while (*str && isspace(*str) && *str != '[') {
-    str++;
-  }
-  if (*str != '[') {
-    return FALSE;
-  }
-  return TRUE;
-}
-
+/* wanted 333] */
 Bool is_index (op_analyze *op, LinkedList *symbol_table, int *val)
 {
-  char *token = op->line_info->token;
-  if (!is_imm2 (op, symbol_table, val)) { /* mov r0 LABEL[&*$] */
+  char *token = op->line_part->token;
+  if (!is_imm2 (op, token, symbol_table, val)) { /* mov r0 LABEL[&*$] */
     return FALSE;
   }
 
   /* check the ] sign */
-  lineTok (op->line_info);
+  lineTok (op->line_part);
   if (IS_EMPTY(token)) { /* mov r0, L[1 */
-    r_error ("expected ']'", op->line_info, "");
+    r_error ("expected ']'", op->line_part, "");
     return FALSE;
   }
   if (strcmp (token, "]") != 0) { /* mov r0, L[1 k] */
-    r_error ("expected ']' before", op->line_info, "");
+    r_error ("expected ']' before", op->line_part, "");
     return FALSE;
   }
   return TRUE;
 }
 
 /*todo outside if empty*/
-Addressing_Mode get_addressing_mode (op_analyze *op, LinkedList *symbol_table,
-                                     state curr_state)
+addr_mode_flag get_addressing_mode (op_analyze *op, LinkedList *symbol_table,
+                                    Operand *operand)
 {
-  char *token = op->line_info->token;
-  int *val = (curr_state == SRC_STATE) ? &(op->src.val) : &(op->target.val);
-  char *symbol_name = (curr_state == SRC_STATE) ? (op->src.symbol_name) :
-      (op->target.symbol_name);
-
+  char *token = op->line_part->token;
+  char tmp[MAX_LINE_LENGTH];
   /*register*/
-  if (is_reg (token, val)) {
-    return REG_ADD;
+  if (is_reg (token, &operand->val)) {
+    return b_reg;
   }
 
   /*imm*/
-  if (IMM_SIGN (*token)) {
-    lineTok (op->line_info);
-    return is_imm2 (op, symbol_table, val) ? IMM_ADD : NONE_ADD;
+  if (IMM_SIGN (token[0])) {
+    strcpy (tmp, token + 1); /* remove # sign */
+    return is_imm2 (op, tmp, symbol_table, &operand->val) ? b_imm : 0;
   }
 
-  /*symbol and index*/
-  if (valid_identifier(op->line_info, token, FALSE)) {
-    strcpy (symbol_name, token);
-
-    /*label*/
-    if (!index_indicate (op)) {
-      return DIRECT_ADD;
-    }
-
-    /*index*/
-    else { /* fount [ */
-      lineTok (op->line_info); /* move to [ */
-      lineTok (op->line_info); /* move to imm */
-      return is_index (op, symbol_table, val) ? INDEX_ADD : NONE_ADD;
+  /* index */
+  if (OPEN_INDEX_SIGN(token)) {
+    strcpy (operand->symbol_name, token);
+    NULL_TERMINATE(operand->symbol_name, strlen (token) - 1); /* remove [ char */
+    if (valid_identifier (op->line_part, operand->symbol_name, FALSE)) {
+      lineTok (op->line_part); /* move to imm */
+      return is_index (op, symbol_table, &operand->val) ? b_index : 0;
     }
   }
 
-  r_error ("", op->line_info, " invalid operand");
-  return NONE_ADD;
+  /*symbol*/
+  if (valid_identifier (op->line_part, token, FALSE)) {
+    strcpy (operand->symbol_name, token);
+    return b_symbol;
+  }
+
+  r_error ("", op->line_part, " invalid operand");
+  return 0;
 }
 
-Bool valid_add_mode (op_analyze *op, state operand)
+Bool valid_add_mode (op_analyze *op, Operand *operand, addr_mode_flag add_mode)
 {
-  if (operand == SRC_STATE) {
-    if (op->propriety->src_modes[op->src.add_mode]) {
-      return TRUE;
-    }
-  }
-  else { /*operand == TARGET_STATE*/
-    if (op->propriety->target_modes[op->target.add_mode]) {
-      return TRUE;
-    }
-  }
-  r_error ("passing ", op->line_info, " is invalid addressing mode to "
-                                        "function");
-  return FALSE;
-  }
+  if (operand->param_types & add_mode) {
+    switch (add_mode) {
 
-state operand_handler (op_analyze *op, LinkedList *symbol_table, state
-curr_state, state next_state)
+      case b_imm:
+        operand->add_mode = IMM_ADD;
+        break;
+      case b_symbol:
+        operand->add_mode = DIRECT_ADD;
+        break;
+      case b_index:
+        operand->add_mode = INDEX_ADD;
+        break;
+      case b_reg:
+        operand->add_mode = REG_ADD;
+        break;
+    }
+    return TRUE;
+  }
+  r_error ("passing ", op->line_part, " is invalid addressing mode to "
+                                      "function");
+  return FALSE;
+}
+
+state operand_handler (op_analyze *op, LinkedList *symbol_table,
+                       Operand *operand, state next_state)
 {
-  Addressing_Mode add_mode;
-  char *token = op->line_info->token;
+  addr_mode_flag add_mode;
+  char *token = op->line_part->token;
 
   /* check for missing arg (exp: mov r2, _ | mov _) */
   if (IS_EMPTY(token)) {
-    r_error ("too few arguments in instruction ", op->line_info, "");
+    r_error ("too few arguments in instruction ", op->line_part, "");
     return ERROR_STATE;
   }
 
   /* check for redundant comma (exp: mov, r2, r3 | mov r2,,r3) */
   if (IS_COMMA(*token)) {
-    r_error ("expected expression before ", op->line_info, " token");
+    r_error ("expected expression before ", op->line_part, " token");
     return ERROR_STATE;
   }
 
   /* find the addressing mode and assign it to the appropriate operand*/
-  add_mode = get_addressing_mode (op, symbol_table, curr_state);
-  if (curr_state == SRC_STATE) {
-    op->src.add_mode = add_mode;
-  }
-  else { /* target */
-    op->target.add_mode = add_mode;
-  }
+  add_mode = get_addressing_mode (op, symbol_table, operand);
 
   /*if couldn't find any addressing mode */
-  if (add_mode == NONE_ADD) {
+  if (add_mode == 0) {
     return ERROR_STATE;
   }
 
   /* check if it is a valid addressing mode */
-  if (!valid_add_mode (op, curr_state)) {
+  if (!valid_add_mode (op, operand, add_mode)) {
     return ERROR_STATE;
   }
   return next_state;
@@ -271,40 +231,40 @@ curr_state, state next_state)
 
 state src_handler (op_analyze *op, file_analyze *file, state next_state)
 {
-  return operand_handler (op, file->symbol_table, SRC_STATE, next_state);
+  return operand_handler (op, file->symbol_table, &op->src, next_state);
 }
 
 state comma_handler (op_analyze *op, file_analyze *file, state next_state)
 {
   /* unused param */
-  char *token = op->line_info->token;
+  char *token = op->line_part->token;
   if (IS_COMMA(*token)) {
     return next_state;
   }
   if (IS_EMPTY(token)) { /*mov r0 */
-    r_error ("too few arguments in instruction", op->line_info, "");
+    r_error ("too few arguments in instruction", op->line_part, "");
   }
   else { /*mov r0 r2*/
-    r_error ("missing comma before ", op->line_info, "");
+    r_error ("missing comma before ", op->line_part, "");
   }
-  file->error+= ERROR; /*todo done only veacuse it's unused... */
+  file->error += ERROR; /*todo done only because it's unused... */
   return ERROR_STATE;
 }
 
 state target_handler (op_analyze *op, file_analyze *file, state next_state)
 {
-  return operand_handler (op, file->symbol_table, TARGET_STATE, next_state);
+  return operand_handler (op, file->symbol_table, &op->target, next_state);
 }
 
 state extra_text_handler (op_analyze *op, file_analyze *file, state next_state)
 {
-  char *token = op->line_info->token;
+  char *token = op->line_part->token;
   if (!IS_EMPTY(token)) {
     /*Concatenates the entire continuation of the line for the error msg */
-    strcat (op->line_info->token, op->line_info->postfix);
-    NULL_TERMINATE(op->line_info->postfix, 0);
-    r_error ("unexpected text after end of the command: ", op->line_info, "");
-    file->error+= ERROR; /*todo done only veacuse it's unused... */
+    strcat (op->line_part->token, op->line_part->postfix);
+    NULL_TERMINATE(op->line_part->postfix, 0);
+    r_error ("unexpected text after end of the command: ", op->line_part, "");
+    file->error += ERROR; /*todo done only veacuse it's unused... */
     return ERROR_STATE;
   }
   return next_state; /*end state*/
@@ -312,13 +272,13 @@ state extra_text_handler (op_analyze *op, file_analyze *file, state next_state)
 
 int run_fsm (op_analyze *op, file_analyze *file_analyze)
 {
-  transition *map = get_map (op->propriety->opcode);
+  transition *map = get_map (op->opcode);
   state next_state = map[0].from, next;
   int i = 0;
 /*   int stateIdx; */
 
   while (next_state != END_STATE) {
-    lineTok (op->line_info);
+    lineTok (op->line_part);
 /*     stateIdx = get_state_idx (op_info->map, next_state); */
     next = map[i].next;
     next_state = map[i].handler (op, file_analyze, next);

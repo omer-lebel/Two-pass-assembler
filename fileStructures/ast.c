@@ -5,17 +5,21 @@
 
 #include "ast.h"
 
+
 /***************** directive_lines *******************/
 
-void init_op_analyze (op_analyze *op, Opcode opcode, LineInfo *line)
+void init_op_analyze (op_analyze *op, Opcode opcode, LinePart *line)
 {
-  op->propriety = &op_propriety[opcode];
+  op->line_part = line;
+  op->opcode = opcode;
+
   op->src.type = SRC;
-  op->target.type = TARGET;
-  op->line_info = line;
-  op->errors = FALSE;
   op->src.add_mode = NONE_ADD;
+  op->src.param_types = param_types[opcode][1];
+
+  op->target.type = TARGET;
   op->target.add_mode = NONE_ADD;
+  op->target.param_types = param_types[opcode][2];
 }
 
 vector *init_op_list(void){
@@ -23,12 +27,12 @@ vector *init_op_list(void){
 }
 
 op_analyze *add_to_op_list(vector* op_list, op_analyze *op){
-  LineInfo *tmp = malloc (sizeof (LineInfo));
+  LinePart *tmp = malloc (sizeof (LinePart));
   if (!tmp){
     return NULL;
   }
-  copy_line_info(tmp, op->line_info);
-  op->line_info = tmp;
+  copy_line_info(tmp, op->line_part);
+  op->line_part = tmp;
   return push (op_list, op);
 }
 
@@ -81,9 +85,9 @@ void print_op_analyze (op_analyze *op, char* file_name)
     return;
   }
   printf ("%04lu\t", op->address);
-  printf ("%s:%-2lu ", file_name, op->line_info->num);
-  printf ("<op: %s>\t", op->propriety->name);
-  printf ("<opcode: %d>\t", op->propriety->opcode);
+  printf ("%s:%-2lu ", file_name, op->line_part->num);
+  printf ("<op: %s>\t", op_names[op->opcode]);
+  printf ("<opcode: %d>\t", op->opcode);
   print_operand(&(op->src));
   print_operand(&(op->target));
   printf ("\n");
@@ -104,7 +108,7 @@ void free_op_list(vector *op_list){
   op_analyze *op;
   for (i=0; i<op_list->size; ++i){
     op = (op_analyze*) get(op_list,i);
-    free(op->line_info);
+    free(op->line_part);
   }
   free_vector (op_list);
 }

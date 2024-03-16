@@ -13,7 +13,7 @@
 #include "utils/linkedList.h"
 
 #define MAX_LINE_LENGTH (80+2)
-#define MAX_TOKEN_SIZE (80+2)
+#define MAX_DATA_ARR_LENGTH (37)
 #define NUM_OF_OP 16
 #define NUM_OF_ADDRESSING_MODE 4
 #define MAX_CMD_NAME_LEN 3
@@ -68,14 +68,19 @@ typedef enum Addressing_Mode
     REG_ADD = 3
 } Addressing_Mode;
 
-typedef struct Op_Propriety
+typedef enum addr_mode_flag
 {
-    Opcode opcode;
-    char name[MAX_CMD_NAME_LEN];
-    Bool src_modes[NUM_OF_ADDRESSING_MODE];
-    Bool target_modes[NUM_OF_ADDRESSING_MODE];
-} Op_Propriety;
+    b_imm = 8, /* 1000 */
+    b_symbol = 4, /* 0100 */
+    b_index = 2, /* 0010 */
+    b_reg = 1, /* 0001 */
+} addr_mode_flag;
 
+#define no_operand 0
+#define all_mode ((unsigned) b_imm | b_symbol | b_index | b_reg)
+#define symbol_n_reg ((unsigned) b_symbol | b_reg)
+#define symbol_n_index ((unsigned) b_symbol | b_index )
+#define symbol_n_index_n_reg ((unsigned) b_symbol | b_index | b_reg)
 
 typedef struct file_analyze{
     char file_name[1000]; /* todo change size*/
@@ -85,20 +90,18 @@ typedef struct file_analyze{
     vector *op_list;
     vector *entry_table;
     vector *extern_table;
-    size_t IC; /* todo change to unsigned */
+    size_t IC; /* todo change to unsigned? */
     size_t DC;
 
     unsigned error;
 }file_analyze;
 
-
-void init_assembler_setting ();
-
 FILE* open_file(char* file_name, const char *extension, const char *mode);
 void remove_file(char* file_name, const char *extension);
 /* todo change place */
 
-extern Op_Propriety op_propriety[NUM_OF_OP];
 extern char *SavedWord[];
+extern char *op_names[NUM_OF_OP];
+extern unsigned int param_types[NUM_OF_OP][3]; /*todo define for 3*/
 
 #endif /* _SETTING_H_ */

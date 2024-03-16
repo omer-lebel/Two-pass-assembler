@@ -32,7 +32,7 @@ typedef struct DsWord
 vector* init_data_seg(size_t *curr_DC);
 
 exit_code add_to_data_seg (vector *data_segment, size_t *curr_DC ,
-                           LineInfo* line, DsType type, void *arr, size_t
+                           LinePart* line, DsType type, void *arr, size_t
                            size);
 
 void print_data_segment (vector *data_segment, size_t cur_DC);
