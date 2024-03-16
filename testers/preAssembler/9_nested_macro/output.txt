@@ -1,0 +1,3 @@
+input:9  error: 'mcr': nested macro definition is not allowed 
+ 9  |     mcr MACRO2
+    |     ^~~

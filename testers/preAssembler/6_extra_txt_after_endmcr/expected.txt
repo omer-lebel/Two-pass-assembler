@@ -1,0 +1,3 @@
+input:10 error: extraneous text '//extra-text'
+ 10 | endmcr //extra-text
+    |        ^~~~~~~~~~~~

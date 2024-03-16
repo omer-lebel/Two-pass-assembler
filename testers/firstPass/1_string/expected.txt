@@ -1,0 +1,18 @@
+expected.am:9  error: redeclaration of 'S0:'
+ 9  | S0: .string "hey"
+    | ^~~
+expected.am:12 error: empty string initialization
+ 12 | S1: .string
+    |            ^
+expected.am:15 error: missing opening " character in 'a"'
+ 15 | S2: .string a"
+    |             ^~
+expected.am:21 error: missing terminating " character in '"a"b'
+ 21 | S4: .string "a"b
+    |             ^~~~
+expected.am:24 error: missing terminating " character in '"a'
+ 24 | S5: .string "a
+    |             ^~
+expected.am:27 warning: '.string' variables may be inaccessible without label
+ 27 | .string "b"
+    | ^~~~~~~

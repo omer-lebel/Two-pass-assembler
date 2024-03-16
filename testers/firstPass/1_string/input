@@ -1,0 +1,26 @@
+;============== .string: =================
+;full string:
+S: .string "hello world! 123"
+
+;empty string
+S0: .string ""
+
+;already exist label
+S0: .string "hey"
+
+;empty string initialization
+S1: .string
+
+;missing opening " character in a"
+S2: .string a"
+
+;redundant text after terminating " character in "a"b"
+S3: .string "a" b
+
+;missing terminating " character in "a
+S4: .string "abc
+
+S5: .string "ab"c
+
+;variables define in '.string "b"' are lost, won't be able to access later
+.string "b"

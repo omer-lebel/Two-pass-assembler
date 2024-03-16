@@ -1,0 +1,3 @@
+input:7  error: '1MAC' starts with a non-alphabetic character
+ 7  | mcr 1MAC
+    |     ^~~~

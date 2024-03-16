@@ -1,0 +1,3 @@
+input:14 error: redeclaration of 'MAC'
+ 14 | mcr MAC
+    |     ^~~
