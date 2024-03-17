@@ -5,12 +5,13 @@
 
 #include "ast.h"
 
+#define CYN   "\x1B[36m"
+#define RESET "\x1B[0m"
 
 /***************** directive_lines *******************/
 
-void init_op_analyze (op_analyze *op, Opcode opcode, LinePart *line)
+void init_op_analyze (op_analyze *op, Opcode opcode)
 {
-  op->line_part = line;
   op->opcode = opcode;
 
   op->src.type = SRC;
@@ -27,12 +28,6 @@ vector *init_op_list(void){
 }
 
 op_analyze *add_to_op_list(vector* op_list, op_analyze *op){
-  LinePart *tmp = malloc (sizeof (LinePart));
-  if (!tmp){
-    return NULL;
-  }
-  copy_line_info(tmp, op->line_part);
-  op->line_part = tmp;
   return push (op_list, op);
 }
 
@@ -79,13 +74,9 @@ void print_operand(Operand *operand){
   }
 }
 
-void print_op_analyze (op_analyze *op, char* file_name)
+void print_op_analyze (op_analyze *op)
 {
-  if (op->errors == TRUE) {
-    return;
-  }
   printf ("%04lu\t", op->address);
-  printf ("%s:%-2lu ", file_name, op->line_part->num);
   printf ("<op: %s>\t", op_names[op->opcode]);
   printf ("<opcode: %d>\t", op->opcode);
   print_operand(&(op->src));
@@ -99,16 +90,46 @@ void print_op_list(vector *op_list, char* file_name){
   printf ("\n----------------- ast list ---------------------\n");
   for (i=0; i<op_list->size; ++i){
     op = (op_analyze*) get (op_list, i);
-    print_op_analyze (op, file_name);
+    print_op_analyze (op);
   }
 }
 
 void free_op_list(vector *op_list){
-  size_t i;
-  op_analyze *op;
-  for (i=0; i<op_list->size; ++i){
-    op = (op_analyze*) get(op_list,i);
-    free(op->line_part);
-  }
   free_vector (op_list);
+}
+
+void print_data(int *arr, unsigned len){
+  unsigned int i;
+  printf (CYN "data: " RESET "%d", arr[0]);
+  for (i = 1; i < len ; ++i) {
+    printf (", %d", arr[i]);
+  }
+  printf ("\n");
+}
+
+void print_line_info(LineInfo *line, char* file_name){
+
+  printf ("%s:%-2lu ", file_name, line->parts->num);
+
+  switch (line->type_t) {
+    case str_l:
+      printf (CYN "string: " RESET "%s\n", line->str.content);
+      break;
+    case data_l:
+      print_data (line->data.arr, line->data.len);
+      break;
+    case ext_l:
+      printf (CYN "extern: " RESET "%s\n", line->ext_ent.name);
+      break;
+    case ent_l:
+      printf (CYN "entry: " RESET "%s\n", line->ext_ent.name);
+      break;
+    case op_l:
+      print_op_analyze (line->op);
+      break;
+    case def_l:
+      printf (CYN "define:" RESET " %s=%d\n", line->define.name, line->define
+          .val);
+      break;
+  }
 }

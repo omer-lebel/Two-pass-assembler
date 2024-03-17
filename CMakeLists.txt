@@ -15,14 +15,20 @@ add_executable(project___mama14
 
         utils/linkedList.c utils/linkedList.h
         utils/text.c utils/text.h
+        utils/vector.c utils/vector.h
+        utils/machineWord.c utils/machineWord.h
 
         fileStructures/symbolTable.c fileStructures/symbolTable.h
         fileStructures/memoryImg.c fileStructures/memoryImg.h
+        fileStructures/entryTable.c fileStructures/entryTable.h
+        fileStructures/ast.c fileStructures/ast.h
+        fileStructures/externTable.c fileStructures/externTable.h
         fsm.c fsm.h
 
         preAssembler.c preAssembler.h
         firstPass.c firstPass.h
+#        secondPass.c secondPass.h
 
-        main.c utils/vector.c utils/vector.h secondPass.c secondPass.h utils/machineWord.c utils/machineWord.h fileStructures/entryTable.c fileStructures/entryTable.h fileStructures/ast.c fileStructures/ast.h fileStructures/externTable.c fileStructures/externTable.h)
+        main.c      )
 
 

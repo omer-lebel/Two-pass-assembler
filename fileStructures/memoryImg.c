@@ -15,7 +15,7 @@ vector *init_data_seg (size_t *DC)
 }
 
 exit_code add_to_data_seg (vector *data_segment, size_t *DC,
-                           LinePart *line, DsType type, void *arr, size_t size)
+                           DsType type, void *arr, size_t size)
 {
   DsWord word;
   int *intArr;
@@ -44,7 +44,6 @@ exit_code add_to_data_seg (vector *data_segment, size_t *DC,
       }
       break;
     default:
-      r_error ("unknown data type in ", line, "");
       return ERROR;
   }
   return SUCCESS;

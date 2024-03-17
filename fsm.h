@@ -16,14 +16,23 @@
 typedef enum state
 {
     SRC_STATE,
-    TARGET_STATE,
     COMA_STATE,
+    TARGET_STATE,
+
+    STRING_STATE,
+
+    IMM_STATE,
+
+    IDENTIFIER_STATE,
+    EQUAL_STATE,
+    INT_STATE,
+
     EXTRA_TEXT_STATE,
     END_STATE,
     ERROR_STATE
 } state;
 
-typedef state (*handler) ( op_analyze *op, file_analyze *file_analyze ,state nextState);
+typedef state (*handler) ( LineInfo *line, file_analyze *file_analyze ,state nextState);
 
 typedef struct transition
 {
@@ -32,13 +41,20 @@ typedef struct transition
     state next;
 } transition;
 
+state str_handler (LineInfo *line, file_analyze *file, state next_state);
+state imm_handler (LineInfo *line, file_analyze *file, state next_state);
 
-state src_handler ( op_analyze *op, file_analyze *file, state nextState);
-state comma_handler ( op_analyze *op, file_analyze *file, state nextState);
-state target_handler ( op_analyze *op, file_analyze *file, state nextState);
-state extra_text_handler ( op_analyze *op, file_analyze *file ,state
+state identifier_handler (LineInfo *line, file_analyze *file,
+                          state next_state);
+state equal_handler (LineInfo *line, file_analyze *file, state next_state);
+state int_handler (LineInfo *line, file_analyze *file, state next_state);
+
+state src_handler ( LineInfo *line, file_analyze *file, state nextState);
+state comma_handler ( LineInfo *line, file_analyze *file, state nextState);
+state target_handler ( LineInfo *line, file_analyze *file, state nextState);
+state extra_text_handler ( LineInfo *line, file_analyze *file ,state
 nextState);
 
-int run_fsm (op_analyze *op, file_analyze *file_analyze);
+Bool run_fsm (LineInfo *line, file_analyze *file_analyze);
 
 #endif /* _FSM_H_ */

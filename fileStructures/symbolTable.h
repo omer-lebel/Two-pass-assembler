@@ -11,7 +11,7 @@
 
 typedef enum SymbolType
 {
-    DATA, OPERATION, DEFINE
+    DATA, OPERATION, DEFINE, EXTERN
 } SymbolType;
 
 typedef enum ARE
@@ -21,12 +21,14 @@ typedef enum ARE
 
 typedef struct Symbol
 {
-    /* todo change into union of types and address/val */
-    size_t address;
+    union
+    {
+        size_t address;
+        int val;    /* for define */
+    };
     SymbolType type;
     Bool isEntry;
-    ARE are;
-    int val;
+    ARE are; /*todo delete */
 } Symbol;
 
 LinkedList *init_symbol_table (void);
@@ -34,6 +36,6 @@ void *init_symbol (const void *data);
 void print_symbol (const char *word, const void *data, FILE *pf);
 exit_code add_symbol (LinkedList *symbol_table, const char *label,
                       SymbolType type, size_t address, ARE are, int val);
-void update_data_symbol_addresses(LinkedList *symbol_table, size_t IC);
+void update_data_symbol_addresses (LinkedList *symbol_table, size_t IC);
 
 #endif /* _MY_SYMBOL_TABLE_H_ */

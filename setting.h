@@ -14,6 +14,7 @@
 
 #define MAX_LINE_LENGTH (80+2)
 #define MAX_DATA_ARR_LENGTH (37)
+#define MAX_STR_LENGTH (72)
 #define NUM_OF_OP 16
 #define NUM_OF_ADDRESSING_MODE 4
 #define MAX_CMD_NAME_LEN 3

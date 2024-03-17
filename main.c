@@ -63,10 +63,10 @@ int main (int argc, char *argv[])
       NULL_TERMINATE(file_analyze.file_name, len);
 
       /*-------------------- second ------------------ */
-      if (res != MEMORY_ERROR){
+      /*if (res != MEMORY_ERROR){
 
         res = secondPass (&file_analyze);
-      }
+      }*/
     }
 
   }

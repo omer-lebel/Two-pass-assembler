@@ -1,22 +1,45 @@
-mov SRT[3], r3
-mov #z!zz, r3
-;============== mov =================
-.define def=+3
-INT: .data 5
-STR: .string "str"
-.extern EXT
+mov r0,,r0
+;============== .data =================
 
+;correct
+D1: .data +100,-100,11
 
-;------ errors in index
-LABEL: .string "a"
-.define size=5
+;correct with define
+.define len = +20
+D2: .data -02, len
 
-mov r4, L[!@$]
-mov L[zzz], r3
-mov L[LABEL], r3
-mov r2, L[
-mov r2, L[3 a]
-mov L[,
-mov r2, L[4
-mov r2, L[]
-mov r2, L]
+;correct but no label (lost)
+.data 3,-3,13
+
+;undeclared symbol
+D4: .data xxx
+D5: .data 5, yyy
+
+;used symbol of other type
+s: .string "a"
+D6: .data s
+
+;out of bound
+D7: .data +7000000000
+D8: .data -800000000
+
+;empty
+D9: .data
+
+; no comma
+D10: .data 10 11
+D11: .data +11, 12 -13, 14
+D12: .data -12 z, 13
+
+;multi comma
+D13: .data 13,,14, -15, len
+
+;=======labels
+;used label
+D1: .data 0
+
+;don't start with abc
+14D0: .data 14,-14
+
+;contain char that diff from abc123
+D15_d: .data 15

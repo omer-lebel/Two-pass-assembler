@@ -7,15 +7,16 @@
 
 /*#define DELIM " \t\r\n"*/
 
-#define IS_EMPTY(s) (*s == '\0')
-#define RESET_STR(str) ((str)[0] = '\0')
-#define NULL_TERMINATE(str, index) ((str)[index] = '\0')
-
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
 #include "../setting.h"
+
+
+#define IS_EMPTY(s) (*s == '\0')
+#define RESET_STR(str) ((str)[0] = '\0')
+#define NULL_TERMINATE(str, index) ((str)[index] = '\0')
 
 #define SAVED_WORD_NUM (8 + 5 + 16)
 /* 8- register, 5-direction, 16-instruction */
