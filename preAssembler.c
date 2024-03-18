@@ -19,7 +19,7 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output,
 
   while (res == SUCCESS && get_line(input, line_info.postfix,
                                     MAX_LINE_LENGTH, &overflow)) {
-    restartLine (&line_info);
+    restart_line_parts (&line_info);
     res = p_processLine (output, mcr_list, &line_info, &curr_mcr);
     if (overflow){
       r_error ("line length is more than 80 characters", &line_info, "");

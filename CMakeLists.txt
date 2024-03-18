@@ -21,7 +21,7 @@ add_executable(project___mama14
         fileStructures/symbolTable.c fileStructures/symbolTable.h
         fileStructures/memoryImg.c fileStructures/memoryImg.h
         fileStructures/entryTable.c fileStructures/entryTable.h
-        fileStructures/ast.c fileStructures/ast.h
+        fileStructures/analyzer.c fileStructures/analyzer.h
         fileStructures/externTable.c fileStructures/externTable.h
         fsm.c fsm.h
 

@@ -8,14 +8,14 @@
 /****************** data segment *******************/
 
 
-vector *init_data_seg (size_t *DC)
+vector *init_data_seg (int *DC)
 {
   *DC = 0;
   return create_vector (sizeof (DsWord));
 }
 
-exit_code add_to_data_seg (vector *data_segment, size_t *DC,
-                           DsType type, void *arr, size_t size)
+Bool add_to_data_seg (vector *data_segment, int *DC,
+                           DsType type, void *arr, int size)
 {
   DsWord word;
   int *intArr;
@@ -29,7 +29,7 @@ exit_code add_to_data_seg (vector *data_segment, size_t *DC,
         word.type = type;
         word.val = *intArr++;
         if (!push (data_segment, &word)) {
-          return MEMORY_ERROR;
+          return FALSE;
         }
       }
       break;
@@ -39,19 +39,17 @@ exit_code add_to_data_seg (vector *data_segment, size_t *DC,
         word.type = type;
         word.val = (int) *charArr++;
         if (!push (data_segment, &word)) {
-          return MEMORY_ERROR;
+          return FALSE;
         }
       }
       break;
-    default:
-      return ERROR;
   }
-  return SUCCESS;
+  return TRUE;
 }
 
-void print_data_segment (vector *data_segment, size_t curr_DC)
+void print_data_segment (vector *data_segment, int curr_DC)
 {
-  size_t i;
+  int i;
   char c;
   DsWord *word;
   printf ("\n----------------- data segment -----------------\n");
@@ -85,29 +83,32 @@ void *add_operand_word (vector *code_segment, Operand *operand)
 {
   unsigned short int word;
   vector *success_add = NULL;
+  Node *node;
   Symbol *symbol;
+  int are = 0;
 
   switch (operand->add_mode) {
     case IMM_ADD:
-      word = imm_word (operand->val);
+      word = imm_word (operand->imm);
       break;
     case DIRECT_ADD:
-      symbol = (Symbol*) operand->symbol->data;
-      word = label_word (symbol->address, symbol->are); /* todo */
+      symbol = (Symbol*)((Node*)operand->symbol)->data;
+      are = symbol->type == EXTERN ? external_b : relocatable_b;
+      word = label_word (symbol->val, are);
       break;
     case INDEX_ADD:
-      symbol = (Symbol*) operand->symbol->data;
-      word = label_word (symbol->address, symbol->are);
+      symbol = (Symbol*)((Node*)operand->symbol)->data;
+      word = label_word (symbol->val, are);
       success_add = push (code_segment, &word); /* add the label */
       if (success_add) {
-        word = imm_word (operand->val); /* add the index */
+        word = imm_word (operand->offset); /* add the index */
       }
       break;
     case REG_ADD:
       if (operand->type == SRC)
-        word = registers_word (operand->val, 0);
+        word = registers_word (operand->reg_num, 0);
       else /* TARGET */
-        word = registers_word (0, operand->val);
+        word = registers_word (0, operand->reg_num);
       break;
     case NONE_ADD:
       break;
@@ -130,7 +131,7 @@ void *add_to_code_seg (vector *code_segment, op_analyze *op)
   /*  both operand are register and they share the second word */
   if ((op->src.add_mode == REG_ADD) && (op->target.add_mode == REG_ADD)
   && success_add){
-    word = registers_word (op->src.val, op->target.val);
+    word = registers_word (op->src.reg_num, op->target.reg_num);
     success_add = push (code_segment, &word);
   }
 

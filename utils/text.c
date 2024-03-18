@@ -132,7 +132,7 @@ void lineTok (LinePart *line)
   }
 }
 
-void restartLine (LinePart *line_info)
+void restart_line_parts (LinePart *line_info)
 {
   line_info->num++;
   RESET_STR(line_info->prefix);
@@ -145,6 +145,15 @@ void copy_line_info (LinePart *dst, LinePart *src)
   strcpy (dst->token, src->token);
   strcpy (dst->postfix, src->postfix);
   dst->num = src->num;
+}
+
+void get_identifier_tok (LinePart *line, Bool has_label){
+  lineToPostfix (line);
+  if (has_label){
+    lineTok (line); /*move to first word */
+  }
+  lineTok (line); /* move to directive (.extern / .entry / .define)*/
+  lineTok (line); /* move to identifier  */
 }
 
 void lineToPostfix (LinePart *line)

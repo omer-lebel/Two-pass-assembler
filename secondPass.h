@@ -10,7 +10,7 @@
 #include "utils/vector.h"
 #include "utils/linkedList.h"
 #include "fileStructures/symbolTable.h"
-#include "fileStructures/ast.h"
+#include "fileStructures/analyzer.h"
 #include "fileStructures/memoryImg.h"
 #include "fileStructures/entryTable.h"
 #include "fileStructures/externTable.h"

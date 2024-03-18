@@ -1,6 +1,8 @@
 /*
  Created by OMER on 1/23/2024.
 */
+#define DEBUG
+
 
 
 #ifndef _SETTING_H_
@@ -60,6 +62,11 @@ typedef enum Opcode
     HLT = 15
 } Opcode;
 
+typedef enum ARE
+{
+    external_b = 1, relocatable_b = 2
+} ARE;
+
 typedef enum Addressing_Mode
 {
     NONE_ADD = -1,
@@ -91,8 +98,8 @@ typedef struct file_analyze{
     vector *op_list;
     vector *entry_table;
     vector *extern_table;
-    size_t IC; /* todo change to unsigned? */
-    size_t DC;
+    int IC; /* todo change to unsigned? */
+    int DC;
 
     unsigned error;
 }file_analyze;
@@ -103,6 +110,6 @@ void remove_file(char* file_name, const char *extension);
 
 extern char *SavedWord[];
 extern char *op_names[NUM_OF_OP];
-extern unsigned int param_types[NUM_OF_OP][3]; /*todo define for 3*/
+extern unsigned int param_types[NUM_OF_OP][MAX_CMD_NAME_LEN];
 
 #endif /* _SETTING_H_ */

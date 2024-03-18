@@ -40,8 +40,8 @@ transition str_map[] = {
 };
 
 transition data_map[] = {
-    {IMM_STATE,        &imm_handler,        COMA_STATE},
-    {COMA_STATE,       &comma_handler,      IMM_STATE},
+    {IMM_STATE,  &imm_handler,   COMA_STATE},
+    {COMA_STATE, &comma_handler, IMM_STATE},
 };
 
 /* define */
@@ -57,8 +57,6 @@ transition ext_ent_map[] = {
     {IDENTIFIER_STATE, &identifier_handler, EXTRA_TEXT_STATE},
     {EXTRA_TEXT_STATE, &extra_text_handler, END_STATE},
 };
-
-
 
 transition *get_map (LineInfo *line)
 {
@@ -91,10 +89,10 @@ transition *get_map (LineInfo *line)
   return NULL;
 }
 
-Bool is_reg (const char *str, int *val)
+Bool is_reg (const char *str, int *reg_num)
 {
   if (str[0] == 'r' && IN_REG_BOUND(str[1]) && str[2] == '\0') {
-    *val = CHAR_TO_INT(str[1]);
+    *reg_num = CHAR_TO_INT(str[1]);
     return TRUE;
   }
   return FALSE;
@@ -150,16 +148,35 @@ Bool is_imm (LineInfo *line, char *token, LinkedList *symbol_table, int *imm)
   return is_int (token, imm) || is_define (line, token, symbol_table, imm);
 }
 
-/* wanted 333] */
-Bool is_index (LineInfo *line, LinkedList *symbol_table, int *val)
+/* put in symbol the symbol name or pointer to the symbol */
+Bool is_symbol (LineInfo *line, char *name, LinkedList *symbol_table,
+                Operand *operand)
 {
-  char *token = line->parts->token;
-  if (!is_imm (line, token, symbol_table, val)) { /* mov r0 LABEL[&*$] */
+  Node *node;
+  Symbol *symbol;
+  if (!valid_identifier (line->parts, name, FALSE)) {
     return FALSE;
   }
 
-  /* check the ] sign */
-  lineTok (line->parts);
+  if ((node = findNode (symbol_table, name))) {
+    symbol = (Symbol *) node->data;
+    if (symbol->type == DEFINE) {
+      return FALSE;
+    }
+    operand->symbol = node;
+    operand->found = TRUE;
+  }
+  else { /*label is exist yet */
+    strcpy (operand->symbol, name);
+    operand->found = FALSE;
+  }
+  return TRUE;
+
+}
+
+Bool is_closing_index_sign (LineInfo *line)
+{
+  char *token = line->parts->token;
   if (IS_EMPTY(token)) { /* mov r0, L[1 */
     r_error ("expected ']'", line->parts, "");
     return FALSE;
@@ -169,6 +186,25 @@ Bool is_index (LineInfo *line, LinkedList *symbol_table, int *val)
     return FALSE;
   }
   return TRUE;
+}
+
+Bool is_index (LineInfo *line, char *name, LinkedList *symbol_table,
+               Operand *operand)
+{
+  char *token = line->parts->token;
+
+  if (!is_symbol (line, name, symbol_table, operand)) {
+    return FALSE;
+  }
+
+  lineTok (line->parts); /* check to offset */
+  if (!is_imm (line, token, symbol_table, &operand->offset)) {
+    return FALSE;
+  }
+
+  /* check ] sign */
+  lineTok (line->parts);
+  return is_closing_index_sign (line);
 }
 
 Bool is_str (LinePart *line)
@@ -196,34 +232,26 @@ addr_mode_flag get_addressing_mode (LineInfo *line, LinkedList *symbol_table,
 {
   char *token = line->parts->token;
   char tmp[MAX_LINE_LENGTH];
+
   /*register*/
-  if (is_reg (token, &operand->val)) {
+  if (is_reg (token, &operand->reg_num)) {
     return b_reg;
   }
-
   /*imm*/
   if (IS_IMM_SIGN (token[0])) {
     strcpy (tmp, token + 1); /* remove # sign */
-    return is_imm (line, tmp, symbol_table, &operand->val) ? b_imm : 0;
+    return is_imm (line, tmp, symbol_table, &operand->imm) ? b_imm : 0;
   }
-
+  strcpy (tmp, token);
   /* index */
   if (IS_OPEN_INDEX_SIGN(token[strlen (token) - 1])) {
-    strcpy (operand->symbol_name, token);
-    NULL_TERMINATE(operand->symbol_name,
-                   strlen (token) - 1); /* remove [ char */
-    if (valid_identifier (line->parts, operand->symbol_name, FALSE)) {
-      lineTok (line->parts); /* move to imm */
-      return is_index (line, symbol_table, &operand->val) ? b_index : 0;
-    }
+    REMOVE_LAST_CHAR(tmp); /* remove [ char */
+    return is_index (line, tmp, symbol_table, operand) ? b_index : 0;
   }
-
   /*symbol*/
-  if (valid_identifier (line->parts, token, FALSE)) {
-    strcpy (operand->symbol_name, token);
+  if (is_symbol (line, tmp, symbol_table, operand)) {
     return b_symbol;
   }
-
   r_error ("", line->parts, " invalid operand");
   return 0;
 }
@@ -305,7 +333,7 @@ state comma_handler (LineInfo *line, file_analyze *file, state next_state)
   if (!IS_EMPTY(token)) { /* mov r0 r3 | .data 1 2 */
     r_error ("expected ',' before ", line->parts, "");
   }
-  else{ /* mov r2 | */
+  else { /* mov r2 | */
     /* if comes from data, assume that token isn't empty,
     therefore it's relevant only for operators */
     r_error ("too few arguments in instruction", line->parts, "");
@@ -326,16 +354,16 @@ state imm_handler (LineInfo *line, file_analyze *file, state next_state)
   int tmp;
 
   if (IS_EMPTY(token)) {
-    if (line->data.len == 0){ /* .data _ */
+    if (line->data.len == 0) { /* .data _ */
       r_error ("empty data initializer", line->parts, "");
     }
-    else{ /* .data 1,_ */
+    else { /* .data 1,_ */
       r_error ("unexpected ',' after end of command", line->parts, "");
     }
     return ERROR_STATE;
   }
 
-  if (IS_COMMA(*token)){
+  if (IS_COMMA(*token)) {
     r_error ("expected integer before ", line->parts, "token");
     return ERROR_STATE;
   }
@@ -347,7 +375,6 @@ state imm_handler (LineInfo *line, file_analyze *file, state next_state)
   line->data.arr[line->data.len++] = tmp;
   return (IS_EMPTY(line->parts->postfix) ? END_STATE : COMA_STATE);
 }
-
 
 state str_handler (LineInfo *line, file_analyze *file, state next_state)
 {
@@ -362,8 +389,8 @@ state str_handler (LineInfo *line, file_analyze *file, state next_state)
 
   /*coping string without "" */
   strcpy (line->str.content, line->parts->token + 1);
-  line->str.len = strlen (line->str.content) - 1;
-  NULL_TERMINATE(line->str.content, line->str.len);
+  REMOVE_LAST_CHAR(line->str.content);
+  line->str.len = (int) strlen (line->str.content);
 
   return next_state;
 }
@@ -378,11 +405,6 @@ state identifier_handler (LineInfo *line, file_analyze *file, state next_state)
   }
   if (!valid_identifier (line->parts, token, TRUE)) {
     /* (not saved word && not abc123 && or not new name) */
-    return ERROR_STATE;
-  }
-  /* todo maybe outside? there is an error entry */
-  if (findNode (file->symbol_table, token)) {
-    r_error ("redeclaration of ", line->parts, "");
     return ERROR_STATE;
   }
 
@@ -459,7 +481,6 @@ Bool run_fsm (LineInfo *line, file_analyze *file_analyze)
     next = map[state_idx].next;
     next_state = map[state_idx].handler (line, file_analyze, next);
     if (next_state == ERROR_STATE) {
-      line->error_t = TRUE;
       return FALSE;
     }
   }

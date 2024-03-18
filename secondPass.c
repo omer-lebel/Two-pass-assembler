@@ -92,7 +92,7 @@ exit_code symbol_handler_second_pass (op_analyze *op, Operand_Type type,
   }
 
   symbol = (Symbol *) node->data;
-  if (symbol->are == EXTERNAL) {
+  if (symbol->isExtern) {
     if (!extern_handler_second_pass (op, type, extern_table)) {
       return MEMORY_ERROR;
     }
@@ -162,7 +162,7 @@ exit_code process_entry_table (vector *entry_table, LinkedList *symbol_table)
       /* label is declare both as extern and as entry label */
     else {
       symbol = (Symbol *) node->data;
-      if (symbol->are == EXTERNAL) {
+      if (symbol->isExtern) {
         r_error ("", entry_syb->line_info, " declared as both external and entry");
         res += ERROR;
       }

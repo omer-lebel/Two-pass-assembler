@@ -10,7 +10,7 @@
 #include "../utils/vector.h"
 #include "../utils/text.h"
 #include "../utils/machineWord.h"
-#include "../fileStructures/ast.h"
+#include "../fileStructures/analyzer.h"
 #include "../fileStructures/symbolTable.h"
 
 
@@ -29,12 +29,12 @@ typedef struct DsWord
 } DsWord;
 
 
-vector* init_data_seg(size_t *curr_DC);
+vector* init_data_seg(int *curr_DC);
 
-exit_code add_to_data_seg (vector *data_segment, size_t *curr_DC ,
-                           DsType type, void *arr, size_t size);
+Bool add_to_data_seg (vector *data_segment, int *DC,
+                           DsType type, void *arr, int size);
 
-void print_data_segment (vector *data_segment, size_t cur_DC);
+void print_data_segment (vector *data_segment, int cur_DC);
 
 
 /****************** text segment *******************/

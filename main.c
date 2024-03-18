@@ -34,7 +34,7 @@ exit_code init_file_analyze (file_analyze *f, char *file_name,
 
 int main (int argc, char *argv[])
 {
-  int res, i, len;
+  int res = SUCCESS, i, len;
   file_analyze file_analyze;
   FILE *src_file, *am_file;
 

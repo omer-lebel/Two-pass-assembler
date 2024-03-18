@@ -56,12 +56,12 @@ unsigned short imm_word(int imm) {
   return machineWord;
 }
 
-unsigned short label_word(unsigned int label, int are) {
+unsigned short label_word(int address, int are) {
   /* Create the machine word using bitwise operations */
   unsigned short machineWord = 0;
 
-  /* bits 13-2: src register */
-  machineWord |= (label << 2);
+  /* bits 13-2: label's address */
+  machineWord |= (address << 2);
 
   /* bits 1-0: A,R,E */
   machineWord |= (are);
