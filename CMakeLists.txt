@@ -3,12 +3,6 @@ project(project___mama14 C)
 
 set(CMAKE_C_STANDARD 90)
 
-#add_executable(project___mama14
-#        test.c
-#        linkedList.c linkedList.h
-#        input.c input.h
-#        preAssembler.c preAssembler.h)
-
 
 add_executable(project___mama14
         setting.c setting.h
@@ -27,8 +21,7 @@ add_executable(project___mama14
 
         preAssembler.c preAssembler.h
         firstPass.c firstPass.h
-#        secondPass.c secondPass.h
 
-        main.c      )
+        main.c secondPass.c secondPass.h)
 
 

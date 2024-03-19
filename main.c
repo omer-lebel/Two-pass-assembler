@@ -9,7 +9,7 @@
 #include "setting.h"
 #include "preAssembler.h"
 #include "firstPass.h"
-#include "secondPass.h"
+#include "second.h"
 
 #define INPUT_IND 1
 
