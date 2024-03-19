@@ -120,7 +120,7 @@ void lineTok (LinePart *line)
     while (*p != '\0' && !isspace(*p) && !strchr ("[,=]", *p)) {
       line->token[i++] = *p++;
     }
-    if (*p == '['){
+    if (*p == '[') {
       line->token[i++] = *p++;
     }
     NULL_TERMINATE(line->token, i);
@@ -131,15 +131,24 @@ void lineTok (LinePart *line)
     line->postfix[i] = p[i];
   }
 }
-
-void restart_line_parts (LinePart *line_info)
+void init_line_parts (LinePart *line_part, char *prefix_buffer,
+                      char *token_buffer, char *postfix_buffer)
 {
-  line_info->num++;
-  RESET_STR(line_info->prefix);
-  RESET_STR(line_info->token);
+  line_part->prefix = prefix_buffer;
+  line_part->token = token_buffer;
+  line_part->postfix = postfix_buffer;
+  line_part->num = 0;
 }
 
-void copy_line_info (LinePart *dst, LinePart *src)
+void restart_line_parts (LinePart *line_part)
+{
+  RESET_STR(line_part->prefix);
+  RESET_STR(line_part->token);
+  strcpy (line_part->postfix, line_part->line);
+  line_part->num++;
+}
+
+void copy_line_part (LinePart *dst, LinePart *src)
 {
   strcpy (dst->prefix, src->prefix);
   strcpy (dst->token, src->token);
@@ -147,9 +156,10 @@ void copy_line_info (LinePart *dst, LinePart *src)
   dst->num = src->num;
 }
 
-void get_identifier_tok (LinePart *line, Bool has_label){
+void get_identifier_tok (LinePart *line, Bool has_label)
+{
   lineToPostfix (line);
-  if (has_label){
+  if (has_label) {
     lineTok (line); /*move to first word */
   }
   lineTok (line); /* move to directive (.extern / .entry / .define)*/

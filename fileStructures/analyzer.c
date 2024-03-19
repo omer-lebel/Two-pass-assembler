@@ -14,8 +14,8 @@ void init_operand(Operand *operand, Opcode opcode, Operand_Type type,
   operand->type = type;
   operand->add_mode = NONE_ADD;
   operand->param_types = param_types[opcode][type];
-  operand->symbol = sym_buffer;
-  operand->found = TRUE;
+  operand->info.symInx.symbol = sym_buffer;
+  operand->info.symInx.found = TRUE;
 }
 
 
@@ -63,16 +63,17 @@ int calc_op_size(op_analyze *op){
 void print_operand(Operand *operand){
   switch (operand->add_mode) {
     case IMM_ADD:
-      printf ("<imm: %d>\t", operand->imm);
+      printf ("<imm: %d>\t", operand->info.imm);
       break;
     case DIRECT_ADD:
-      printf ("<symbol: %s>\t", (char*) operand->symbol);
+      printf ("<symbol: %s>\t", ((Node *)operand->info.symInx.symbol)->word);
       break;
     case INDEX_ADD:
-      printf ("<index: %s[%d]>\t", (char*) operand->symbol, operand->offset);
+      printf ("<index: %s[%d]>\t", ((Node *)operand->info.symInx.symbol)->word,
+      operand->info.symInx.offset);
       break;
     case REG_ADD:
-      printf ("<reg: r%d>\t", operand->reg_num);
+      printf ("<reg: r%d>\t", operand->info.reg_num);
       break;
     case NONE_ADD:
       printf ("           \t");
@@ -114,27 +115,27 @@ void print_data(int *arr, unsigned len){
 }
 
 void print_line_info(LineInfo *line, char* file_name){
-
   printf ("%s:%-2lu ", file_name, line->parts->num);
 
-  switch (line->type_t) {
+  switch (line->type_l) {
     case str_l:
-      printf (CYN "string: " RESET "%s\n", line->str.content);
+      printf (CYN "string: " RESET "%s\n", line->info.str.content);
       break;
     case data_l:
-      print_data (line->data.arr, line->data.len);
+      print_data (line->info.data.arr, line->info.data.len);
       break;
     case ext_l:
-      printf (CYN "extern: " RESET "%s\n", line->ext_ent.name);
+      printf (CYN "extern: " RESET "%s\n", line->info.ext_ent.name);
       break;
     case ent_l:
-      printf (CYN "entry: " RESET "%s\n", line->ext_ent.name);
+      printf (CYN "entry: " RESET "%s\n", line->info.ext_ent.name);
       break;
     case op_l:
-      print_op_analyze (line->op);
+      print_op_analyze (line->info.op);
       break;
     case def_l:
-      printf (CYN "define:" RESET " %s=%d\n", line->define.name, line->define
+      printf (CYN "define:" RESET " %s=%d\n", line->info.define.name,
+              line->info.define
           .val);
       break;
   }

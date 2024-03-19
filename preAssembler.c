@@ -8,31 +8,33 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output,
   Node *curr_mcr = NULL;
   exit_code res = SUCCESS;
   Bool overflow = FALSE;
-  LinePart line_info;
+  char prefix[MAX_LINE_LEN] = "", token[MAX_LINE_LEN] = "",
+      postfix[MAX_LINE_LEN] = "";
+  LinePart line_part;
   LinkedList *mcr_list = createList (init_mcrData, print_mcrData, free_mcrData);
 
   if (!mcr_list) {
     return MEMORY_ERROR;
   }
-  line_info.file = file_name;
-  line_info.num = 0;
+  init_line_parts (&line_part, prefix, token, postfix);
+  line_part.file = file_name; /*todo delete */
 
-  while (res == SUCCESS && get_line(input, line_info.postfix,
-                                    MAX_LINE_LENGTH, &overflow)) {
-    restart_line_parts (&line_info);
-    res = p_processLine (output, mcr_list, &line_info, &curr_mcr);
-    if (overflow){
-      r_error ("line length is more than 80 characters", &line_info, "");
+  while (res == SUCCESS && get_line (input, line_part.line,
+                                     MAX_LINE_LEN, &overflow)) {
+    restart_line_parts (&line_part);
+    res = p_processLine (output, mcr_list, &line_part, &curr_mcr);
+    if (overflow) {
+      r_error ("line length is more than 80 characters", &line_part, "");
       *error_flag += ERROR;
     }
   }
 
   /* check that mcr flag is off at EOF */
   if (res == SUCCESS && curr_mcr != NULL) {
-    trim_end (line_info.postfix);
+    trim_end (line_part.postfix);
     r_error ("reached EOF in the middle of macro definition. Expected "
              "'endmcr'",
-             &line_info, "");
+             &line_part, "");
     res = ERROR;
   }
 /*  printList (mcr_list, stdout); */
@@ -41,29 +43,29 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output,
 }
 
 exit_code
-p_processLine (FILE *output, LinkedList *mcr_list, LinePart *line_info,
+p_processLine (FILE *output, LinkedList *mcr_list, LinePart *line,
                Node **curr_mcr)
 {
   exit_code res = SUCCESS;
-  char first_word[MAX_LINE_LENGTH];
-  lineTok (line_info);
-  strcpy (first_word, line_info->token);
+  char first_word[MAX_LINE_LEN];
+  lineTok (line);
+  strcpy (first_word, line->token);
 
   if (IS_EMPTY(first_word) || IS_COMMENT (first_word)) {
     fputc ('\n', output);
   }
   else if (strcmp (first_word, "mcr") == 0) { /* mcr start */
-    res = mcr_handler (mcr_list, curr_mcr, line_info);
+    res = mcr_handler (mcr_list, curr_mcr, line);
   }
   else if (strcmp (first_word, "endmcr") == 0) { /* mcr end */
-    res = endmcr_handler (curr_mcr, line_info);
+    res = endmcr_handler (curr_mcr, line);
   }
   else if (*curr_mcr) { /* mcr content */
-    lineToPostfix (line_info);
-    res = add_content ((*curr_mcr)->data, line_info->postfix);
+    lineToPostfix (line);
+    res = add_content ((*curr_mcr)->data, line->postfix);
   }
   else { /* regular line */
-    res = write_to_am_file (output, line_info, mcr_list);
+    res = write_to_am_file (output, line, mcr_list);
   }
   return res;
 }
@@ -177,14 +179,14 @@ void *init_mcrData (const void *data)
   if (!new_data) {
     return NULL;
   }
-  new_data->content = (char *) malloc (sizeof (char) * MAX_LINE_LENGTH);
+  new_data->content = (char *) malloc (sizeof (char) * MAX_LINE_LEN);
   if (!new_data->content) {
     free (new_data);
     return NULL;
   }
   RESET_STR(new_data->content);
   new_data->total = 0;
-  new_data->capacity = MAX_LINE_LENGTH;
+  new_data->capacity = MAX_LINE_LEN;
 
   (void) data; /* todo because I don't use the param */
   return new_data;

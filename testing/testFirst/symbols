@@ -1,7 +1,3 @@
-; use and than data (resolved)
-sub USEvCODE, r4
-USEvCODE: prn r4
-
 ;============== symbols =================
 
 ; define and than use (error)
@@ -114,9 +110,62 @@ EXTvDATA: .data -2
 ENTvCODE: hlt
 
 ; use and than data (resolved)
-;sub USEvCODE, r4
-;USEvCODE: prn r4
+sub USEvCODE, r4
+USEvCODE: prn r4
 
 
 
-
+txt.am:5  error: 'DEFvUSE' invalid operand
+ 5  | bne DEFvUSE
+    |     ^~~~~~~
+txt.am:9  error: 'DEFvUSE' invalid operand
+ 9  | jsr DEFvUSE
+    |     ^~~~~~~
+txt.am:28 error: redeclaration of 'EXTvENT'
+ 28 | .entry EXTvENT
+    |        ^~~~~~~
+txt.am:32 error: redeclaration of 'DEFvENT'
+ 32 | .entry DEFvENT
+    |        ^~~~~~~
+txt.am:37 warning: 'ENTvDATA' has already declared in earlier line
+ 37 | .entry ENTvDATA
+    |        ^~~~~~~~
+txt.am:47 error: redeclaration of 'DATAvEXT'
+ 47 | .extern DATAvEXT
+    |         ^~~~~~~~
+txt.am:51 error: redeclaration of 'DEFvEXT'
+ 51 | .extern DEFvEXT
+    |         ^~~~~~~
+txt.am:55 warning: 'EXTvEXT' has already declared in earlier line
+ 55 | .extern EXTvEXT
+    |         ^~~~~~~
+txt.am:68 error: redeclaration of 'USEvEXT3'
+ 68 | .entry USEvEXT3
+    |        ^~~~~~~~
+txt.am:72 error: redeclaration of 'ENTvEXT'
+ 72 | .extern ENTvEXT
+    |         ^~~~~~~
+txt.am:73 error: redeclaration of 'USEvENT'
+ 73 | .extern USEvENT
+    |         ^~~~~~~
+txt.am:86 error: redeclaration of 'CODEvDEF'
+ 86 | .define CODEvDEF=1
+    |         ^~~~~~~~
+txt.am:87 error: redeclaration of 'USEvDEF'
+ 87 | .define USEvDEF=2
+    |         ^~~~~~~
+txt.am:90 error: redeclaration of 'ENTvDEF'
+ 90 | .define ENTvDEF=3
+    |         ^~~~~~~
+txt.am:93 error: redeclaration of 'EXTvDEF'
+ 93 | .define EXTvDEF=4
+    |         ^~~~~~~
+txt.am:96 error: redeclaration of 'DEFvDEF'
+ 96 | .define DEFvDEF=5
+    |         ^~~~~~~
+txt.am:102 error: redeclaration of 'DEVvCODE:'
+ 102 | DEVvCODE: rts
+    | ^~~~~~~~~
+txt.am:106 error: redeclaration of 'EXTvDATA:'
+ 106 | EXTvDATA: .data -2
+    | ^~~~~~~~~

@@ -1,0 +1,82 @@
+;============== mov =================
+.define def=+3
+INT: .data 5
+STR: .string "str"
+.extern EXT
+
+;-----------correct:
+
+;imm as src
+mov #+01, INT
+mov #-02, STR[2]
+mov #def, r3
+
+;label as src
+mov INT, STR
+mov STR, INT[def]
+mov EXT, r4
+mov xxx, xxx
+
+;index as src
+mov INT[def], STR
+mov STR[5], INT[def]
+mov EXT[3], r7
+mov xxx[2], xxx[def]
+
+
+;-----------error:
+invalid add mode
+mov #2, #3
+
+
+;illegal comma
+mov ,r0,r2
+mov r0,,r2
+
+;missing comma
+mov r2 r3
+mov r0
+
+;extra text after end of command
+mov r2, r3, r4
+mov r2, r3,
+
+;missing operand
+mov
+mov r2,
+
+;------errors in imm:
+;invalid type
+mov #STR, r2,
+
+;invalid imm
+mov #!@94a, r2
+
+;undeclared imm
+mov #zzz, r0
+
+;no imm after #
+mov # , r2
+mov r0 ,#
+
+;------- errors in label
+;invalid type ??
+
+;invalid label
+mov r2, 2L
+mov ew!, r4
+mov .string, #3
+
+;------ errors in index
+LABEL: .string "a"
+.define size=5
+
+mov r4, L[!@$]
+mov L[zzz], r3
+mov L[STR], r3
+mov r2, L[
+mov r2, L[3 a]
+mov L[,
+mov r2, L[4
+mov r2, L[]
+mov r2, L]

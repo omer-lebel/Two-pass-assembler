@@ -22,12 +22,12 @@
 #define SAVED_WORD_NUM (8 + 5 + 16)
 /* 8- register, 5-direction, 16-instruction */
 
-
 typedef struct LinePart{
     char* file; /* todo delete!! */
-    char prefix[MAX_LINE_LENGTH];
-    char token[MAX_LINE_LENGTH];
-    char postfix[MAX_LINE_LENGTH];
+    char line[MAX_LINE_LEN];
+    char *prefix;
+    char *token;
+    char *postfix;
     size_t num;
 }LinePart;
 
@@ -40,8 +40,10 @@ Bool valid_identifier (LinePart *line, char *name, Bool print_err);
 
 char* get_line(FILE *file, char *buffer, size_t buff_size, Bool *overflow);
 void lineTok (LinePart *line);
-void restart_line_parts (LinePart *line_info);
-void copy_line_info(LinePart *dst, LinePart *src);
+void init_line_parts (LinePart *line_part, char *prefix_buf,
+                      char *token_buf, char *postfix_buf);
+void restart_line_parts (LinePart *line_part);
+void copy_line_part(LinePart *dst, LinePart *src);
 void lineToPostfix(LinePart *line);
 void get_identifier_tok (LinePart *line, Bool has_label);
 

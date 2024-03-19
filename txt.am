@@ -1,64 +1,64 @@
-; use and than data (resolved)
+
 sub USEvCODE, r4
 USEvCODE: prn r4
 
-;============== symbols =================
 
-; define and than use (error)
+
+
 .define DEFvUSE = 1111
 bne DEFvUSE
 
-;extern and than use
+
 .extern EXTvUSE
 jsr DEFvUSE
 
-;entry and than use
+
 .entry ENTvUSE
 red ENTvUSE[3]
 
 DATAvUSE: .string "data use"
 clr DATAvUSE
 
-;--------------------- entry
 
-; unresolved and than ent (update to entry)
+
+
 dec USEvENT[11]
 cmp #-1, USEvENT
 add USEvENT, USEvENT
 .entry USEvENT
 
-;extern and than entry (error)
+
 .extern EXTvENT
 .entry EXTvENT
 
-;define and than entry (error)
+
 .define DEFvENT = 0033
 .entry DEFvENT
 
-; entry data and than entry (error)
+
 .entry ENTvDATA
 ENTvDATA: .string "entry data"
 .entry ENTvDATA
 
-;data and than entry (update)
+
 DATAvENT: .string "entry data"
 .entry DATAvENT
 
-;--------------------- extern
 
-; data and than ext (error)
+
+
 DATAvEXT: .data 1
 .extern DATAvEXT
 
-; define and than ext (error)
+
 .define DEFvEXT = 2
 .extern DEFvEXT
 
-; ext and than ext (warning)
+
 .extern EXTvEXT
 .extern EXTvEXT
 
-; unresolved and than ext (resolved to extern)
+
 not USEvEXT1
 .extern USEvEXT1
 
@@ -68,24 +68,24 @@ mov r5, USEvEXT2[3]
 mov USEvEXT3, USEvEXT3
 .extern USEvEXT3
 
-;entry of resolved extern
+
 .entry USEvEXT3
 
-; entry and than extern
+
 .entry ENTvEXT
 .extern ENTvEXT
 .extern USEvENT
 
-;mov DATA[3], #zzz
-;mov DATA, CODE
-;.entry ENT
 
-;--use of define
-;.define df = 3
-;mov df, r3
-;mov r2, df[3]
 
-;--------------------- define
+
+
+
+
+
+
+
+
 CODEvDEF: jmp USEvDEF
 .define CODEvDEF=1
 .define USEvDEF=2
@@ -99,23 +99,23 @@ CODEvDEF: jmp USEvDEF
 .define DEFvDEF=-5
 .define DEFvDEF=5
 
-;--------------------- code or data
 
-; define and than code (error)
+
+
 .define DEVvCODE=1
 DEVvCODE: rts
 
-; extern and than code (error)
+
 .extern EXTvDATA
 EXTvDATA: .data -2
 
-; entry and than code (resolved)
+
 .entry ENTvCODE
 ENTvCODE: hlt
 
-; use and than data (resolved)
-;sub USEvCODE, r4
-;USEvCODE: prn r4
+
+
+
 
 
 

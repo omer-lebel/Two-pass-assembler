@@ -20,7 +20,7 @@ Bool add_to_data_seg (vector *data_segment, int *DC,
   DsWord word;
   int *intArr;
   char *charArr;
-  size_t target_dc = *DC + size;
+  int target_dc = *DC + size;
 
   switch (type) {
     case INT_TYPE:
@@ -83,32 +83,31 @@ void *add_operand_word (vector *code_segment, Operand *operand)
 {
   unsigned short int word;
   vector *success_add = NULL;
-  Node *node;
   Symbol *symbol;
   int are = 0;
 
   switch (operand->add_mode) {
     case IMM_ADD:
-      word = imm_word (operand->imm);
+      word = imm_word (operand->info.imm);
       break;
     case DIRECT_ADD:
-      symbol = (Symbol*)((Node*)operand->symbol)->data;
+      symbol = (Symbol*)((Node*)operand->info.symInx.symbol)->data;
       are = symbol->type == EXTERN ? external_b : relocatable_b;
       word = label_word (symbol->val, are);
       break;
     case INDEX_ADD:
-      symbol = (Symbol*)((Node*)operand->symbol)->data;
+      symbol = (Symbol*)((Node*)operand->info.symInx.symbol)->data;
       word = label_word (symbol->val, are);
       success_add = push (code_segment, &word); /* add the label */
       if (success_add) {
-        word = imm_word (operand->offset); /* add the index */
+        word = imm_word (operand->info.symInx.offset); /* add the index */
       }
       break;
     case REG_ADD:
       if (operand->type == SRC)
-        word = registers_word (operand->reg_num, 0);
+        word = registers_word (operand->info.reg_num, 0);
       else /* TARGET */
-        word = registers_word (0, operand->reg_num);
+        word = registers_word (0, operand->info.reg_num);
       break;
     case NONE_ADD:
       break;
@@ -131,7 +130,7 @@ void *add_to_code_seg (vector *code_segment, op_analyze *op)
   /*  both operand are register and they share the second word */
   if ((op->src.add_mode == REG_ADD) && (op->target.add_mode == REG_ADD)
   && success_add){
-    word = registers_word (op->src.reg_num, op->target.reg_num);
+    word = registers_word (op->src.info.reg_num, op->target.info.reg_num);
     success_add = push (code_segment, &word);
   }
 

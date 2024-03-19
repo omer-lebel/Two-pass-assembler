@@ -25,14 +25,14 @@ typedef struct Operand
     Addressing_Mode add_mode;
     union
     {
-        int reg_num;            /* register mode */
-        int imm;                /* imm mode */
+        int reg_num;            /** register mode */
+        int imm;                /** imm mode */
         struct {
-            void *symbol;       /* symbol or index mode */
+            void *symbol;       /** symbol or index mode */
             Bool found;
-            int offset;         /* offset is 0 in direct mode */
-        };
-    };
+            int offset;         /** offset is 0 in direct mode */
+        } symInx;
+    } info;
 } Operand;
 
 typedef struct op_analyze
@@ -68,37 +68,42 @@ union{
     int define_val;
 };*/
 
+/** info about the line according to its type */
+typedef union Info
+{
+    op_analyze *op;    /** operator */
+
+    struct {            /** .data */
+        int *arr;
+        int len;
+    } data;
+
+    struct {            /** .string */
+        char *content;
+        int len;
+    } str;
+
+    struct {             /** .define */
+        char *name;
+        int val;
+    } define;
+
+    struct {             /** .entry | .extern */
+        char *name;
+    } ext_ent;
+} Info;
+
+
 typedef struct LineInfo
 {
-    lineType type_t;
-    LinePart *parts;
-    char *label;
-
-    union
-    {
-        op_analyze *op;    /** operator */
-
-        struct {            /** .data */
-            int *arr;
-            int len;
-        } data;
-
-        struct {            /** .string */
-            char *content;
-            int len;
-        } str;
-
-        struct {             /** .define */
-            char *name;
-            int val;
-        } define;
-
-        struct {             /** .entry | .extern */
-            char *name;
-        } ext_ent;
-    };
+    lineType type_l;    /** str / data / ext / ent / def / op */
+    LinePart *parts;    /** line, line num, postfix, prefix, postfix*/
+    char *label;        /** if exist */
+    Info info;          /** info according to tha type */
 
 } LineInfo;
+
+
 
 /****************** op list *******************/
 void init_op_analyze (op_analyze *op, Opcode opcode, char *src_sym_buffer,

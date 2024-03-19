@@ -60,7 +60,7 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output,
  * @return Returns TRUE on success, FALSE on failure.
  */
 exit_code
-p_processLine (FILE *output, LinkedList *mcr_list, LinePart *line_info,
+p_processLine (FILE *output, LinkedList *mcr_list, LinePart *line,
                Node **curr_mcr);
 
 exit_code mcr_handler(LinkedList *mcr_list, Node **mcr_node, LinePart *line);

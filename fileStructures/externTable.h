@@ -10,7 +10,7 @@
 #include "../utils/vector.h"
 
 typedef struct ExternUse{
-    char name[MAX_LINE_LENGTH];
+    char name[MAX_LINE_LEN];
     vector *location;
 }ExternSyb;
 

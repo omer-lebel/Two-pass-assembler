@@ -61,30 +61,28 @@ transition ext_ent_map[] = {
 transition *get_map (LineInfo *line)
 {
   Opcode o;
-  switch (line->type_t) {
+  switch (line->type_l) {
     case str_l:
       return str_map;
+    case data_l:
+      return data_map;
     case def_l:
       return define_map;
     case ext_l:
-      return ext_ent_map;
     case ent_l:
       return ext_ent_map;
     case op_l:
-      o = line->op->opcode;
+      o = line->info.op->opcode;
       if (o == MOV || o == CMP || o == ADD || o == SUB || o == LEA) {
         return two_operand_map;
       }
       if (o == NOT || o == CLR || o == INC || o == DEC || o == JMP || o == BNE
-          ||
-          o == RED || o == PRN || o == JSR) {
+          || o == RED || o == PRN || o == JSR) {
         return one_operand_map;
       }
       if (o == RTS || o == HLT) {
         return zero_operand_map;
       }
-    case data_l:
-      return data_map;
   }
   return NULL;
 }
@@ -137,7 +135,7 @@ Bool is_define (LineInfo *line, char *token, LinkedList *symbol_table,
 
 Bool is_imm (LineInfo *line, char *token, LinkedList *symbol_table, int *imm)
 {
-  if (IS_EMPTY(token) && line->type_t != data_l) {
+  if (IS_EMPTY(token) && line->type_l != data_l) {
     /*  mov r0, #_  | mov r0, L [_] */
     /* if comes from data, assume that token isn't empty,
     therefore it's relevant only for operators */
@@ -163,12 +161,12 @@ Bool is_symbol (LineInfo *line, char *name, LinkedList *symbol_table,
     if (symbol->type == DEFINE) {
       return FALSE;
     }
-    operand->symbol = node;
-    operand->found = TRUE;
+    operand->info.symInx.symbol = node;
+    operand->info.symInx.found = TRUE;
   }
   else { /*label is exist yet */
-    strcpy (operand->symbol, name);
-    operand->found = FALSE;
+    strcpy (operand->info.symInx.symbol, name);
+    operand->info.symInx.found = FALSE;
   }
   return TRUE;
 
@@ -198,7 +196,7 @@ Bool is_index (LineInfo *line, char *name, LinkedList *symbol_table,
   }
 
   lineTok (line->parts); /* check to offset */
-  if (!is_imm (line, token, symbol_table, &operand->offset)) {
+  if (!is_imm (line, token, symbol_table, &operand->info.symInx.offset)) {
     return FALSE;
   }
 
@@ -231,16 +229,16 @@ addr_mode_flag get_addressing_mode (LineInfo *line, LinkedList *symbol_table,
                                     Operand *operand)
 {
   char *token = line->parts->token;
-  char tmp[MAX_LINE_LENGTH];
+  char tmp[MAX_LINE_LEN];
 
   /*register*/
-  if (is_reg (token, &operand->reg_num)) {
+  if (is_reg (token, &operand->info.reg_num)) {
     return b_reg;
   }
   /*imm*/
   if (IS_IMM_SIGN (token[0])) {
     strcpy (tmp, token + 1); /* remove # sign */
-    return is_imm (line, tmp, symbol_table, &operand->imm) ? b_imm : 0;
+    return is_imm (line, tmp, symbol_table, &operand->info.imm) ? b_imm : 0;
   }
   strcpy (tmp, token);
   /* index */
@@ -316,12 +314,9 @@ state operand_handler (LineInfo *line, LinkedList *symbol_table,
 
 state src_handler (LineInfo *line, file_analyze *file, state next_state)
 {
-  return operand_handler (line, file->symbol_table, &line->op->src,
+  return operand_handler (line, file->symbol_table, &line->info.op->src,
                           next_state);
 }
-
-//.data 1,2,3,
-// mov r2 r3
 
 state comma_handler (LineInfo *line, file_analyze *file, state next_state)
 {
@@ -344,7 +339,7 @@ state comma_handler (LineInfo *line, file_analyze *file, state next_state)
 
 state target_handler (LineInfo *line, file_analyze *file, state next_state)
 {
-  return operand_handler (line, file->symbol_table, &line->op->target,
+  return operand_handler (line, file->symbol_table, &line->info.op->target,
                           next_state);
 }
 
@@ -354,7 +349,7 @@ state imm_handler (LineInfo *line, file_analyze *file, state next_state)
   int tmp;
 
   if (IS_EMPTY(token)) {
-    if (line->data.len == 0) { /* .data _ */
+    if (line->info.data.len == 0) { /* .data _ */
       r_error ("empty data initializer", line->parts, "");
     }
     else { /* .data 1,_ */
@@ -372,7 +367,7 @@ state imm_handler (LineInfo *line, file_analyze *file, state next_state)
     return ERROR_STATE;
   }
 
-  line->data.arr[line->data.len++] = tmp;
+  line->info.data.arr[line->info.data.len++] = tmp;
   return (IS_EMPTY(line->parts->postfix) ? END_STATE : COMA_STATE);
 }
 
@@ -388,9 +383,9 @@ state str_handler (LineInfo *line, file_analyze *file, state next_state)
   }
 
   /*coping string without "" */
-  strcpy (line->str.content, line->parts->token + 1);
-  REMOVE_LAST_CHAR(line->str.content);
-  line->str.len = (int) strlen (line->str.content);
+  strcpy (line->info.str.content, line->parts->token + 1);
+  REMOVE_LAST_CHAR(line->info.str.content);
+  line->info.str.len = (int) strlen (line->info.str.content);
 
   return next_state;
 }
@@ -408,7 +403,8 @@ state identifier_handler (LineInfo *line, file_analyze *file, state next_state)
     return ERROR_STATE;
   }
 
-  target = (line->type_t == def_l ? line->define.name : line->ext_ent.name);
+  target = (line->type_l == def_l ?
+            line->info.define.name : line->info.ext_ent.name);
   strcpy (target, token);
 
   return next_state;
@@ -435,7 +431,7 @@ state int_handler (LineInfo *line, file_analyze *file, state next_state)
     r_error ("expected numeric expression after '='", line->parts, "");
     return ERROR_STATE;
   }
-  if (!is_int (token, &line->define.val)) {
+  if (!is_int (token, &line->info.define.val)) {
 /*    if (res > MAX_INT || res < MIN_INT) {
       r_error ("", line, " exceeds integer bounds [-(2^13-1), 2^13-1]");
     }*/

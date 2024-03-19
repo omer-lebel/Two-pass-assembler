@@ -1,0 +1,75 @@
+;============== forward declaration =================
+.define four=4
+mov STR, INT
+cmp ENT, EXT
+inc STR
+ENT: jmp LOOP
+LOOP: sub STR[2], INT[four]
+
+
+STR: .string "hello"
+INT: .data 1,2,3,four
+.entry ENT
+.extern EXT
+
+
+
+----------------- ast list ---------------------
+0100    txt.am:2  <op: mov>     <opcode: 0>     <symbol: STR>   <symbol: INT>
+0103    txt.am:3  <op: cmp>     <opcode: 1>     <symbol: ENT>   <symbol: EXT>
+0106    txt.am:4  <op: inc>     <opcode: 7>                     <symbol: STR>
+0108    txt.am:5  <op: jmp>     <opcode: 9>                     <symbol: LOOP>
+0110    txt.am:6  <op: sub>     <opcode: 3>     <index: STR[2]> <index: INT[4]>
+
+----------------- data segment -----------------
+| h | e | l | l | o |   | 1 | 2 | 3 | 4 |
+
+----------------- symbol table -----------------
+ four             0      define          not external    4
+ ENT              108    operation       not external
+ LOOP             110    operation       not external
+ STR              115    directive       not external
+ INT              121    directive       not external
+ EXT              0      directive       external
+
+----------------- extern table -----------------
+EXT      0105
+
+----------------- entry table ------------------
+0108     ENT            txt.am:9
+
+----------------- code segment -----------------
+0100    00000000010100
+0101    00000111001110
+0102    00000111100110
+0103    00000001010100
+0104    00000110110010
+0105    00000000000001
+0106    00000111000100
+0107    00000111001110
+0108    00001001000100
+0109    00000110111010
+0110    00000011101000
+0111    00000111001110
+0112    00000000001000
+0113    00000111100110
+0114    00000000010000
+
+----------------- code segment -----------------
+0100    ****##*
+0101    **#!*!%
+0102    **#!%#%
+0103    ***###*
+0104    **#%!*%
+0105    ******#
+0106    **#!*#*
+0107    **#!*!%
+0108    **%#*#*
+0109    **#%!%%
+0110    ***!%%*
+0111    **#!*!%
+0112    *****%*
+0113    **#!%#%
+0114    ****#**
+
+//data seg

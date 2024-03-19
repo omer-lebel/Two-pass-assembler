@@ -1,0 +1,39 @@
+;============== extern & entry =================
+;correct
+.extern EX0
+.entry ENT0
+
+;contains non-alphanumeric char
+.extern EX$1
+.entry E-N-T-1
+.extern E[NT
+.entry EN,T
+
+;starts with a non-alphabetic char
+.extern @EX2
+.entry 2ENT
+
+;already exist label (in string label)
+L3: .string "d"
+.extern L3
+
+;already exist label (in extern label)
+.extern E4
+.extern E4
+E4: .string "f"
+
+;meaningless label
+EX5: .extern EX6
+ENT6: .entry ENT6
+
+;saved word
+.extern r0
+.entry mov
+
+;empty declaration
+.extern
+.entry
+
+;already exist label (in string label)
+.extern E
+.entry E

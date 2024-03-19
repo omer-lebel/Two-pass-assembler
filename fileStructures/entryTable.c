@@ -34,7 +34,7 @@ EntrySyb *add_to_entry_table (vector *entry_table, char *name,
   if (!entry_syb.line_info) {
     return NULL;
   }
-  copy_line_info (entry_syb.line_info, line);
+  copy_line_part (entry_syb.line_info, line);
   return push (entry_table, &entry_syb);;
 }
 

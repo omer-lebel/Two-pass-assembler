@@ -12,7 +12,7 @@
 
 typedef struct EntrySyb
 {
-    char name[MAX_LINE_LENGTH];
+    char name[MAX_LINE_LEN];
     LinePart *line_info;
     unsigned int address;
 } EntrySyb;

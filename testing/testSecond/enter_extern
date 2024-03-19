@@ -1,0 +1,11 @@
+.extern EXT1
+.extern EXT2
+
+L1: mov r0,EXT1
+;(3) - 100
+
+L2: mov EXT1, r0
+;(3) - 103
+
+L3: mov EXT2, EXT2
+;(3) - 106

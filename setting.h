@@ -1,7 +1,7 @@
 /*
  Created by OMER on 1/23/2024.
 */
-#define DEBUG
+/*#define DEBUG*/
 
 
 
@@ -14,7 +14,7 @@
 #include "utils/vector.h"
 #include "utils/linkedList.h"
 
-#define MAX_LINE_LENGTH (80+2)
+#define MAX_LINE_LEN (80+2)
 #define MAX_DATA_ARR_LENGTH (37)
 #define MAX_STR_LENGTH (72)
 #define NUM_OF_OP 16
@@ -81,7 +81,7 @@ typedef enum addr_mode_flag
     b_imm = 8, /* 1000 */
     b_symbol = 4, /* 0100 */
     b_index = 2, /* 0010 */
-    b_reg = 1, /* 0001 */
+    b_reg = 1 /* 0001 */
 } addr_mode_flag;
 
 #define no_operand 0

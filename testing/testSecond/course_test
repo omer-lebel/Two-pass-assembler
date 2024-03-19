@@ -1,0 +1,115 @@
+; file ps.as
+.entry LIST
+.extern W
+.define sz = 2
+MAIN:	mov r3, LIST[sz]
+LOOP: 	jmp W
+	    prn #-5
+    	mov STR[5], STR[2]
+	    sub r1, r4
+	    cmp K, #sz
+    	bne W
+L1: 	inc L3
+.entry LOOP
+	bne LOOP
+END:     hlt
+.define len = 4
+STR:     .string "abcdef"
+LIST:   .data 6, -9, len
+K:      .data 22
+.extern L3
+
+
+
+
+----------------- ast list ---------------------
+0100    txt.am:4  <op: mov>     <opcode: 0>     <reg: r3>       <index: LIST[2]>
+0104    txt.am:5  <op: jmp>     <opcode: 9>                     <symbol: W>
+0106    txt.am:6  <op: prn>     <opcode: 12>                    <imm: -5>
+0108    txt.am:7  <op: mov>     <opcode: 0>     <index: STR[5]> <index: STR[2]>
+0113    txt.am:8  <op: sub>     <opcode: 3>     <reg: r1>       <reg: r4>
+0115    txt.am:9  <op: cmp>     <opcode: 1>     <symbol: K>     <imm: 2>
+0118    txt.am:10 <op: bne>     <opcode: 10>                    <symbol: W>
+0120    txt.am:11 <op: inc>     <opcode: 7>                     <symbol: L3>
+0122    txt.am:13 <op: bne>     <opcode: 10>                    <symbol: LOOP>
+0124    txt.am:14 <op: hlt>     <opcode: 15>
+
+----------------- data segment -----------------
+| a | b | c | d | e | f |   | 6 | -9 | 4 | 22 |
+
+----------------- symbol table -----------------
+ W                0      directive       external
+ sz               0      define          not external    2
+ MAIN             100    operation       not external
+ LOOP             104    operation       not external
+ L1               120    operation       not external
+ END              124    operation       not external
+ len              0      define          not external    4
+ STR              125    directive       not external
+ LIST             132    directive       not external
+ K                135    directive       not external
+ L3               0      directive       external
+
+----------------- extern table -----------------
+W        0105
+W        0119
+L3       0121
+
+----------------- entry table ------------------
+0132     LIST           txt.am:1
+0104     LOOP           txt.am:12
+
+----------------- code segment -----------------
+0100    00000000111000
+0101    00000001100000
+0102    00001000010010
+0103    00000000001000
+0104    00001001000100
+0105    00000000000001
+0106    00001100000000
+0107    11111111101100
+0108    00000000101000
+0109    00000111110110
+0110    00000000010100
+0111    00000111110110
+0112    00000000001000
+0113    00000011111100
+0114    00000000110000
+0115    00000001010000
+0116    00001000011110
+0117    00000000001000
+0118    00001010000100
+0119    00000000000001
+0120    00000111000100
+0121    00000000000001
+0122    00001010000100
+0123    00000110100010
+0124    00001111000000
+
+----------------- code segment -----------------
+0100    ****!%*
+0101    ***#%**
+0102    **%*#*%
+0103    *****%*
+0104    **%#*#*
+0105    ******#
+0106    **!****
+0107    !!!!%!*
+0108    ****%%*
+0109    **#!!#%
+0110    ****##*
+0111    **#!!#%
+0112    *****%*
+0113    ***!!!*
+0114    ****!**
+0115    ***##**
+0116    **%*#!%
+0117    *****%*
+0118    **%%*#*
+0119    ******#
+0120    **#!*#*
+0121    ******#
+0122    **%%*#*
+0123    **#%%*%
+0124    **!!***
+//data seg...

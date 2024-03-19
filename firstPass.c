@@ -37,8 +37,7 @@ exit_code init_first_pass (file_analyze *f, char *file_name,
   line_info->label = label;
   line_info->parts = line_part;
 
-  line_part->file = file_name;
-  line_part->num = 0;
+  line_part->file = file_name; /*todo delete */
 
   return SUCCESS;
 }
@@ -98,29 +97,29 @@ Bool directive_analyze (LineInfo *line, file_analyze *file_analyze)
   return TRUE;
 }
 /************************* string *************************/
-exit_code str_analyze (LineInfo *line, file_analyze *file_analyze)
+exit_code str_analyze (LineInfo *line, file_analyze *f)
 {
   exit_code res;
   char str_content[MAX_STR_LENGTH] = "";
-  line->type_t = str_l;
-  line->str.content = str_content;
+  line->type_l = str_l;
+  line->info.str.content = str_content;
 
-  if (!directive_analyze (line, file_analyze)) {
+  if (!directive_analyze (line, f)) {
     return ERROR;
   }
   /* add or update symbol table */
-  res = process_directive_label (line, file_analyze->symbol_table, file_analyze->DC);
+  res = process_directive_label (line, f->symbol_table, f->DC);
   if (res != SUCCESS) {
     return res;
   }
   /* add to data seg */
-  if (!add_to_data_seg (file_analyze->data_segment, &(file_analyze->DC),
-                        CHAR_TYPE, line->str.content, line->str.len + 1)) {
+  if (!add_to_data_seg (f->data_segment, &(f->DC),CHAR_TYPE,
+                        line->info.str.content, line->info.str.len + 1)) {
     return MEMORY_ERROR;
   }
 
 #ifdef DEBUG
-  print_line_info (line, file_analyze->file_name);
+  print_line_info (line, f->file_name);
 #endif
   return SUCCESS;
 }
@@ -130,10 +129,10 @@ exit_code data_analyze (LineInfo *line, file_analyze *f)
 {
   int data_arr[MAX_DATA_ARR_LENGTH];
   exit_code res;
-  line->type_t = data_l;
-  line->data.arr = data_arr;
+  line->type_l = data_l;
+  line->info.data.arr = data_arr;
 
-  if (directive_analyze (line, f) != SUCCESS) {
+  if (!directive_analyze (line, f)) {
     return ERROR;
   }
   /* add or update symbol table */
@@ -144,7 +143,7 @@ exit_code data_analyze (LineInfo *line, file_analyze *f)
 
   /* add to data seg */
   if (!add_to_data_seg (f->data_segment, &(f->DC),
-                        INT_TYPE, line->data.arr, line->data.len)) {
+                        INT_TYPE, line->info.data.arr, line->info.data.len)) {
     return MEMORY_ERROR;
   }
 
@@ -157,7 +156,7 @@ exit_code data_analyze (LineInfo *line, file_analyze *f)
 /************************* define *************************/
 exit_code define_analyze (LineInfo *line, file_analyze *file_analyze)
 {
-  char def_name[MAX_LINE_LENGTH] = "";
+  char def_name[MAX_LINE_LEN] = "";
 
   /* label and define at the same line */
   if (!IS_EMPTY(line->label)) { /* LABEL: .define x=3 */
@@ -168,19 +167,19 @@ exit_code define_analyze (LineInfo *line, file_analyze *file_analyze)
     return ERROR;
   }
 
-  line->type_t = def_l;
-  line->define.name = def_name;
+  line->type_l = def_l;
+  line->info.define.name = def_name;
   if (!run_fsm (line, file_analyze)) {
     return ERROR;
   }
 
-  if ((findNode (file_analyze->symbol_table, line->define.name))) {
+  if ((findNode (file_analyze->symbol_table, line->info.define.name))) {
     get_identifier_tok (line->parts, !IS_EMPTY(line->label));
-    r_error ("redeclaration of", line->parts, "");
+    r_error ("redeclaration of ", line->parts, "");
     return ERROR;
   }
-  if (!add_symbol (file_analyze->symbol_table, line->define.name,
-                   DEFINE, line->define.val, FALSE)) {
+  if (!add_symbol (file_analyze->symbol_table, line->info.define.name,
+                   DEFINE, line->info.define.val, FALSE)) {
     return MEMORY_ERROR;
   }
 #ifdef DEBUG
@@ -208,9 +207,9 @@ exit_code ext_ent_analyze (LineInfo *line, file_analyze *file_analyze)
 exit_code process_entry_label (LinkedList *symbol_table, LineInfo *line)
 {
   Symbol *symbol;
-  Node *node = findNode (symbol_table, line->ext_ent.name);
+  Node *node = findNode (symbol_table, line->info.ext_ent.name);
   if (!node) {
-    if (!(add_symbol (symbol_table, line->ext_ent.name, UNRESOLVED, 0, TRUE))) {
+    if (!(add_symbol (symbol_table, line->info.ext_ent.name, UNRESOLVED, 0, TRUE))) {
       return MEMORY_ERROR;
     }
     return SUCCESS;
@@ -235,10 +234,10 @@ exit_code process_entry_label (LinkedList *symbol_table, LineInfo *line)
 
 exit_code entry_analyze (LineInfo *line, file_analyze *file_analyze)
 {
-  char ent_name[MAX_LINE_LENGTH] = "";
+  char ent_name[MAX_LINE_LEN] = "";
   exit_code res;
-  line->ext_ent.name = ent_name;
-  line->type_t = ent_l;
+  line->info.ext_ent.name = ent_name;
+  line->type_l = ent_l;
 
   if (ext_ent_analyze (line, file_analyze) != SUCCESS) {
     return ERROR;
@@ -259,9 +258,9 @@ exit_code entry_analyze (LineInfo *line, file_analyze *file_analyze)
 exit_code process_extern_label (LinkedList *symbol_table, LineInfo *line)
 {
   Symbol *symbol;
-  Node *node = findNode (symbol_table, line->ext_ent.name);
-  if (!node) {
-    if (!(add_symbol (symbol_table, line->ext_ent.name, EXTERN, 0, FALSE))) {
+  Node *node = findNode (symbol_table, line->info.ext_ent.name);
+  if (!node) { /*new symbol */
+    if (!(add_symbol (symbol_table, line->info.ext_ent.name, EXTERN, 0, FALSE))) {
       return MEMORY_ERROR;
     }
     return SUCCESS;
@@ -269,11 +268,11 @@ exit_code process_extern_label (LinkedList *symbol_table, LineInfo *line)
 
   /* else, label already exist */
   symbol = (Symbol *) node->data;
-  if (symbol->type == UNRESOLVED) {
+  if (symbol->type == UNRESOLVED && !symbol->isEntry) {
     symbol->type = EXTERN;
     return SUCCESS;
   }
-  /* label is resolved, therefore there is an error or warning: */
+  /* label is resolved/entry, therefore there is an error or warning: */
   get_identifier_tok (line->parts, !IS_EMPTY(line->label));
   if (symbol->type == EXTERN) {
     r_warning ("", line->parts, " has already declared in earlier line");
@@ -285,10 +284,10 @@ exit_code process_extern_label (LinkedList *symbol_table, LineInfo *line)
 
 exit_code extern_analyze (LineInfo *line, file_analyze *file_analyze)
 {
-  char ext_name[MAX_LINE_LENGTH] = "";
+  char ext_name[MAX_LINE_LEN] = "";
   exit_code res;
-  line->ext_ent.name = ext_name;
-  line->type_t = ext_l;
+  line->info.ext_ent.name = ext_name;
+  line->type_l = ext_l;
 
   if (ext_ent_analyze (line, file_analyze) != SUCCESS) {
     return ERROR;
@@ -317,13 +316,13 @@ Opcode get_opcode (char *token)
   return NO_OPCODE;
 }
 
-Bool process_operand_label (LinkedList *symbol_table, Operand *operand)
+Node *process_operand_label (LinkedList *symbol_table, Operand *operand)
 {
-  Node *node = add_symbol (symbol_table, operand->symbol, UNRESOLVED, 0,
-                           FALSE);
-  operand->symbol = node;
-  operand->found = TRUE;
-  return node != NULL;
+  Node *node = add_symbol (symbol_table, operand->info.symInx.symbol,
+                           UNRESOLVED, 0,FALSE);
+  operand->info.symInx.symbol = node;
+  operand->info.symInx.found = TRUE;
+  return node;
 }
 
 Bool process_code_label (LinkedList *symbol_table, char *label, int address)
@@ -343,21 +342,34 @@ Bool process_code_label (LinkedList *symbol_table, char *label, int address)
 
 Bool process_op_labels (LinkedList *symbol_table, LineInfo *line)
 {
+  Node *node;
+  Operand *src = &line->info.op->src, *target = &line->info.op->target;
+
+  /* process code symbol (label at the beginning of the line) */
+  if (!IS_EMPTY(line->label)) {
+    if (!process_code_label (symbol_table, line->label, line->info.op->address)) {
+      return FALSE;
+    }
+  }
+  /* src and target share the same unresolved symbol */
+  if (!src->info.symInx.found && !target->info.symInx.found
+      && strcmp (src->info.symInx.symbol, target->info.symInx.symbol) == 0) {
+    if (!(node = process_operand_label (symbol_table, src))) {
+      return FALSE;
+    }
+    target->info.symInx.symbol = node;
+    target->info.symInx.found = TRUE;
+    return TRUE;
+  }
   /* src use unresolved label */
-  if (!line->op->src.found) {
-    if (!process_operand_label (symbol_table, &line->op->src)) {
+  if (!src->info.symInx.found) {
+    if (!process_operand_label (symbol_table, src)) {
       return FALSE;
     }
   }
   /* target use unresolved label */
-  if (!line->op->target.found) {
-    if (!process_operand_label (symbol_table, &line->op->target)) {
-      return FALSE;
-    }
-  }
-  /* code symbol (label at the start) */
-  if (!IS_EMPTY(line->label)) {
-    if (!process_code_label (symbol_table, line->label, line->op->address)) {
+  if (!target->info.symInx.found) {
+    if (!process_operand_label (symbol_table, target)) {
       return FALSE;
     }
   }
@@ -366,19 +378,19 @@ Bool process_op_labels (LinkedList *symbol_table, LineInfo *line)
 
 exit_code op_handler (LineInfo *line, Opcode opcode, file_analyze *f)
 {
-  char src_sym_buffer[MAX_LINE_LENGTH];
-  char target_sym_buffer[MAX_LINE_LENGTH];
+  char src_sym_buffer[MAX_LINE_LEN];
+  char target_sym_buffer[MAX_LINE_LEN];
   op_analyze op;
   init_op_analyze (&op, opcode, src_sym_buffer, target_sym_buffer);
-  line->op = &op;
-  line->type_t = op_l;
+  line->info.op = &op;
+  line->type_l = op_l;
 
   if (!run_fsm (line, f)) {
     return ERROR;
   }
 
-  line->op->address = f->IC + IC_START;
-  if (!process_op_labels (f->symbol_table, line)){
+  line->info.op->address = f->IC + IC_START;
+  if (!process_op_labels (f->symbol_table, line)) {
     return MEMORY_ERROR;
   }
 
@@ -387,7 +399,7 @@ exit_code op_handler (LineInfo *line, Opcode opcode, file_analyze *f)
   }*/
 
 
-  f->IC += calc_op_size (line->op);
+  f->IC += calc_op_size (line->info.op);
 #ifdef DEBUG
   print_line_info (line, f->file_name);
 #endif
@@ -471,12 +483,14 @@ exit_code firstPass (FILE *input_file, file_analyze *f)
 {
   LineInfo line_info;
   LinePart line_part;
-  char label[MAX_LINE_LENGTH] = "";
+  char prefix[MAX_LINE_LEN] = "", token[MAX_LINE_LEN] = "",
+      postfix[MAX_LINE_LEN] = "", label[MAX_LINE_LEN] = "";
   exit_code res;
 
+  init_line_parts (&line_part, prefix, token, postfix);
   res = init_first_pass (f, f->file_name, &line_info, &line_part, label);
 
-  while (fgets (line_info.parts->postfix, MAX_LINE_LENGTH, input_file)
+  while (fgets (line_info.parts->line, MAX_LINE_LEN, input_file)
          && res != MEMORY_ERROR) {
     restart_line_info (&line_info);
     lineTok (line_info.parts);
