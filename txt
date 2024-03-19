@@ -1,7 +1,3 @@
-; use and than data (resolved)
-sub USEvCODE, r4
-USEvCODE: prn r4
-
 ;============== symbols =================
 
 ; define and than use (error)
@@ -114,9 +110,5 @@ EXTvDATA: .data -2
 ENTvCODE: hlt
 
 ; use and than data (resolved)
-;sub USEvCODE, r4
-;USEvCODE: prn r4
-
-
-
-
+sub USEvCODE, r4
+USEvCODE: prn r4

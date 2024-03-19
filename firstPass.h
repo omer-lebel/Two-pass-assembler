@@ -8,7 +8,6 @@
 #include "fileStructures/symbolTable.h"
 #include "fileStructures/memoryImg.h"
 #include "fileStructures/analyzer.h"
-#include "fileStructures/entryTable.h"
 #include "fsm.h"
 
 #ifndef _FIRST_PASS_H_

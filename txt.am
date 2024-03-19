@@ -1,8 +1,4 @@
 
-sub USEvCODE, r4
-USEvCODE: prn r4
-
-
 
 
 .define DEFvUSE = 1111
@@ -114,9 +110,5 @@ EXTvDATA: .data -2
 ENTvCODE: hlt
 
 
-
-
-
-
-
-
+sub USEvCODE, r4
+USEvCODE: prn r4

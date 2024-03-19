@@ -14,14 +14,15 @@ add_executable(project___mama14
 
         fileStructures/symbolTable.c fileStructures/symbolTable.h
         fileStructures/memoryImg.c fileStructures/memoryImg.h
-        fileStructures/entryTable.c fileStructures/entryTable.h
+#        fileStructures/entryTable.c fileStructures/entryTable.h
         fileStructures/analyzer.c fileStructures/analyzer.h
-        fileStructures/externTable.c fileStructures/externTable.h
+#        fileStructures/externTable.c fileStructures/externTable.h
         fsm.c fsm.h
 
         preAssembler.c preAssembler.h
         firstPass.c firstPass.h
+        secondPass.c secondPass.h
 
-        main.c secondPass.c secondPass.h)
+        main.c )
 
 

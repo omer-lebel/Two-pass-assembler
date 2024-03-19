@@ -14,9 +14,10 @@
 void free_file_analyze1 (file_analyze *f)
 {
   freeList (f->symbol_table);
+//  free_vector (f->data_segment);
+//  free_op_list (f->op_list);
+//  free_entry_table (f->entry_table);
   free_vector (f->data_segment);
-  free_op_list (f->op_list);
-  free_entry_table (f->entry_table);
   memset (f, 0, sizeof (file_analyze));
 }
 
@@ -26,9 +27,9 @@ exit_code init_first_pass (file_analyze *f, char *file_name,
 {
   f->symbol_table = init_symbol_table ();
   f->data_segment = init_data_seg (&f->DC);
-  f->op_list = init_op_list ();
-  f->entry_table = init_entry_table ();
-  if (!f->symbol_table || !f->data_segment || !f->op_list || !f->entry_table) {
+//  f->op_list = init_op_list ();
+//  f->entry_table = init_entry_table ();
+  if (!f->symbol_table || !f->data_segment) {
     free_file_analyze1 (f);
     return MEMORY_ERROR;
   }

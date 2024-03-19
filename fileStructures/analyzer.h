@@ -27,10 +27,12 @@ typedef struct Operand
     {
         int reg_num;            /** register mode */
         int imm;                /** imm mode */
-        struct {
-            void *symbol;       /** symbol or index mode */
+        struct {                /** symbol or index mode */
+            /* symbol fount - point to node in symbol table
+            * not found - point temporary to char of its name */
+            void *symbol;
             Bool found;
-            int offset;         /** offset is 0 in direct mode */
+            int offset;         /* offset is 0 in direct mode */
         } symInx;
     } info;
 } Operand;
@@ -38,9 +40,9 @@ typedef struct Operand
 typedef struct op_analyze
 {
     Opcode opcode;
+    int address;
     Operand src;
     Operand target;
-    int address;
 
 } op_analyze;
 
@@ -54,19 +56,6 @@ typedef enum lineType
     def_l
 } lineType;
 
-/*union
-{
-    op_analyze *op;
-    int *data_arr;
-    char *string;
-    char *dir_name;
-};
-
-union{
-    int data_arr_len;
-    int str_len;
-    int define_val;
-};*/
 
 /** info about the line according to its type */
 typedef union Info
@@ -108,8 +97,8 @@ typedef struct LineInfo
 /****************** op list *******************/
 void init_op_analyze (op_analyze *op, Opcode opcode, char *src_sym_buffer,
                       char * target_sym_buffer);
-vector *init_op_list (void);
-op_analyze *add_to_op_list (vector *op_list, op_analyze *op);
+//vector *init_op_list (void);
+//op_analyze *add_to_op_list (vector *op_list, op_analyze *op);
 int calc_op_size (op_analyze *op);
 void print_op_analyze (op_analyze *op);
 void print_op_list (vector *op_list, char *file_name);

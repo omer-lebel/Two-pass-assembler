@@ -19,8 +19,6 @@
 #define NULL_TERMINATE(str, index) ((str)[index] = '\0')
 #define REMOVE_LAST_CHAR(str) ((str)[strlen(str) - 1] = '\0')
 
-#define SAVED_WORD_NUM (8 + 5 + 16)
-/* 8- register, 5-direction, 16-instruction */
 
 typedef struct LinePart{
     char* file; /* todo delete!! */

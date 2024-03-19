@@ -40,7 +40,7 @@ void print_data_segment (vector *data_segment, int cur_DC);
 /****************** text segment *******************/
 
 
-vector* init_code_seg(size_t IC);
+vector* init_code_seg(int IC);
 
 void *add_to_code_seg (vector *code_segment, op_analyze *op);
 

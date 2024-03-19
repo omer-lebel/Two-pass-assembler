@@ -11,7 +11,7 @@
 vector *init_data_seg (int *DC)
 {
   *DC = 0;
-  return create_vector (sizeof (DsWord));
+  return create_vector (sizeof (DsWord), NULL, NULL, NULL);
 }
 
 Bool add_to_data_seg (vector *data_segment, int *DC,
@@ -72,9 +72,9 @@ void print_data_segment (vector *data_segment, int curr_DC)
 
 /****************** code segment *******************/
 
-vector *init_code_seg (size_t IC)
+vector *init_code_seg (int IC)
 {
-  return create_n_vector (MACHINE_WORD_SIZE, IC);
+  return create_n_vector (MACHINE_WORD_SIZE, IC, NULL, NULL, NULL);
 }
 
 

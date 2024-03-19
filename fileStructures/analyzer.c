@@ -28,14 +28,38 @@ void init_op_analyze (op_analyze *op, Opcode opcode, char* scr_sym_buffer,
 }
 
 
-vector *init_op_list(void){
-  return create_vector (sizeof (op_analyze));
+LineInfo* add_line_to_op_list(LineInfo *line){
+  op_analyze *tmp_op;
+  LinePart *tmp_part;
+
+  tmp_op = malloc (sizeof (op_analyze));
+  if (!tmp_op){
+    return NULL;
+  }
+
+  tmp_part =  malloc (sizeof (LinePart));
+  if (!tmp_part){
+    free(tmp_op);
+    return NULL;
+  }
+
+  *tmp_part = *line->parts;
+  *tmp_op = *line->info.op;
+  line->info.op = tmp_op;
+  line->parts = tmp_part;
+
+  return line;
 }
 
-/*todo rewrite with lineParts and symbol names*/
-op_analyze *add_to_op_list(vector* op_list, op_analyze *op){
-  return push (op_list, op);
+/*
+
+vector *init_op_list(void){
+  return create_vector(sizeof (LineInfo));
 }
+
+*/
+
+
 
 int calc_op_size(op_analyze *op){
   int res = 1; /*for the first word */
@@ -94,7 +118,7 @@ void print_op_analyze (op_analyze *op)
 void print_op_list(vector *op_list, char* file_name){
   size_t i;
   op_analyze *op;
-  printf ("\n----------------- ast list ---------------------\n");
+  printf ("\n----------------- op list ---------------------\n");
   for (i=0; i<op_list->size; ++i){
     op = (op_analyze*) get (op_list, i);
     print_op_analyze (op);
