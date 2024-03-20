@@ -9,7 +9,6 @@
 #include "../setting.h"
 #include "../utils/text.h"
 #include "../utils/vector.h"
-#include "../utils/linkedList.h"
 
 typedef enum Operand_Type
 {

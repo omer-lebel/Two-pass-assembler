@@ -1,114 +1,38 @@
-;============== symbols =================
 
-; define and than use (error)
-.define DEFvUSE = 1111
-bne DEFvUSE
+;--------------- unresolved
+;unresolved entry 1
+.entry ENT
 
-;extern and than use
-.extern EXTvUSE
-jsr DEFvUSE
+;unresolved use 1
+prn UNRES
 
-;entry and than use
-.entry ENTvUSE
-red ENTvUSE[3]
-
-DATAvUSE: .string "data use"
-clr DATAvUSE
-
-;--------------------- entry
-
-; unresolved and than ent (update to entry)
-dec USEvENT[11]
-cmp #-1, USEvENT
-add USEvENT, USEvENT
+;unresolved use & entry 2
+prn USEvENT
 .entry USEvENT
 
-;extern and than entry (error)
-.extern EXTvENT
-.entry EXTvENT
+;unresolved entry & use 3
+.entry ENTvUSE
+prn ENTvUSE
 
-;define and than entry (error)
-.define DEFvENT = 0033
-.entry DEFvENT
+;--------------- resolved use
+mov USE1, r1
+.extern USE1
 
-; entry data and than entry (error)
-.entry ENTvDATA
-ENTvDATA: .string "entry data"
-.entry ENTvDATA
+mov USE2, r2
+USE2: .string "2"
 
-;data and than entry (update)
-DATAvENT: .string "entry data"
-.entry DATAvENT
+;--------------- resolved entry & use
+mov USE3, r3
+.entry USE3
+USE3: .data 3
 
-;--------------------- extern
+.entry USE4
+mov USE4, r4
+USE4: hlt
 
-; data and than ext (error)
-DATAvEXT: .data 1
-.extern DATAvEXT
+;--------------- resolved entry
+.entry ENT5
+ENT5: .string "hi"
 
-; define and than ext (error)
-.define DEFvEXT = 2
-.extern DEFvEXT
-
-; ext and than ext (warning)
-.extern EXTvEXT
-.extern EXTvEXT
-
-; unresolved and than ext (resolved to extern)
-not USEvEXT1
-.extern USEvEXT1
-
-mov r5, USEvEXT2[3]
-.extern USEvEXT2
-
-mov USEvEXT3, USEvEXT3
-.extern USEvEXT3
-
-;entry of resolved extern
-.entry USEvEXT3
-
-; entry and than extern
-.entry ENTvEXT
-.extern ENTvEXT
-.extern USEvENT
-
-;mov DATA[3], #zzz
-;mov DATA, CODE
-;.entry ENT
-
-;--use of define
-;.define df = 3
-;mov df, r3
-;mov r2, df[3]
-
-;--------------------- define
-CODEvDEF: jmp USEvDEF
-.define CODEvDEF=1
-.define USEvDEF=2
-
-.entry ENTvDEF
-.define ENTvDEF=3
-
-.extern EXTvDEF
-.define EXTvDEF=4
-
-.define DEFvDEF=-5
-.define DEFvDEF=5
-
-;--------------------- code or data
-
-; define and than code (error)
-.define DEVvCODE=1
-DEVvCODE: rts
-
-; extern and than code (error)
-.extern EXTvDATA
-EXTvDATA: .data -2
-
-; entry and than code (resolved)
-.entry ENTvCODE
-ENTvCODE: hlt
-
-; use and than data (resolved)
-sub USEvCODE, r4
-USEvCODE: prn r4
+.entry ENT6
+ENT6: cmp #1, #2

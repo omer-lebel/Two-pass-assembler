@@ -1,7 +1,7 @@
 /*
  Created by OMER on 1/23/2024.
 */
-/*#define DEBUG*/
+#define DEBUG
 
 
 
@@ -11,14 +11,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+
 #include "utils/vector.h"
-#include "utils/linkedList.h"
+#include "fileStructures/symbolTable.h"
 
 #define MAX_LINE_LEN (80+2)
 #define MAX_DATA_ARR_LENGTH (37)
 #define MAX_STR_LENGTH (72)
 #define NUM_OF_OP 16
-#define NUM_OF_ADDRESSING_MODE 4
 #define MAX_CMD_NAME_LEN 3
 
 #define MACHINE_WORD_SIZE 14
@@ -92,7 +92,7 @@ typedef enum addr_mode_flag
 
 typedef struct file_analyze{
     char file_name[1000]; /* todo change size*/
-    LinkedList *symbol_table;
+    Symbol_Table *symbol_table;
     vector *data_segment;
     vector *code_segment;
     vector *op_list;

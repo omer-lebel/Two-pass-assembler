@@ -83,7 +83,7 @@ void *add_operand_word (vector *code_segment, Operand *operand)
 {
   unsigned short int word;
   vector *success_add = NULL;
-  Symbol *symbol;
+  Symbol_Data *symbol;
   int are = 0;
 
   switch (operand->add_mode) {
@@ -91,12 +91,12 @@ void *add_operand_word (vector *code_segment, Operand *operand)
       word = imm_word (operand->info.imm);
       break;
     case DIRECT_ADD:
-      symbol = (Symbol*)((Node*)operand->info.symInx.symbol)->data;
+      symbol = (Symbol_Data*)((Symbol_N*)operand->info.symInx.symbol)->data;
       are = symbol->type == EXTERN ? external_b : relocatable_b;
       word = label_word (symbol->val, are);
       break;
     case INDEX_ADD:
-      symbol = (Symbol*)((Node*)operand->info.symInx.symbol)->data;
+      symbol = (Symbol_Data*)((Symbol_N*)operand->info.symInx.symbol)->data;
       word = label_word (symbol->val, are);
       success_add = push (code_segment, &word); /* add the label */
       if (success_add) {

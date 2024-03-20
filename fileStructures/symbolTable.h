@@ -6,27 +6,50 @@
 #ifndef _MY_SYMBOL_TABLE_H_
 #define _MY_SYMBOL_TABLE_H_
 
-#include "../setting.h"
 #include "../utils/linkedList.h"
 
 typedef enum SymbolType
 {
-    DATA, CODE, DEFINE, EXTERN, UNRESOLVED
+    DATA, CODE, DEFINE, EXTERN,
+    UNRESOLVED_USAGE, UNRESOLVED_ENTRY, UNRESOLVED_ENTRY_USAGE
 } SymbolType;
 
-typedef struct Symbol
+typedef enum EntryFlag
 {
-    int val;    /* address or val of define */
-    SymbolType type;
-    Bool isEntry;
-    Bool isResolved;
-} Symbol;
+    NOT_ENTRY, IS_Entry
+} EntryFlag;
 
-LinkedList *init_symbol_table (void);
-void *init_symbol (const void *data);
-void print_symbol (const char *word, const void *data, FILE *pf);
-Node* add_symbol (LinkedList *symbol_table, const char *label,
-                      SymbolType type, int val, Bool isEntry);
-void update_data_symbol_addresses (LinkedList *symbol_table, int IC);
+
+typedef struct Symbol_Data
+{
+    int val;        /* address or val of define */
+    SymbolType type;
+    EntryFlag isEntry;
+} Symbol_Data;
+
+typedef Node Symbol_N;
+
+
+typedef struct Symbol_Table{
+    LinkedList *database;
+    int extern_count;
+    int unresolved_entry_count;
+    int unresolved_usage_count;
+}Symbol_Table;
+
+
+
+
+Symbol_Table *new_symbol_table (void);
+void *init_symbol_data (const void *data);
+Symbol_N *add_symbol (Symbol_Table *table, const char *label,
+                      SymbolType type, int val, EntryFlag isEntry);
+Symbol_N* find_symbol(Symbol_Table *table, const char *name);
+void print_symbol (const char *word, const void *data, FILE *stream);
+void print_symbol_table(Symbol_Table *table, FILE *stream);
+void free_symbol_table (Symbol_Table *table);
+
+
+//void update_data_symbol_addresses (LinkedList *symbol_table, int IC);
 
 #endif /* _MY_SYMBOL_TABLE_H_ */

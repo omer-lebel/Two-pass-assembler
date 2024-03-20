@@ -104,15 +104,15 @@ Bool is_int (char *token, int *imm)
   return IS_EMPTY(end_ptr);
 }
 
-Bool is_define (LineInfo *line, char *token, LinkedList *symbol_table,
+Bool is_define (LineInfo *line, char *token, Symbol_Table *symbol_table,
                 int *imm)
 {
-  Symbol *symbol;
-  Node *node = findNode (symbol_table, token);
-  if (node) {
-    symbol = (Symbol *) node->data;
-    if (symbol->type == DEFINE) {
-      *imm = symbol->val;
+  Symbol_Data *symbol_data;
+  Symbol_N *symbol = find_symbol(symbol_table, token);
+  if (symbol) {
+    symbol_data = (Symbol_Data *) symbol->data;
+    if (symbol_data->type == DEFINE) {
+      *imm = symbol_data->val;
       return TRUE;
     }
     else { /* mov r0 #STR | mov r0 LABEL[STR] */
@@ -133,7 +133,7 @@ Bool is_define (LineInfo *line, char *token, LinkedList *symbol_table,
   return FALSE;
 }
 
-Bool is_imm (LineInfo *line, char *token, LinkedList *symbol_table, int *imm)
+Bool is_imm (LineInfo *line, char *token, Symbol_Table *table, int *imm)
 {
   if (IS_EMPTY(token) && line->type_l != data_l) {
     /*  mov r0, #_  | mov r0, L [_] */
@@ -143,28 +143,32 @@ Bool is_imm (LineInfo *line, char *token, LinkedList *symbol_table, int *imm)
              line->parts, "");
     return FALSE;
   }
-  return is_int (token, imm) || is_define (line, token, symbol_table, imm);
+  return is_int (token, imm) || is_define (line, token, table, imm);
 }
 
 /* put in symbol the symbol name or pointer to the symbol */
-Bool is_symbol (LineInfo *line, char *name, LinkedList *symbol_table,
+Bool is_symbol (LineInfo *line, char *name, Symbol_Table *symbol_table,
                 Operand *operand)
 {
-  Node *node;
-  Symbol *symbol;
+  Symbol_N *symbol;
+  Symbol_Data *symbol_data;
   if (!valid_identifier (line->parts, name, FALSE)) {
     return FALSE;
   }
 
-  if ((node = findNode (symbol_table, name))) {
-    symbol = (Symbol *) node->data;
-    if (symbol->type == DEFINE) {
+  if ((symbol = find_symbol(symbol_table, name))) {
+    symbol_data = (Symbol_Data *) symbol->data;
+    if (symbol_data->type == DEFINE) {
       return FALSE;
     }
-    operand->info.symInx.symbol = node;
+    operand->info.symInx.symbol = symbol;
     operand->info.symInx.found = TRUE;
+    if (symbol_data->type == UNRESOLVED_ENTRY){
+      symbol_data->type = UNRESOLVED_ENTRY_USAGE;
+      symbol_table->unresolved_usage_count++;
+    }
   }
-  else { /*label is exist yet */
+  else { /*label is not exist yet */
     strcpy (operand->info.symInx.symbol, name);
     operand->info.symInx.found = FALSE;
   }
@@ -186,17 +190,17 @@ Bool is_closing_index_sign (LineInfo *line)
   return TRUE;
 }
 
-Bool is_index (LineInfo *line, char *name, LinkedList *symbol_table,
+Bool is_index (LineInfo *line, char *name, Symbol_Table *table,
                Operand *operand)
 {
   char *token = line->parts->token;
 
-  if (!is_symbol (line, name, symbol_table, operand)) {
+  if (!is_symbol (line, name, table, operand)) {
     return FALSE;
   }
 
   lineTok (line->parts); /* check to offset */
-  if (!is_imm (line, token, symbol_table, &operand->info.symInx.offset)) {
+  if (!is_imm (line, token, table, &operand->info.symInx.offset)) {
     return FALSE;
   }
 
@@ -225,7 +229,7 @@ Bool is_str (LinePart *line)
   return TRUE;
 }
 
-addr_mode_flag get_addressing_mode (LineInfo *line, LinkedList *symbol_table,
+addr_mode_flag get_addressing_mode (LineInfo *line, Symbol_Table *table,
                                     Operand *operand)
 {
   char *token = line->parts->token;
@@ -238,16 +242,16 @@ addr_mode_flag get_addressing_mode (LineInfo *line, LinkedList *symbol_table,
   /*imm*/
   if (IS_IMM_SIGN (token[0])) {
     strcpy (tmp, token + 1); /* remove # sign */
-    return is_imm (line, tmp, symbol_table, &operand->info.imm) ? b_imm : 0;
+    return is_imm (line, tmp, table, &operand->info.imm) ? b_imm : 0;
   }
   strcpy (tmp, token);
   /* index */
   if (IS_OPEN_INDEX_SIGN(token[strlen (token) - 1])) {
     REMOVE_LAST_CHAR(tmp); /* remove [ char */
-    return is_index (line, tmp, symbol_table, operand) ? b_index : 0;
+    return is_index (line, tmp, table, operand) ? b_index : 0;
   }
   /*symbol*/
-  if (is_symbol (line, tmp, symbol_table, operand)) {
+  if (is_symbol (line, tmp, table, operand)) {
     return b_symbol;
   }
   r_error ("", line->parts, " invalid operand");
@@ -279,7 +283,7 @@ Bool valid_add_mode (LineInfo *line, Operand *operand, addr_mode_flag add_mode)
   return FALSE;
 }
 
-state operand_handler (LineInfo *line, LinkedList *symbol_table,
+state operand_handler (LineInfo *line, Symbol_Table *table,
                        Operand *operand, state next_state)
 {
   addr_mode_flag add_mode;
@@ -298,7 +302,7 @@ state operand_handler (LineInfo *line, LinkedList *symbol_table,
   }
 
   /* find the addressing mode and assign it to the appropriate operand*/
-  add_mode = get_addressing_mode (line, symbol_table, operand);
+  add_mode = get_addressing_mode (line, table, operand);
 
   /*if couldn't find any addressing mode */
   if (add_mode == 0) {
@@ -312,13 +316,13 @@ state operand_handler (LineInfo *line, LinkedList *symbol_table,
   return next_state;
 }
 
-state src_handler (LineInfo *line, file_analyze *file, state next_state)
+state src_handler (LineInfo *line, Symbol_Table *table, state next_state)
 {
-  return operand_handler (line, file->symbol_table, &line->info.op->src,
+  return operand_handler (line, table, &line->info.op->src,
                           next_state);
 }
 
-state comma_handler (LineInfo *line, file_analyze *file, state next_state)
+state comma_handler (LineInfo *line, Symbol_Table *table, state next_state)
 {
   char *token = line->parts->token;
   if (IS_COMMA(*token)) {
@@ -337,13 +341,13 @@ state comma_handler (LineInfo *line, file_analyze *file, state next_state)
   return ERROR_STATE;
 }
 
-state target_handler (LineInfo *line, file_analyze *file, state next_state)
+state target_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
-  return operand_handler (line, file->symbol_table, &line->info.op->target,
+  return operand_handler (line, symbol_table, &line->info.op->target,
                           next_state);
 }
 
-state imm_handler (LineInfo *line, file_analyze *file, state next_state)
+state imm_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token;
   int tmp;
@@ -363,7 +367,7 @@ state imm_handler (LineInfo *line, file_analyze *file, state next_state)
     return ERROR_STATE;
   }
 
-  if (!is_imm (line, token, file->symbol_table, &tmp)) {
+  if (!is_imm (line, token, symbol_table, &tmp)) {
     return ERROR_STATE;
   }
 
@@ -371,14 +375,13 @@ state imm_handler (LineInfo *line, file_analyze *file, state next_state)
   return (IS_EMPTY(line->parts->postfix) ? END_STATE : COMA_STATE);
 }
 
-state str_handler (LineInfo *line, file_analyze *file, state next_state)
+state str_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   /* get the whole string into token */
   strcat (line->parts->token, line->parts->postfix);
   NULL_TERMINATE(line->parts->postfix, 0);
 
   if (!is_str (line->parts)) {
-    file->error += ERROR; /*todo done only because it's unused... */
     return ERROR_STATE;
   }
 
@@ -390,7 +393,7 @@ state str_handler (LineInfo *line, file_analyze *file, state next_state)
   return next_state;
 }
 
-state identifier_handler (LineInfo *line, file_analyze *file, state next_state)
+state identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token, *target;
 
@@ -410,7 +413,7 @@ state identifier_handler (LineInfo *line, file_analyze *file, state next_state)
   return next_state;
 }
 
-state equal_handler (LineInfo *line, file_analyze *file, state next_state)
+state equal_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   if (IS_EMPTY(line->parts->token)) {
     r_error ("empty define declaration", line->parts, "");
@@ -423,7 +426,7 @@ state equal_handler (LineInfo *line, file_analyze *file, state next_state)
   return next_state;
 }
 
-state int_handler (LineInfo *line, file_analyze *file, state next_state)
+state int_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token;
 
@@ -441,7 +444,7 @@ state int_handler (LineInfo *line, file_analyze *file, state next_state)
   return next_state;
 }
 
-state extra_text_handler (LineInfo *line, file_analyze *file, state next_state)
+state extra_text_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token;
   if (!IS_EMPTY(token)) {
@@ -465,7 +468,7 @@ int get_state_idx (transition map[], state state)
   }
 }
 
-Bool run_fsm (LineInfo *line, file_analyze *file_analyze)
+Bool run_fsm (LineInfo *line, Symbol_Table *symbol_table)
 {
   transition *map = get_map (line);
   state next_state = map[0].from, next;
@@ -475,7 +478,7 @@ Bool run_fsm (LineInfo *line, file_analyze *file_analyze)
     lineTok (line->parts);
     state_idx = get_state_idx (map, next_state);
     next = map[state_idx].next;
-    next_state = map[state_idx].handler (line, file_analyze, next);
+    next_state = map[state_idx].handler (line, symbol_table, next);
     if (next_state == ERROR_STATE) {
       return FALSE;
     }

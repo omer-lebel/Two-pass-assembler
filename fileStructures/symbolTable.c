@@ -3,86 +3,119 @@
 */
 #include "symbolTable.h"
 
-
-LinkedList* init_symbol_table(void){
-  return createList (init_symbol, print_symbol, free);
-}
-
-void *init_symbol (const void *data)
+Symbol_Table *new_symbol_table (void)
 {
-  Symbol *symbol_data = (Symbol *) data;
-  Symbol *new_symbol = (Symbol *) malloc (sizeof (Symbol));
-  if (!new_symbol) {
-    return NULL; /* memory error */
+  Symbol_Table *table = malloc (sizeof (Symbol_Table));
+  if (!table) {
+    return NULL;
   }
-  new_symbol->val = symbol_data->val;
-  new_symbol->type = symbol_data->type;
-  new_symbol->isEntry = symbol_data->isEntry;
-  return new_symbol;
-}
-
-void print_symbol (const char *word, const void *data, FILE *pf)
-{
-  Symbol *symbol_data = (Symbol *) data;
-
-  fprintf (pf, " %-15s  %-5d ", word, symbol_data->val);
-  switch (symbol_data->type) {
-    case DATA:
-      fprintf (pf, " %-15s", "directive");
-      break;
-    case CODE:
-      fprintf (pf, " %-15s", "operation");
-      break;
-    case DEFINE:
-      fprintf (pf, " %-15s", "define");
-      break;
-    case EXTERN:
-      fprintf (pf, " %-15s", "external");
-      break;
-    case UNRESOLVED:
-      fprintf (pf, " %-15s", "unresolved");
-      break;
+  table->database = createList (init_symbol_data, print_symbol, free);
+  if (!table->database) {
+    free (table);
+    return NULL;
   }
+  table->extern_count = 0;
+  table->unresolved_usage_count = 0;
+  table->unresolved_entry_count = 0;
 
-  fprintf (pf, " %-15s", (symbol_data->isEntry ?
-                          "entry" : "not entry"));
-
-  fprintf (pf, "\n");
-
+  return table;
 }
 
-Node* add_symbol (LinkedList *symbol_table, const char *label,
-                      SymbolType type, int val, Bool isEntry)
+void *init_symbol_data (const void *data)
 {
-  Symbol symbol_data;
-  Node *new_symbol;
+  Symbol_Data *new_data = malloc (sizeof (Symbol_Data));
+  if (!new_data) {
+    return NULL;
+  }
+  memcpy (new_data, data, sizeof (Symbol_Data));
+  return new_data;
+}
+
+Symbol_N *add_symbol (Symbol_Table *table, const char *label,
+                  SymbolType type, int val, EntryFlag isEntry)
+{
+  Symbol_Data symbol_data;
+  Symbol_N *new_symbol;
 
   symbol_data.type = type;
   symbol_data.val = val;
   symbol_data.isEntry = isEntry;
 
-  new_symbol = createNode (symbol_table, label, &symbol_data);
+  new_symbol = createNode (table->database, label, &symbol_data);
   if (!new_symbol) {
-    return NULL; /* memory error */
+    return NULL;
   }
-  appendToTail(symbol_table, new_symbol); /* todo sorted? */
+  appendToTail (table->database, new_symbol); /* todo sorted? */
   return new_symbol;
 }
 
-void update_data_symbol_addresses(LinkedList *symbol_table, int IC)
+Symbol_N *find_symbol (Symbol_Table *table, const char *name)
 {
-  Symbol *symbol;
-  Node *node = symbol_table->head;
-  while (node)
-  {
-    symbol = (Symbol*) node->data;
-    if (symbol->type == CODE){
-      symbol->val += IC_START;
-      if (symbol->type == DATA){
-        symbol->val += IC_START + IC;
-      }
-    }
+  return findNode (table->database, name);
+}
 
-    node = node->next;
+void print_symbol (const char *word, const void *data, FILE *stream)
+{
+  Symbol_Data *symbol_data = (Symbol_Data *) data;
+
+  fprintf (stream, " %-15s  %-5d ", word, symbol_data->val);
+  switch (symbol_data->type) {
+    case DATA:
+      fprintf (stream, " %-15s", "directive");
+      break;
+    case CODE:
+      fprintf (stream, " %-15s", "code");
+      break;
+    case DEFINE:
+      fprintf (stream, " %-15s", "define");
+      break;
+    case EXTERN:
+      fprintf (stream, " %-15s", "external");
+      break;
+    case UNRESOLVED_USAGE:
+      fprintf (stream, " %-15s", "unresolved usage");
+      break;
+    case UNRESOLVED_ENTRY:
+      fprintf (stream, " %-15s", "unresolved entry");
+      break;
+    case UNRESOLVED_ENTRY_USAGE:
+      fprintf (stream, " %-15s", "unresolved entry usage");
+      break;
   }
+
+  fprintf (stream, "\t\t%-15s", (symbol_data->isEntry ?
+                              "entry" : "not entry"));
+
+  fprintf (stream, "\n");
+
+}
+
+//void update_data_symbol_addresses (LinkedList *symbol_table, int IC)
+//{
+//  Symbol_Data *symbol;
+//  Node *node = symbol_table->head;
+//  while (node) {
+//    symbol = (Symbol_Data *) node->data;
+//    if (symbol->type == CODE) {
+//      symbol->val += IC_START;
+//      if (symbol->type == DATA) {
+//        symbol->val += IC_START + IC;
+//      }
+//    }
+//
+//    node = node->next;
+//  }
+//}
+
+void print_symbol_table(Symbol_Table *table, FILE *stream){
+  printf ("\n----------------- symbol table -----------------\n");
+  printf("unresolved usage count: %d\n", table->unresolved_usage_count);
+  printf("unresolved entry count: %d\n", table->unresolved_entry_count);
+  printList (table->database, stream);
+}
+
+void free_symbol_table (Symbol_Table *table)
+{
+  freeList (table->database);
+  free (table);
 }

@@ -7,8 +7,8 @@
  *  deletion, tail insertion, sorted insertion and printing.
  */
 
-#ifndef _LINKEDLIST1_H_
-#define _LINKEDLIST1_H_
+#ifndef _LINKED_LIST_H_
+#define _LINKED_LIST_H_
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -122,5 +122,5 @@ void printList (LinkedList *linked_list, FILE *fp);
  */
 void freeList (LinkedList *linked_list);
 
-#endif /* _LINKEDLIST1_H_ */
+#endif /* _LINKED_LIST_H_ */
 

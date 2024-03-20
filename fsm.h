@@ -11,7 +11,6 @@
 #include "fileStructures/symbolTable.h"
 #include "fileStructures/memoryImg.h"
 
-
 /* states */
 typedef enum state
 {
@@ -32,7 +31,7 @@ typedef enum state
     ERROR_STATE
 } state;
 
-typedef state (*handler) ( LineInfo *line, file_analyze *file_analyze ,state nextState);
+typedef state (*handler) (LineInfo *line, Symbol_Table *table, state nextState);
 
 typedef struct transition
 {
@@ -41,20 +40,20 @@ typedef struct transition
     state next;
 } transition;
 
-state str_handler (LineInfo *line, file_analyze *file, state next_state);
-state imm_handler (LineInfo *line, file_analyze *file, state next_state);
+state str_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state);
+state imm_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state);
 
-state identifier_handler (LineInfo *line, file_analyze *file,
-                          state next_state);
-state equal_handler (LineInfo *line, file_analyze *file, state next_state);
-state int_handler (LineInfo *line, file_analyze *file, state next_state);
+state identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state
+next_state);
+state equal_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state);
+state int_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state);
 
-state src_handler ( LineInfo *line, file_analyze *file, state nextState);
-state comma_handler ( LineInfo *line, file_analyze *file, state nextState);
-state target_handler ( LineInfo *line, file_analyze *file, state nextState);
-state extra_text_handler ( LineInfo *line, file_analyze *file ,state
+state src_handler (LineInfo *line, Symbol_Table *table, state nextState);
+state comma_handler (LineInfo *line, Symbol_Table *table, state nextState);
+state target_handler (LineInfo *line, Symbol_Table *symbol_table, state nextState);
+state extra_text_handler (LineInfo *line, Symbol_Table *symbol_table, state
 nextState);
 
-Bool run_fsm (LineInfo *line, file_analyze *file_analyze);
+Bool run_fsm (LineInfo *line, Symbol_Table *symbol_table);
 
 #endif /* _FSM_H_ */

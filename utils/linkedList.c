@@ -1,7 +1,7 @@
 #include "linkedList.h"
 
 LinkedList* createList(init_data_func init_data, print_func print,
-                       free_data_func freeData)
+                       free_data_func free_data)
 {
   LinkedList *new_list = (LinkedList*)malloc (sizeof (LinkedList));
   if (!new_list)
@@ -14,7 +14,7 @@ LinkedList* createList(init_data_func init_data, print_func print,
 
   new_list->init_data_func = init_data;
   new_list->print_func = print;
-  new_list->free_data = freeData;
+  new_list->free_data = free_data;
 
   return new_list;
 }

@@ -1,27 +1,28 @@
+; =============== unresolved symbols ==================
 
-
-
+;--------------- unresolved
+;unresolved entry 1
 .entry ENT
 
-
+;unresolved use 1
 prn UNRES
 
-
+;unresolved use & entry 2
 prn USEvENT
 .entry USEvENT
 
-
+;unresolved entry & use 3
 .entry ENTvUSE
 prn ENTvUSE
 
-
+;--------------- resolved use
 mov USE1, r1
 .extern USE1
 
 mov USE2, r2
 USE2: .string "2"
 
-
+;--------------- resolved entry & use
 mov USE3, r3
 .entry USE3
 USE3: .data 3
@@ -30,7 +31,7 @@ USE3: .data 3
 mov USE4, r4
 USE4: hlt
 
-
+;--------------- resolved entry
 .entry ENT5
 ENT5: .string "hi"
 
