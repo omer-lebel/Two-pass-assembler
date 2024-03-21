@@ -10,6 +10,7 @@ typedef struct file_analyze{
     Symbol_Table *symbol_table;
     Data_Segment *data_segment;
     Op_List *op_list;
+    Entry_List *entry_list;
     int IC;
     int DC;
     Bool error;

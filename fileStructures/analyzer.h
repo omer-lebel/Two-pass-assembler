@@ -22,7 +22,6 @@ typedef enum Operand_Type
     TARGET
 } Operand_Type;
 
-
 typedef struct Operand
 {
     Operand_Type type;
@@ -32,7 +31,8 @@ typedef struct Operand
     {
         int reg_num;            /** register mode */
         int imm;                /** imm mode */
-        struct {                /** symbol or index mode */
+        struct
+        {                /** symbol or index mode */
             /* symbol fount - point to node in symbol table
             * not found - point temporary to char of its name */
             void *symbol;
@@ -52,7 +52,7 @@ typedef struct op_analyze
 } op_analyze;
 
 void init_op_analyze (op_analyze *op, Opcode opcode, char *src_sym_buffer,
-                      char * target_sym_buffer);
+                      char *target_sym_buffer);
 
 int calc_op_size (op_analyze *op);
 
@@ -69,34 +69,36 @@ typedef enum lineType
     def_l
 } lineType;
 
-
 /** info about the line according to its type */
 typedef union Info
 {
     op_analyze *op;    /** operator */
 
-    struct {            /** .data */
+    struct
+    {            /** .data */
         int *arr;
         int len;
     } data;
 
-    struct {            /** .string */
+    struct
+    {            /** .string */
         char *content;
         int len;
     } str;
 
-    struct {             /** .define */
+    struct
+    {             /** .define */
         void *name;
         Bool found;
         int val;
     } define;
 
-    struct {             /** .entry | .extern */
+    struct
+    {             /** .entry | .extern */
         void *name;
         Bool found;
     } ext_ent;
 } Info;
-
 
 typedef struct LineInfo
 {
@@ -107,9 +109,7 @@ typedef struct LineInfo
 
 } LineInfo;
 
-
 void print_line_info (LineInfo *line, char *file_name);
-
 
 /************************* op list ***************************/
 
@@ -117,34 +117,37 @@ typedef vector Op_List;
 
 typedef LineInfo Op_Line;
 
-Op_List* new_op_list (void);
+Op_List *new_op_list (void);
 
-Op_Line* add_to_op_list (Op_List *op_list, Op_Line *op_line);
+Op_Line *add_to_op_list (Op_List *op_list, Op_Line *op_line);
 
 /*todo change the static */
-Op_Line* get_next_op_line(Op_List *op_list);
+Op_Line *get_next_op_line (Op_List *op_list);
 
-void show_op_list(Op_List *op_list, FILE *stream);
+void show_op_list (Op_List *op_list, FILE *stream);
 
 void free_op_list (Op_List *op_list);
 
-
 /************************* entry list ***************************/
 
-/*
- *
- * typedef LineInfo Entry_line
- *
- * typedef vector Entry_List;
- *
- * Entry_List* new_entry_list (void);
- *
- * Entry_line* get_next_entry_line(Entry_List *entry_list);
- *
- * LineInfo *add_to_entry_list (Entry_List *entry_list, Entry_line *entry_line);
- *
- * void free_entry_list (vector *entry_list);
- */
 
+
+typedef  struct Entry_line{
+    Symbol_N *symbol;
+    LinePart *part;   /*line will be null if the symbol resolved  in adding */
+}Entry_line;
+
+typedef vector Entry_List;
+
+Entry_List *new_entry_list (void);
+
+Entry_line *get_next_entry_line (Entry_List *entry_list);
+
+Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol_N *symbol,
+                               LinePart *line_part);
+
+void show_entry_list (Entry_List *entry_list, FILE *stream);
+
+void free_entry_list (vector *entry_list);
 
 #endif /* _ANALYZER_H_ */

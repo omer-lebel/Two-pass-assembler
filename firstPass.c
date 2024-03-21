@@ -16,6 +16,7 @@ void free_file_analyze1 (file_analyze *f)
   free_symbol_table (f->symbol_table);
   free_op_list (f->op_list);
   free_data_segment (f->data_segment);
+  free_entry_list (f->entry_list);
   memset (f, 0, sizeof (file_analyze));
 }
 
@@ -26,7 +27,8 @@ exit_code init_first_pass (file_analyze *f, char *file_name,
   f->symbol_table = new_symbol_table ();
   f->data_segment = new_data_segment (&f->DC);
   f->op_list = new_op_list ();
-  if (!f->symbol_table || !f->data_segment || !f->op_list) {
+  f->entry_list = new_entry_list();
+  if (!f->symbol_table || !f->data_segment || !f->op_list || !f->entry_list) {
     free_file_analyze1 (f);
     return MEMORY_ERROR;
   }
@@ -206,14 +208,17 @@ exit_code define_analyze (LineInfo *line, Symbol_Table *symbol_table)
 }
 
 /************************* ent ext *************************/
-exit_code process_entry_label (LineInfo *line, Symbol_Table *symbol_table)
+exit_code process_entry_label (LineInfo *line, Symbol_Table *symbol_table,
+                               Entry_List *entry_list)
 {
   Symbol_Data *symbol_data;
   Symbol_N *symbol;
+  LinePart *resolved_flag = NULL;
 
   if (!line->info.ext_ent.found) { /*new symbol */
     if (!(symbol = add_symbol (symbol_table, line->info.ext_ent.name,
-                      UNRESOLVED_ENTRY, 0, IS_Entry))) {
+                      UNRESOLVED_ENTRY, 0, IS_Entry))
+          || !add_to_entry_list (entry_list, symbol, resolved_flag)) {
       return MEMORY_ERROR;
     }
     line->info.ext_ent.name = symbol;
@@ -222,16 +227,22 @@ exit_code process_entry_label (LineInfo *line, Symbol_Table *symbol_table)
     return SUCCESS;
   }
 
-  /* else, symbol already exist. can be: unresolved or entry */
+  /* else, symbol already exist. (unresolved / entry / data / code)*/
   symbol = (Symbol_N *) line->info.define.name;
   symbol_data = symbol->data;
 
   if (!symbol_data->isEntry) {
     symbol_data->isEntry = IS_Entry;
     symbol_table->entry_count++;
+
     if (symbol_data->type == UNRESOLVED_USAGE) {
       symbol_data->type = UNRESOLVED_ENTRY_USAGE;
       symbol_table->unresolved_entry_count++;
+      resolved_flag = line->parts;
+    }
+
+    if (!add_to_entry_list (entry_list, symbol, resolved_flag)){
+      return MEMORY_ERROR;
     }
   }
   return SUCCESS;
@@ -278,7 +289,8 @@ Bool ext_ent_analyze (LineInfo *line, Symbol_Table *symbol_table)
   return TRUE;
 }
 
-exit_code ent_analyze (LineInfo *line, Symbol_Table *symbol_table)
+exit_code ent_analyze (LineInfo *line, Symbol_Table *symbol_table,
+                       Entry_List *entry_list)
 {
   char name[MAX_LINE_LEN] = "";
   line->info.ext_ent.name = name;
@@ -287,13 +299,13 @@ exit_code ent_analyze (LineInfo *line, Symbol_Table *symbol_table)
   if (!ext_ent_analyze(line, symbol_table)){
     return ERROR;
   }
-  return process_entry_label (line, symbol_table);
-  // add to entry list
+  return process_entry_label (line, symbol_table, entry_list);
 }
 
 exit_code ext_analyze (LineInfo *line, Symbol_Table *symbol_table)
 {
   char name[MAX_LINE_LEN] = "";
+  exit_code res;
   line->info.ext_ent.name = name;
   line->type_l = ext_l;
 
@@ -430,7 +442,7 @@ exit_code first_process (file_analyze *f, LineInfo *line_info)
     res = define_analyze (line_info, f->symbol_table);
   }
   else if (strcmp (".entry", token) == 0) {
-    res = ent_analyze (line_info, f->symbol_table);
+    res = ent_analyze (line_info, f->symbol_table, f->entry_list);
   }
   else if (strcmp (".extern", token) == 0) {
     res = ext_analyze (line_info, f->symbol_table);
@@ -510,9 +522,10 @@ exit_code firstPass (FILE *input_file, file_analyze *f)
   show_op_list (f->op_list, stdout);
   show_data_segment (f->data_segment, stdout);
   show_symbol_table (f->symbol_table, stdout);
+  show_entry_list(f->entry_list, stdout);
 #endif
-  free_file_analyze1 (f);
 
+  free_file_analyze1 (f);
   return res;
 }
 

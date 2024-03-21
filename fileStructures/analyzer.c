@@ -169,7 +169,7 @@ void free_line_in_op_list (void *elem)
 Op_List *new_op_list (void)
 {
   return create_vector (sizeof (Op_Line), add_line_to_op_list,
-                        print_op_line, free_line_in_op_list);
+                        free_line_in_op_list);
 }
 
 
@@ -178,16 +178,78 @@ Op_Line *add_to_op_list (Op_List *op_list, Op_Line *op_line){
 }
 
 /* todo change */
-LineInfo* get_next_op_line(Op_List *op_list){
+Op_Line* get_next_op_line(Op_List *op_list){
   static int i = 0;
   return get(op_list, i++);
 }
 
 void show_op_list(Op_List *op_list, FILE *stream){
   fprintf (stream, "------------------ op list ------------------\n");
-  print_vector (op_list, stream, "\n", "\n");
+  print_vector (op_list, print_op_line, stream, "\n", "\n");
 }
 
 void free_op_list (Op_List *op_list){
   free_vector (op_list);
+}
+
+
+/************************* entry list ***************************/
+
+void *add_line_to_entry_list (void *elem)
+{
+  Entry_line *entry_line = (Entry_line *) elem;
+  LinePart *tmp_part;
+
+  if (entry_line->part) { /*symbol is unresolved yet */
+    tmp_part = malloc (sizeof (LinePart));
+    if (!tmp_part) {
+      return NULL;
+    }
+    *tmp_part = *entry_line->part;
+    entry_line->part = tmp_part;
+  }
+  return entry_line;
+}
+
+void print_entry_line (const void *elem, FILE *stream)
+{
+  Entry_line *entry_line = (Entry_line *) elem;
+  Symbol_Data *symbol_data = entry_line->symbol->data;
+  fprintf (stream, "%s\t%04u", entry_line->symbol->word, symbol_data->val);
+}
+
+void free_line_in_entry_list (void *elem)
+{
+  Entry_line *entry_line = (Entry_line *) elem;
+  free (entry_line->part);
+}
+
+/* in h*/
+Entry_List *new_entry_list (void)
+{
+  return create_vector (sizeof (Entry_line), add_line_to_entry_list,
+                        free_line_in_entry_list);
+}
+
+Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol_N *symbol,
+                               LinePart *line_part){
+  Entry_line entry_line;
+  entry_line.symbol = symbol;
+  entry_line.part = line_part;
+  return push (entry_list, &entry_line);
+}
+
+/* todo change */
+Entry_line* get_next_entry_line(Entry_List *entry_list){
+  static int i = 0;
+  return get(entry_list, i++);
+}
+
+void show_entry_list(Entry_List *entry_list, FILE *stream){
+  fprintf (stream, "------------------ entry list ------------------\n");
+  print_vector (entry_list, print_entry_line, stream, "\n", "\n");
+}
+
+void free_entry_list (Entry_List *entry_list){
+  free_vector (entry_list);
 }

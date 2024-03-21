@@ -9,7 +9,7 @@
 #define INITIAL_CAPACITY 16
 
 vector *create_n_vector (int n, size_t elem_size, init_elem_func init_elem,
-                         print_elem_func print_elem , free_elem_func free_elem)
+                         free_elem_func free_elem)
 {
   vector *new_vector = (vector *) malloc (sizeof (vector));
   if (!new_vector) {
@@ -27,7 +27,6 @@ vector *create_n_vector (int n, size_t elem_size, init_elem_func init_elem,
   new_vector->elem_size = elem_size;
 
   new_vector->init_elem = init_elem;
-  new_vector->print_elem = print_elem;
   new_vector->free_elem = free_elem;
 
   return new_vector;
@@ -35,9 +34,9 @@ vector *create_n_vector (int n, size_t elem_size, init_elem_func init_elem,
 
 
 vector *create_vector (size_t elem_size, init_elem_func init_elem,
-                       print_elem_func print_elem , free_elem_func free_elem)
+                       free_elem_func free_elem)
 {
-  return create_n_vector(INITIAL_CAPACITY, elem_size, init_elem, print_elem, free_elem);
+  return create_n_vector(INITIAL_CAPACITY, elem_size, init_elem, free_elem);
 }
 
 
@@ -106,12 +105,13 @@ void free_vector (vector *v)
   free (v);
 }
 
-void print_vector (vector *v, FILE *stream, char* separator, char *ending)
+void print_vector (vector *v, print_elem_func print_elem,FILE *stream,
+                   char* separator, char *ending)
 {
   int i;
-  if ( v->print_elem) {
+  if ( print_elem) {
     for (i = 0; i < v->size; ++i) {
-      v->print_elem (get (v, i), stream);
+      print_elem (get (v, i), stream);
       if (i < v->size - 1){
         fprintf (stream, "%s", separator);
       }

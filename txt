@@ -1,5 +1,29 @@
-.extern EXTvEXT
-.extern EXTvEXT
+; =============== entry ==================
 
-jmp USEvDEF
-.define USEvDEF=2
+;--------------- unresolved
+;unresolved entry 1
+.entry ENT
+
+;unresolved use & entry 2
+prn USEvENT
+.entry USEvENT
+
+;unresolved entry & use 3
+.entry ENTvUSE
+prn ENTvUSE
+
+;--------------- resolved entry & use
+mov USE3, r3
+.entry USE3
+USE3: .data 3
+
+.entry USE4
+mov USE4, r4
+USE4: hlt
+
+;--------------- resolved entry
+.entry ENT5
+ENT5: .string "hi"
+
+.entry ENT6
+ENT6: cmp #1, #2

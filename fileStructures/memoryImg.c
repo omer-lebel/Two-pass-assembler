@@ -58,14 +58,14 @@ void print_data_word(const void* elem, FILE *stream){
 Data_Segment *new_data_segment (int *DC)
 {
   *DC = 0;
-  return create_vector (sizeof (DsWord), NULL, print_data_word, NULL);
+  return create_vector (sizeof (DsWord), NULL, NULL);
 }
 
 
 void show_data_segment (Data_Segment *data_segment, FILE *stream)
 {
   fprintf (stream, "\n----------------- data segment -----------------\n");
-  print_vector (data_segment, stream, "|", "|\n");
+  print_vector (data_segment, print_data_word, stream, "|", "|\n");
 }
 
 void free_data_segment (Data_Segment *data_segment)

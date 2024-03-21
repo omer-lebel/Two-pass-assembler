@@ -322,7 +322,7 @@ state src_handler (LineInfo *line, Symbol_Table *table, state next_state)
                           next_state);
 }
 
-state comma_handler (LineInfo *line, Symbol_Table *table, state next_state)
+state comma_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token;
   if (IS_COMMA(*token)) {
@@ -453,7 +453,6 @@ state
 identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token, *target;
-  Symbol_Data *symbol_data;
   Symbol_N *symbol;
 
   if (IS_EMPTY(token)) { /* .define _ */

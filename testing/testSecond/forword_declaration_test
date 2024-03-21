@@ -25,12 +25,13 @@ INT: .data 1,2,3,four
 | h | e | l | l | o |   | 1 | 2 | 3 | 4 |
 
 ----------------- symbol table -----------------
- four             0      define          not external    4
- ENT              108    operation       not external
- LOOP             110    operation       not external
- STR              115    directive       not external
- INT              121    directive       not external
- EXT              0      directive       external
+ four             4      define          not entry
+ STR              115    directive       not entry
+ INT              121    directive       not entry
+ ENT              108    code            entry
+ EXT              0      external        not entry
+ LOOP             110    code            not entry
+
 
 ----------------- extern table -----------------
 EXT      0105
