@@ -1,7 +1,10 @@
 /*
  Created by OMER on 3/6/2024.
 */
-
+/*
+ * line info --> move to setting??
+ * op_line and op_analyze
+ */
 
 #ifndef _ANALYZER_H_
 #define _ANALYZER_H_
@@ -9,6 +12,9 @@
 #include "../setting.h"
 #include "../utils/text.h"
 #include "../utils/vector.h"
+#include "symbolTable.h"
+
+/************************* op analyze ***************************/
 
 typedef enum Operand_Type
 {
@@ -45,6 +51,14 @@ typedef struct op_analyze
 
 } op_analyze;
 
+void init_op_analyze (op_analyze *op, Opcode opcode, char *src_sym_buffer,
+                      char * target_sym_buffer);
+
+int calc_op_size (op_analyze *op);
+
+/************************* line info ***************************/
+
+
 typedef enum lineType
 {
     str_l,
@@ -72,12 +86,14 @@ typedef union Info
     } str;
 
     struct {             /** .define */
-        char *name;
+        void *name;
+        Bool found;
         int val;
     } define;
 
     struct {             /** .entry | .extern */
-        char *name;
+        void *name;
+        Bool found;
     } ext_ent;
 } Info;
 
@@ -92,17 +108,43 @@ typedef struct LineInfo
 } LineInfo;
 
 
-
-/****************** op list *******************/
-void init_op_analyze (op_analyze *op, Opcode opcode, char *src_sym_buffer,
-                      char * target_sym_buffer);
-//vector *init_op_list (void);
-//op_analyze *add_to_op_list (vector *op_list, op_analyze *op);
-int calc_op_size (op_analyze *op);
-void print_op_analyze (op_analyze *op);
-void print_op_list (vector *op_list, char *file_name);
-void free_op_list (vector *op_list);
-
 void print_line_info (LineInfo *line, char *file_name);
+
+
+/************************* op list ***************************/
+
+typedef vector Op_List;
+
+typedef LineInfo Op_Line;
+
+Op_List* new_op_list (void);
+
+Op_Line* add_to_op_list (Op_List *op_list, Op_Line *op_line);
+
+/*todo change the static */
+Op_Line* get_next_op_line(Op_List *op_list);
+
+void show_op_list(Op_List *op_list, FILE *stream);
+
+void free_op_list (Op_List *op_list);
+
+
+/************************* entry list ***************************/
+
+/*
+ *
+ * typedef LineInfo Entry_line
+ *
+ * typedef vector Entry_List;
+ *
+ * Entry_List* new_entry_list (void);
+ *
+ * Entry_line* get_next_entry_line(Entry_List *entry_list);
+ *
+ * LineInfo *add_to_entry_list (Entry_List *entry_list, Entry_line *entry_line);
+ *
+ * void free_entry_list (vector *entry_list);
+ */
+
 
 #endif /* _ANALYZER_H_ */

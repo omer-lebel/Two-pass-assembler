@@ -3,7 +3,7 @@
 #define IS_COMMENT(s) ((s)[0] == ';')
 
 exit_code preAssembler (char *file_name, FILE *input, FILE *output,
-                        exit_code *error_flag)
+                        Bool *error_flag)
 {
   Node *curr_mcr = NULL;
   exit_code res = SUCCESS;

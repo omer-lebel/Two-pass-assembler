@@ -45,7 +45,7 @@ typedef struct mcrData
  * @return Returns EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
 exit_code preAssembler (char *file_name, FILE *input, FILE *output,
-                        exit_code *overflow);
+                        Bool *error_flag);
 
 /**
  * !!!!!!!!!!!!!!!!!!!!!!!!!!!

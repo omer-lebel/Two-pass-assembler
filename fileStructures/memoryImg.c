@@ -8,14 +8,8 @@
 /****************** data segment *******************/
 
 
-vector *init_data_seg (int *DC)
-{
-  *DC = 0;
-  return create_vector (sizeof (DsWord), NULL, NULL, NULL);
-}
-
-Bool add_to_data_seg (vector *data_segment, int *DC,
-                           DsType type, void *arr, int size)
+Bool add_to_data_segment (Data_Segment *data_segment, int *DC,
+                          DsType type, void *arr, int size)
 {
   DsWord word;
   int *intArr;
@@ -47,42 +41,56 @@ Bool add_to_data_seg (vector *data_segment, int *DC,
   return TRUE;
 }
 
-void print_data_segment (vector *data_segment, int curr_DC)
-{
-  int i;
+void print_data_word(const void* elem, FILE *stream){
   char c;
-  DsWord *word;
-  printf ("\n----------------- data segment -----------------\n");
-  for (i = 0; i < curr_DC; ++i) {
-    word = (DsWord *) get (data_segment, i);
-    if (word->type == INT_TYPE) {
-      printf ("| %d ", word->val);
-    }
-    else if ((c = (char) word->val) != '\0') { /* char */
-      printf ("| %c ", c);
-    }
-    else { /* '\0' */
-      printf ("|   ");
-    }
+  DsWord *ds_word = (DsWord*) elem;
+  if (ds_word->type == INT_TYPE) {
+    fprintf (stream, " %d ", ds_word->val);
   }
-  if (i != 0) {
-    printf ("|\n");
+  else if ((c = (char) ds_word->val) != '\0') { /* char */
+    fprintf (stream, " %c ", c);
+  }
+  else { /* '\0' */
+    fprintf (stream, "   ");
   }
 }
 
-/****************** code segment *******************/
-
-vector *init_code_seg (int IC)
+Data_Segment *new_data_segment (int *DC)
 {
-  return create_n_vector (MACHINE_WORD_SIZE, IC, NULL, NULL, NULL);
+  *DC = 0;
+  return create_vector (sizeof (DsWord), NULL, print_data_word, NULL);
 }
 
+
+void show_data_segment (Data_Segment *data_segment, FILE *stream)
+{
+  fprintf (stream, "\n----------------- data segment -----------------\n");
+  print_vector (data_segment, stream, "|", "|\n");
+}
+
+void free_data_segment (Data_Segment *data_segment)
+{
+  free_vector (data_segment);
+}
+
+void print_data_segment (Data_Segment *data_segment, int *memInx, int len,
+                         FILE *stream)
+{
+  DsWord *word;
+  int i = 0;
+  for (; *memInx < len; ++(*memInx), ++i) {
+    word = (DsWord *) get (data_segment, i);
+    fprintf (stream, "%04d ", *memInx);
+    print_special_base_word (word->val, (len - *memInx == 1), stream);
+  }
+}
+
+/****************** print memory img *******************/
 
 /* don't take care of add 2 registers! */
-void *add_operand_word (vector *code_segment, Operand *operand)
+void print_operand_word (Operand *operand, int *memInx, int len, FILE *stream)
 {
-  unsigned short int word;
-  vector *success_add = NULL;
+  unsigned short int word = 0;
   Symbol_Data *symbol;
   int are = 0;
 
@@ -91,17 +99,16 @@ void *add_operand_word (vector *code_segment, Operand *operand)
       word = imm_word (operand->info.imm);
       break;
     case DIRECT_ADD:
-      symbol = (Symbol_Data*)((Symbol_N*)operand->info.symInx.symbol)->data;
+      symbol = (Symbol_Data *) ((Symbol_N *) operand->info.symInx.symbol)->data;
       are = symbol->type == EXTERN ? external_b : relocatable_b;
       word = label_word (symbol->val, are);
       break;
     case INDEX_ADD:
-      symbol = (Symbol_Data*)((Symbol_N*)operand->info.symInx.symbol)->data;
+      symbol = (Symbol_Data *) ((Symbol_N *) operand->info.symInx.symbol)->data;
       word = label_word (symbol->val, are);
-      success_add = push (code_segment, &word); /* add the label */
-      if (success_add) {
-        word = imm_word (operand->info.symInx.offset); /* add the index */
-      }
+      printf ("%04d\t", (*memInx)++); /* print the label */
+      print_special_base_word (word, (len - *memInx == 1), stream);
+      word = imm_word (operand->info.symInx.offset); /* add the index */
       break;
     case REG_ADD:
       if (operand->type == SRC)
@@ -109,92 +116,62 @@ void *add_operand_word (vector *code_segment, Operand *operand)
       else /* TARGET */
         word = registers_word (0, operand->info.reg_num);
       break;
-    case NONE_ADD:
-      break;
+    case NONE_ADD: /* never happened */
+      return;
   }
-  success_add = push (code_segment, &word);
-  return success_add;
+  printf ("%04d\t", (*memInx)++);
+  print_special_base_word (word, (len - *memInx == 1), stream);
 }
 
-void *add_to_code_seg (vector *code_segment, op_analyze *op)
+void add_op_line_to_code_segment (op_analyze *op, int *memInx, int len, FILE *stream)
 {
   unsigned short int word, scr_code, target_code;
-  void *success_add = NULL;
-
   /* first word */
   scr_code = (op->src.add_mode == NONE_ADD) ? 0 : op->src.add_mode;
   target_code = (op->target.add_mode == NONE_ADD) ? 0 : op->target.add_mode;
   word = first_word (op->opcode, scr_code, target_code);
-  success_add = push (code_segment, &word);
+  printf ("%04d\t", (*memInx)++);
+  print_special_base_word (word, (len - *memInx == 1), stream);
 
-  /*  both operand are register and they share the second word */
-  if ((op->src.add_mode == REG_ADD) && (op->target.add_mode == REG_ADD)
-  && success_add){
+  /*  both operand are registers, so they share the second word */
+  if ((op->src.add_mode == REG_ADD) && (op->target.add_mode == REG_ADD)) {
     word = registers_word (op->src.info.reg_num, op->target.info.reg_num);
-    success_add = push (code_segment, &word);
+    printf ("%04d\t", (*memInx)++);
+    print_special_base_word (word, (len - *memInx == 1), stream);
   }
 
-  else{
+  else {
     /* src word */
-    if ((op->src.add_mode != NONE_ADD) && success_add) {
-      success_add = add_operand_word (code_segment, &op->src);
+    if ((op->src.add_mode != NONE_ADD)) {
+      print_operand_word (&op->src, memInx, len, stream);
     }
     /* target word */
-    if ((op->target.add_mode != NONE_ADD) && success_add) {
-      success_add = add_operand_word (code_segment, &op->target);
-    }
-  }
-
-  return success_add;
-}
-
-void print_code_segment_binary(vector* code_segment){
-  size_t i;
-  unsigned short int *word;
-  printf ("\n----------------- code segment -----------------\n");
-  for (i = 0; i < code_segment->size; ++i){
-    word = (unsigned short int*) get (code_segment, i);
-    printf("%04lu\t", i + IC_START);
-    print_binary_word (*word);
-  }
-}
-
-void print_code_segment(vector* code_segment){
-  size_t i;
-  unsigned short int *word;
-  printf ("\n----------------- code segment -----------------\n");
-  for (i = 0; i < code_segment->size; ++i){
-    word = (unsigned short int*) get (code_segment, i);
-    printf("%04lu\t", i + IC_START);
-    print_special_base_word (*word, stdin);
-  }
-}
-
-void print_memory_img(vector* code_segment, vector* data_segment,
-                      FILE *stream){
-  size_t i, mem_ind = IC_START;
-  size_t len = code_segment->size + data_segment->size + IC_START;
-  unsigned short int *word;
-  DsWord *data_seg_word;
-
-  fprintf(stream, "%4lu %lu\n", code_segment->size, data_segment->size);
-
-  /* code */
-  for (i = 0; i < code_segment->size; ++i, ++mem_ind){
-    word = (unsigned short int*) get (code_segment, i);
-    fprintf(stream, "%04lu ", mem_ind);
-    print_special_base_word (*word, stream);
-    if (mem_ind < len - 1){ /*todo check about condition */
-      fputc ('\n', stream);
-    }
-  }
-  /* data */
-  for (i=0; i < data_segment->size; ++i, ++mem_ind){
-    data_seg_word = (DsWord*) get (data_segment, i);
-    fprintf(stream, "%04lu ", mem_ind);
-    print_special_base_word (data_seg_word->val, stream);
-    if (mem_ind < len - 1){
-      fputc ('\n', stream);
+    if ((op->target.add_mode != NONE_ADD)) {
+      print_operand_word (&op->target, memInx, len, stream);
     }
   }
 }
+
+void print_code_segment (Op_List *op_list, int *memInx, int len, FILE *stream)
+{
+  op_analyze *op;
+  int i = 0;
+  for (; *memInx < len; ++(*memInx), ++i) {
+    op = (op_analyze *) get (op_list, i);
+    add_op_line_to_code_segment (op, memInx, len, stream);
+  }
+}
+
+void print_memory_img (Op_List *op_list, int ic, Data_Segment *data_segment,
+                       int dc, FILE *stream)
+{
+  int len = ic + dc + IC_START;
+  int memInx = IC_START;
+
+  fprintf (stream, "%4d %d\n", ic, dc);
+
+  print_code_segment (op_list, &memInx, len, stream);
+
+  print_data_segment (data_segment, &memInx, len, stream);
+}
+

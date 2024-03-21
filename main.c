@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #include "setting.h"
+#include "fileStructures/fileStructures.h"
 #include "preAssembler.h"
 #include "firstPass.h"
 //#include "second.h"

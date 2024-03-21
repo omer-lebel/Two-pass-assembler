@@ -39,7 +39,7 @@ void* get_tail(vector * v);
 
 void* push(vector * v, void* element);
 
-void print_vector (vector *v, FILE *stream);
+void print_vector (vector *v, FILE *stream, char* separator, char *ending);
 
 void free_vector(vector* v);
 

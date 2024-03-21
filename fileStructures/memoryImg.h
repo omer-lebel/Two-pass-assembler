@@ -28,28 +28,21 @@ typedef struct DsWord
     int val: 14;
 } DsWord;
 
+typedef vector Data_Segment;
 
-vector* init_data_seg(int *curr_DC);
+Data_Segment* new_data_segment(int *DC);
 
-Bool add_to_data_seg (vector *data_segment, int *DC,
-                           DsType type, void *arr, int size);
+Bool add_to_data_segment (Data_Segment *data_segment, int *DC,
+                          DsType type, void *arr, int size);
 
-void print_data_segment (vector *data_segment, int cur_DC);
+void show_data_segment (Data_Segment *data_segment, FILE *stream);
+
+void free_data_segment (Data_Segment *data_segment);
 
 
-/****************** text segment *******************/
 
-
-vector* init_code_seg(int IC);
-
-void *add_to_code_seg (vector *code_segment, op_analyze *op);
-
-void print_code_segment_binary(vector* code_segment);
-
-void print_code_segment(vector* code_segment);
-
-void print_memory_img(vector* code_segment, vector* data_segment,
-                      FILE *stream);
+void print_memory_img(Op_List * op_list, int ic, Data_Segment * data_segment,
+                      int dc, FILE *stream);
 
 
 #endif /*_MEMORY_IMG_H_ */

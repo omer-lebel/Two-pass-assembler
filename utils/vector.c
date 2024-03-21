@@ -106,12 +106,18 @@ void free_vector (vector *v)
   free (v);
 }
 
-void print_vector (vector *v, FILE *stream)
+void print_vector (vector *v, FILE *stream, char* separator, char *ending)
 {
   int i;
-  if (v->free_elem) {
+  if ( v->print_elem) {
     for (i = 0; i < v->size; ++i) {
       v->print_elem (get (v, i), stream);
+      if (i < v->size - 1){
+        fprintf (stream, "%s", separator);
+      }
+      else{
+        fprintf (stream, "%s", ending);
+      }
     }
   }
 }

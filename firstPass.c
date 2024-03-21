@@ -14,10 +14,8 @@
 void free_file_analyze1 (file_analyze *f)
 {
   free_symbol_table (f->symbol_table);
-//  free_vector (f->data_segment);
-//  free_op_list (f->op_list);
-//  free_entry_table (f->entry_table);
-  free_vector (f->data_segment);
+  free_op_list (f->op_list);
+  free_data_segment (f->data_segment);
   memset (f, 0, sizeof (file_analyze));
 }
 
@@ -26,10 +24,9 @@ exit_code init_first_pass (file_analyze *f, char *file_name,
                            char *label)
 {
   f->symbol_table = new_symbol_table ();
-  f->data_segment = init_data_seg (&f->DC);
-//  f->op_list = init_op_list ();
-//  f->entry_table = init_entry_table ();
-  if (!f->symbol_table || !f->data_segment) {
+  f->data_segment = new_data_segment (&f->DC);
+  f->op_list = new_op_list ();
+  if (!f->symbol_table || !f->data_segment || !f->op_list) {
     free_file_analyze1 (f);
     return MEMORY_ERROR;
   }
@@ -39,7 +36,6 @@ exit_code init_first_pass (file_analyze *f, char *file_name,
   line_info->parts = line_part;
 
   line_part->file = file_name; /*todo delete */
-
   return SUCCESS;
 }
 
@@ -58,7 +54,9 @@ void restart_line_info (LineInfo *line)
 }
 
 /* called when symbol is resolved */
-void update_unresolved_count(Symbol_Data *symbol_data, Symbol_Table *symbol_table){
+void
+update_unresolved_count (Symbol_Data *symbol_data, Symbol_Table *symbol_table)
+{
   if (symbol_data->type == UNRESOLVED_ENTRY_USAGE) {
     symbol_table->unresolved_entry_count--;
     symbol_table->unresolved_usage_count--;
@@ -86,7 +84,7 @@ exit_code process_directive_label (LineInfo *line, Symbol_Table *symbol_table,
   /* else, the symbol already exist.
    * since validation already done, it's must be unresolved symbol */
   symbol_data = (Symbol_Data *) symbol->data;
-  update_unresolved_count(symbol_data, symbol_table);
+  update_unresolved_count (symbol_data, symbol_table);
   symbol_data->type = DATA;
   symbol_data->val = DC;
   return SUCCESS;
@@ -123,8 +121,8 @@ exit_code str_analyze (LineInfo *line, file_analyze *f)
     return res;
   }
   /* add to data seg */
-  if (!add_to_data_seg (f->data_segment, &(f->DC), CHAR_TYPE,
-                        line->info.str.content, line->info.str.len + 1)) {
+  if (!add_to_data_segment (f->data_segment, &(f->DC), CHAR_TYPE,
+                            line->info.str.content, line->info.str.len + 1)) {
     return MEMORY_ERROR;
   }
 
@@ -149,8 +147,8 @@ exit_code data_analyze (LineInfo *line, file_analyze *f)
   }
 
   /* add to data seg */
-  if (!add_to_data_seg (f->data_segment, &(f->DC),
-                        INT_TYPE, line->info.data.arr, line->info.data.len)) {
+  if (!add_to_data_segment (f->data_segment, &(f->DC),
+                            INT_TYPE, line->info.data.arr, line->info.data.len)) {
     return MEMORY_ERROR;
   }
 
@@ -158,6 +156,33 @@ exit_code data_analyze (LineInfo *line, file_analyze *f)
 }
 
 /************************* define *************************/
+exit_code process_define_label (LineInfo *line, Symbol_Table *symbol_table)
+{
+  Symbol_N *symbol;
+  Symbol_Data *symbol_data;
+
+  if (!line->info.define.found) {
+    if (!(symbol = add_symbol (symbol_table, line->info.define.name,
+                     DEFINE, line->info.define.val, NOT_ENTRY))) {
+      return MEMORY_ERROR;
+    }
+    line->info.define.name = symbol;
+    return SUCCESS;
+  }
+  /* else, symbol already exist */
+  /* only redeclaration allowed here is redeclaration of define */
+  symbol = (Symbol_N *) line->info.define.name;
+  symbol_data = (Symbol_Data*) symbol->data;
+  get_identifier_tok (line->parts, FALSE);
+  if (symbol_data->val != line->info.define.val) { /* x = 1 | x = 2 */
+    r_error ("redeclaration of ", line->parts, "");
+    return ERROR;
+  }
+  /* x = 1 | x = 1 */
+  r_warning ("", line->parts, " has already declared in earlier line");
+  return SUCCESS;
+}
+
 exit_code define_analyze (LineInfo *line, Symbol_Table *symbol_table)
 {
   char def_name[MAX_LINE_LEN] = "";
@@ -177,62 +202,33 @@ exit_code define_analyze (LineInfo *line, Symbol_Table *symbol_table)
     return ERROR;
   }
 
-  if ((find_symbol (symbol_table, line->info.define.name))) {
-    get_identifier_tok (line->parts, !IS_EMPTY(line->label));
-    r_error ("redeclaration of ", line->parts, "");
-    return ERROR;
-  }
-  if (!add_symbol (symbol_table, line->info.define.name,
-                   DEFINE, line->info.define.val, NOT_ENTRY)) {
-    return MEMORY_ERROR;
-  }
-  return SUCCESS;
+  return process_define_label (line, symbol_table);
 }
 
 /************************* ent ext *************************/
-exit_code ext_ent_analyze (LineInfo *line, Symbol_Table *symbol_table)
-{
-  if (!run_fsm (line, symbol_table)) {
-    return ERROR;
-  }
-
-  if (!IS_EMPTY(line->label)) {
-    lineToPostfix (line->parts); /*get the fist tok again for the error msg */
-    lineTok (line->parts);
-    r_warning ("label ", line->parts, " is ignored");
-  }
-  return SUCCESS;
-}
-
-/************************* entry *************************/
-exit_code process_entry_label (Symbol_Table *symbol_table, LineInfo *line)
+exit_code process_entry_label (LineInfo *line, Symbol_Table *symbol_table)
 {
   Symbol_Data *symbol_data;
-  Symbol_N *symbol = find_symbol (symbol_table, line->info.ext_ent.name);
-  if (!symbol) {
-    if (!(add_symbol (symbol_table, line->info.ext_ent.name,
+  Symbol_N *symbol;
+
+  if (!line->info.ext_ent.found) { /*new symbol */
+    if (!(symbol = add_symbol (symbol_table, line->info.ext_ent.name,
                       UNRESOLVED_ENTRY, 0, IS_Entry))) {
       return MEMORY_ERROR;
     }
+    line->info.ext_ent.name = symbol;
     symbol_table->unresolved_entry_count++;
+    symbol_table->entry_count++;
     return SUCCESS;
   }
 
-  /* else, label already exist */
-  symbol_data = (Symbol_Data *) symbol->data;
-  get_identifier_tok (line->parts, !IS_EMPTY(line->label));
+  /* else, symbol already exist. can be: unresolved or entry */
+  symbol = (Symbol_N *) line->info.define.name;
+  symbol_data = symbol->data;
 
-  if (symbol_data->type == DEFINE || symbol_data->type == EXTERN) {
-    r_error ("redeclaration of ", line->parts, "");
-    return ERROR;
-  }
-
-  /* label that can be entry label: */
-  if (symbol_data->isEntry) {
-    r_warning ("", line->parts, " has already declared in earlier line");
-  }
-  else{ /*already exist label*/
+  if (!symbol_data->isEntry) {
     symbol_data->isEntry = IS_Entry;
+    symbol_table->entry_count++;
     if (symbol_data->type == UNRESOLVED_USAGE) {
       symbol_data->type = UNRESOLVED_ENTRY_USAGE;
       symbol_table->unresolved_entry_count++;
@@ -241,72 +237,70 @@ exit_code process_entry_label (Symbol_Table *symbol_table, LineInfo *line)
   return SUCCESS;
 }
 
-exit_code entry_analyze (LineInfo *line, Symbol_Table *symbol_table)
-{
-  char ent_name[MAX_LINE_LEN] = "";
-  exit_code res;
-  line->info.ext_ent.name = ent_name;
-  line->type_l = ent_l;
-
-  if (ext_ent_analyze (line, symbol_table) != SUCCESS) {
-    return ERROR;
-  }
-
-  res = process_entry_label (symbol_table, line);
-  if (res != SUCCESS) {
-    return res;
-  }
-
-  return SUCCESS;
-}
-
-/************************* extern *************************/
 exit_code process_extern_label (LineInfo *line, Symbol_Table *symbol_table)
 {
   Symbol_Data *symbol_data;
-  Symbol_N *symbol = find_symbol (symbol_table, line->info.ext_ent.name);
-  if (!symbol) { /*new symbol */
-    if (!(add_symbol (symbol_table, line->info.ext_ent.name, EXTERN, 0,
-                      NOT_ENTRY))) {
+  Symbol_N *symbol;
+
+  if (!line->info.ext_ent.found) { /*new symbol */
+    if (!(symbol = add_symbol (symbol_table, line->info.ext_ent.name,
+                               EXTERN, 0, NOT_ENTRY))) {
       return MEMORY_ERROR;
     }
+    symbol_table->extern_count++;
+    line->info.ext_ent.name = symbol;
     return SUCCESS;
   }
 
-  /* else, label already exist */
-  symbol_data = (Symbol_Data *) symbol->data;
-  if (symbol_data->type == UNRESOLVED_USAGE) {
+  /* else, label already exist. can be: extern or unresolved */
+  symbol = (Symbol_N *) line->info.define.name;
+  symbol_data = symbol->data;
+
+  if (symbol_data->type != EXTERN) { /* unresolved */
     symbol_data->type = EXTERN;
     symbol_table->unresolved_usage_count--;
-    return SUCCESS;
+    symbol_table->extern_count++;
   }
-  /* label is resolved/entry, therefore there is an error or warning: */
-  get_identifier_tok (line->parts, !IS_EMPTY(line->label));
-  if (symbol_data->type == EXTERN) {
-    r_warning ("", line->parts, " has already declared in earlier line");
-    return SUCCESS;
-  }
-  r_error ("redeclaration of ", line->parts, "");
-  return ERROR;
+  return SUCCESS;
 }
 
-exit_code extern_analyze (LineInfo *line, Symbol_Table *symbol_table)
+Bool ext_ent_analyze (LineInfo *line, Symbol_Table *symbol_table)
 {
-  char ext_name[MAX_LINE_LEN] = "";
-  exit_code res;
-  line->info.ext_ent.name = ext_name;
+  if (!run_fsm (line, symbol_table)) {
+    return FALSE;
+  }
+
+  if (!IS_EMPTY(line->label)) {
+    lineToPostfix (line->parts); /*get the fist tok again for the error msg */
+    lineTok (line->parts);
+    r_warning ("label ", line->parts, " is ignored");
+  }
+  return TRUE;
+}
+
+exit_code ent_analyze (LineInfo *line, Symbol_Table *symbol_table)
+{
+  char name[MAX_LINE_LEN] = "";
+  line->info.ext_ent.name = name;
+  line->type_l = ent_l;
+
+  if (!ext_ent_analyze(line, symbol_table)){
+    return ERROR;
+  }
+  return process_entry_label (line, symbol_table);
+  // add to entry list
+}
+
+exit_code ext_analyze (LineInfo *line, Symbol_Table *symbol_table)
+{
+  char name[MAX_LINE_LEN] = "";
+  line->info.ext_ent.name = name;
   line->type_l = ext_l;
 
-  if (ext_ent_analyze (line, symbol_table) != SUCCESS) {
+  if (!ext_ent_analyze(line, symbol_table)){
     return ERROR;
   }
-
-  res = process_extern_label (line, symbol_table);
-  if (res != SUCCESS) {
-    return ERROR;
-  }
-
-  return SUCCESS;
+  return process_extern_label (line, symbol_table);
 }
 
 /************************* operator *************************/
@@ -342,7 +336,7 @@ Bool process_code_label (Symbol_Table *symbol_table, char *label, int address)
   /* else, the symbol already exist.
    * since validation already done, it's must be unresolved symbol */
   symbol_data = (Symbol_Data *) symbol->data;
-  update_unresolved_count(symbol_data, symbol_table);
+  update_unresolved_count (symbol_data, symbol_table);
   symbol_data->type = CODE;
   return TRUE;
 }
@@ -401,10 +395,9 @@ exit_code op_handler (LineInfo *line, Opcode opcode, file_analyze *f)
     return MEMORY_ERROR;
   }
 
-/*  if (!add_to_op_list (f->op_list, line->op)) {
+  if (!add_to_op_list (f->op_list, line)) {
     return MEMORY_ERROR;
-  }*/
-
+  }
 
   f->IC += calc_op_size (line->info.op);
   return SUCCESS;
@@ -437,10 +430,10 @@ exit_code first_process (file_analyze *f, LineInfo *line_info)
     res = define_analyze (line_info, f->symbol_table);
   }
   else if (strcmp (".entry", token) == 0) {
-    res = entry_analyze (line_info, f->symbol_table);
+    res = ent_analyze (line_info, f->symbol_table);
   }
   else if (strcmp (".extern", token) == 0) {
-    res = extern_analyze (line_info, f->symbol_table);
+    res = ext_analyze (line_info, f->symbol_table);
   }
   else if (strcmp (".string", token) == 0) {
     res = str_analyze (line_info, f);
@@ -497,8 +490,8 @@ exit_code firstPass (FILE *input_file, file_analyze *f)
   init_line_parts (&line_part, prefix, token, postfix);
   res = init_first_pass (f, f->file_name, &line_info, &line_part, label);
 
-  while (fgets (line_info.parts->line, MAX_LINE_LEN, input_file)
-         && res != MEMORY_ERROR) {
+  while (res != MEMORY_ERROR &&
+         fgets (line_info.parts->line, MAX_LINE_LEN, input_file)) {
     restart_line_info (&line_info);
     lineTok (line_info.parts);
 
@@ -514,10 +507,9 @@ exit_code firstPass (FILE *input_file, file_analyze *f)
     f->error += res;
   }
 #ifdef DEBUG
-  /* print_op_list (f->op_list, f->file_name); */
-  print_data_segment (f->data_segment, f->DC);
-  print_symbol_table (f->symbol_table, stdout);
-  /*print_entry_table (f->entry_table, f->file_name);*/
+  show_op_list (f->op_list, stdout);
+  show_data_segment (f->data_segment, stdout);
+  show_symbol_table (f->symbol_table, stdout);
 #endif
   free_file_analyze1 (f);
 

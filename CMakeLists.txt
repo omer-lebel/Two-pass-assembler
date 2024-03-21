@@ -23,6 +23,6 @@ add_executable(project___mama14
         firstPass.c firstPass.h
         secondPass.c secondPass.h
 
-        main.c)
+        main.c fileStructures/fileStructures.h fileStructures/externUsages.c fileStructures/externUsages.h)
 
 

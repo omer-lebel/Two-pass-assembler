@@ -202,12 +202,12 @@ void r_msg (char *type, char *color, char *msg_before, LinePart *line, char
 
   /* print line number and the line with the token bolded in color
    i | line with error cause bolted in color */
-  printf (" %-2lu | %s%s%s" RESET "%s\n",
+  printf (" %-3lu | %s%s%s" RESET "%s\n",
           line->num, line->prefix, color, line->token, line->postfix);
 
   /* print an arrow pointing to the location of the token in the line
        |           ^~~~~~~~~                 */
-  printf (" %-2s |", " ");
+  printf (" %-3s |", " ");
   for (i = 0; i < (int) strlen (line->prefix); i++) {
     printf (" ");
   }

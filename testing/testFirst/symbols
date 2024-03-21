@@ -6,7 +6,7 @@ bne DEFvUSE
 
 ;extern and than use
 .extern EXTvUSE
-jsr DEFvUSE
+jsr EXTvUSE
 
 ;entry and than use
 .entry ENTvUSE
@@ -82,8 +82,11 @@ mov USEvEXT3, USEvEXT3
 ;mov r2, df[3]
 
 ;--------------------- define
+;code than define (error)
 CODEvDEF: jmp USEvDEF
 .define CODEvDEF=1
+
+;use and than define (nothing. error in the use in the second pass)
 .define USEvDEF=2
 
 .entry ENTvDEF
@@ -92,8 +95,10 @@ CODEvDEF: jmp USEvDEF
 .extern EXTvDEF
 .define EXTvDEF=4
 
-.define DEFvDEF=-5
-.define DEFvDEF=5
+;define and than define (warning and than error)
+.define DEFvDEF = 5
+.define DEFvDEF = 5
+.define DEFvDEF = 0
 
 ;--------------------- code or data
 
@@ -117,9 +122,6 @@ USEvCODE: prn r4
 
 txt.am:5  error: 'DEFvUSE' invalid operand
  5  | bne DEFvUSE
-    |     ^~~~~~~
-txt.am:9  error: 'DEFvUSE' invalid operand
- 9  | jsr DEFvUSE
     |     ^~~~~~~
 txt.am:28 error: redeclaration of 'EXTvENT'
  28 | .entry EXTvENT
@@ -151,9 +153,6 @@ txt.am:73 error: redeclaration of 'USEvENT'
 txt.am:86 error: redeclaration of 'CODEvDEF'
  86 | .define CODEvDEF=1
     |         ^~~~~~~~
-txt.am:87 error: redeclaration of 'USEvDEF'
- 87 | .define USEvDEF=2
-    |         ^~~~~~~
 txt.am:90 error: redeclaration of 'ENTvDEF'
  90 | .define ENTvDEF=3
     |         ^~~~~~~

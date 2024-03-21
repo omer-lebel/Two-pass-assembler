@@ -4,7 +4,6 @@
 
 
 #include "machineWord.h"
-#include "../setting.h"
 
 #define OPCODE_SHIFT 6
 #define ADD_MOD_SRC_SHIFT 4
@@ -78,7 +77,8 @@ void print_binary_word(unsigned short word) {
   printf("\n");
 }
 
-void print_special_base_word(unsigned short binaryWord, FILE *stream) {
+void print_special_base_word(unsigned short binaryWord, Bool is_last,
+                             FILE *stream) {
   int i;
   char c;
   unsigned int pair;
@@ -102,5 +102,8 @@ void print_special_base_word(unsigned short binaryWord, FILE *stream) {
         break;
     }
     fputc (c, stream);
+  }
+  if (!is_last){
+    fputc ('\n', stream);
   }
 }

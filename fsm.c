@@ -108,7 +108,7 @@ Bool is_define (LineInfo *line, char *token, Symbol_Table *symbol_table,
                 int *imm)
 {
   Symbol_Data *symbol_data;
-  Symbol_N *symbol = find_symbol(symbol_table, token);
+  Symbol_N *symbol = find_symbol (symbol_table, token);
   if (symbol) {
     symbol_data = (Symbol_Data *) symbol->data;
     if (symbol_data->type == DEFINE) {
@@ -146,7 +146,7 @@ Bool is_imm (LineInfo *line, char *token, Symbol_Table *table, int *imm)
   return is_int (token, imm) || is_define (line, token, table, imm);
 }
 
-/* put in symbol the symbol name or pointer to the symbol */
+/* put in symbol: the symbol name or pointer to the symbol */
 Bool is_symbol (LineInfo *line, char *name, Symbol_Table *symbol_table,
                 Operand *operand)
 {
@@ -156,14 +156,14 @@ Bool is_symbol (LineInfo *line, char *name, Symbol_Table *symbol_table,
     return FALSE;
   }
 
-  if ((symbol = find_symbol(symbol_table, name))) {
+  if ((symbol = find_symbol (symbol_table, name))) {
     symbol_data = (Symbol_Data *) symbol->data;
     if (symbol_data->type == DEFINE) {
       return FALSE;
     }
     operand->info.symInx.symbol = symbol;
     operand->info.symInx.found = TRUE;
-    if (symbol_data->type == UNRESOLVED_ENTRY){
+    if (symbol_data->type == UNRESOLVED_ENTRY) {
       symbol_data->type = UNRESOLVED_ENTRY_USAGE;
       symbol_table->unresolved_usage_count++;
     }
@@ -341,13 +341,15 @@ state comma_handler (LineInfo *line, Symbol_Table *table, state next_state)
   return ERROR_STATE;
 }
 
-state target_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
+state
+target_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   return operand_handler (line, symbol_table, &line->info.op->target,
                           next_state);
 }
 
-state imm_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
+state
+imm_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token;
   int tmp;
@@ -375,7 +377,8 @@ state imm_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
   return (IS_EMPTY(line->parts->postfix) ? END_STATE : COMA_STATE);
 }
 
-state str_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
+state
+str_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   /* get the whole string into token */
   strcat (line->parts->token, line->parts->postfix);
@@ -393,9 +396,65 @@ state str_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
   return next_state;
 }
 
-state identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
+Bool valid_entry_label (LineInfo *line, Symbol_N *symbol)
+{
+  Symbol_Data *symbol_data = (Symbol_Data *) symbol->data;
+
+  if (symbol_data->type == DEFINE || symbol_data->type == EXTERN) {
+    r_error ("redeclaration of ", line->parts, "");
+    return FALSE;
+  }
+
+  /* else, label can be entry label (dada, code, unresolved) */
+  if (symbol_data->isEntry) {
+    r_warning ("", line->parts, " has already declared in earlier line");
+  }
+  line->info.ext_ent.name = symbol;
+  line->info.ext_ent.found = TRUE;
+  return TRUE;
+}
+
+Bool valid_extern_label (LineInfo *line, Symbol_N *symbol)
+{
+  Symbol_Data *symbol_data = (Symbol_Data *) symbol->data;
+
+  if (symbol_data->type == EXTERN) {
+    r_warning ("", line->parts, " has already declared in earlier line");
+    line->info.ext_ent.name = symbol;
+    line->info.ext_ent.found = TRUE;
+    return TRUE;
+  }
+
+   if (symbol_data->type == UNRESOLVED_USAGE) {
+    line->info.ext_ent.name = symbol;
+    line->info.ext_ent.found = TRUE;
+    return TRUE;
+  }
+
+  /* else, not valid. including: code, data, entry, define, unresolved */
+  r_error ("redeclaration of ", line->parts, "");
+  return FALSE;
+}
+
+Bool valid_define_label (LineInfo *line, Symbol_N *symbol)
+{
+  Symbol_Data *symbol_data = (Symbol_Data *) symbol->data;
+
+  if (symbol_data->type == DEFINE) {
+    line->info.define.name = symbol;
+    line->info.define.found = TRUE;
+    return TRUE;
+  }
+  r_error ("redeclaration of ", line->parts, "");
+  return FALSE;
+}
+
+state
+identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token, *target;
+  Symbol_Data *symbol_data;
+  Symbol_N *symbol;
 
   if (IS_EMPTY(token)) { /* .define _ */
     r_error ("expected identifier after directive", line->parts, "");
@@ -406,14 +465,25 @@ state identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state next
     return ERROR_STATE;
   }
 
-  target = (line->type_l == def_l ?
-            line->info.define.name : line->info.ext_ent.name);
-  strcpy (target, token);
-
+  symbol = find_symbol (symbol_table, line->parts->token);
+  if (!symbol) {
+    target = (line->type_l == def_l ?
+              line->info.define.name : line->info.ext_ent.name);
+    strcpy (target, token);
+    return next_state;
+  }
+  else { /* symbol already exist, make sure it's valid */
+    if ( (line->type_l == ext_l && !valid_extern_label(line, symbol))
+        || (line->type_l == ent_l && !valid_entry_label (line, symbol))
+        || (line->type_l == def_l && !valid_define_label(line, symbol)) ){
+      return ERROR_STATE;
+    }
+  }
   return next_state;
 }
 
-state equal_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
+state
+equal_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   if (IS_EMPTY(line->parts->token)) {
     r_error ("empty define declaration", line->parts, "");
@@ -426,7 +496,8 @@ state equal_handler (LineInfo *line, Symbol_Table *symbol_table, state next_stat
   return next_state;
 }
 
-state int_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
+state
+int_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token;
 
@@ -444,7 +515,8 @@ state int_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
   return next_state;
 }
 
-state extra_text_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
+state
+extra_text_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token;
   if (!IS_EMPTY(token)) {

@@ -3,8 +3,8 @@
 */
 #include "setting.h"
 #include "utils/text.h"
+#include "fileStructures/fileStructures.h"
 #include "utils/vector.h"
-#include "utils/linkedList.h"
 #include "fileStructures/symbolTable.h"
 #include "fileStructures/memoryImg.h"
 #include "fileStructures/analyzer.h"

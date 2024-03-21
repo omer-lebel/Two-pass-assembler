@@ -11,9 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-
-#include "utils/vector.h"
-#include "fileStructures/symbolTable.h"
+#include <stdio.h>
 
 #define MAX_LINE_LEN (80+2)
 #define MAX_DATA_ARR_LENGTH (37)
@@ -90,23 +88,11 @@ typedef enum addr_mode_flag
 #define symbol_n_index ((unsigned) b_symbol | b_index )
 #define symbol_n_index_n_reg ((unsigned) b_symbol | b_index | b_reg)
 
-typedef struct file_analyze{
-    char file_name[1000]; /* todo change size*/
-    Symbol_Table *symbol_table;
-    vector *data_segment;
-    vector *code_segment;
-    vector *op_list;
-    vector *entry_table;
-    vector *extern_table;
-    int IC; /* todo change to unsigned? */
-    int DC;
 
-    unsigned error;
-}file_analyze;
-
+/* todo change place */
 FILE* open_file(char* file_name, const char *extension, const char *mode);
 void remove_file(char* file_name, const char *extension);
-/* todo change place */
+
 
 extern char *SavedWord[];
 extern char *op_names[NUM_OF_OP];
