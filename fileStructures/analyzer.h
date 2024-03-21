@@ -42,19 +42,19 @@ typedef struct Operand
     } info;
 } Operand;
 
-typedef struct op_analyze
+typedef struct Op_Analyze
 {
     Opcode opcode;
     int address;
     Operand src;
     Operand target;
 
-} op_analyze;
+} Op_Analyze;
 
-void init_op_analyze (op_analyze *op, Opcode opcode, char *src_sym_buffer,
+void init_op_analyze (Op_Analyze *op, Opcode opcode, char *src_sym_buffer,
                       char *target_sym_buffer);
 
-int calc_op_size (op_analyze *op);
+int calc_op_size (Op_Analyze *op);
 
 /************************* line info ***************************/
 
@@ -72,7 +72,7 @@ typedef enum lineType
 /** info about the line according to its type */
 typedef union Info
 {
-    op_analyze *op;    /** operator */
+    Op_Analyze *op;    /** operator */
 
     struct
     {            /** .data */
@@ -112,17 +112,20 @@ typedef struct LineInfo
 void print_line_info (LineInfo *line, char *file_name);
 
 /************************* op list ***************************/
+typedef struct Op_Line{
+    Op_Analyze *analyze;
+    LinePart *line_part;
+}Op_Line2;
+
 
 typedef vector Op_List;
 
-typedef LineInfo Op_Line;
 
 Op_List *new_op_list (void);
 
-Op_Line *add_to_op_list (Op_List *op_list, Op_Line *op_line);
+Op_Line *add_to_op_list (Op_List *op_list, Op_Analyze *op_analyze,
+                         LinePart *line_part);
 
-/*todo change the static */
-Op_Line *get_next_op_line (Op_List *op_list);
 
 void show_op_list (Op_List *op_list, FILE *stream);
 
@@ -133,7 +136,7 @@ void free_op_list (Op_List *op_list);
 
 
 typedef  struct Entry_line{
-    Symbol_N *symbol;
+    Symbol *symbol;
     LinePart *part;   /*line will be null if the symbol resolved  in adding */
 }Entry_line;
 
@@ -141,12 +144,10 @@ typedef vector Entry_List;
 
 Entry_List *new_entry_list (void);
 
-Entry_line *get_next_entry_line (Entry_List *entry_list);
-
-Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol_N *symbol,
+Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol *symbol,
                                LinePart *line_part);
 
-void show_entry_list (Entry_List *entry_list, FILE *stream);
+void print_entry_list (Entry_List *entry_list, FILE *stream);
 
 void free_entry_list (vector *entry_list);
 

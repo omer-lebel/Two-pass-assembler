@@ -108,7 +108,7 @@ Bool is_define (LineInfo *line, char *token, Symbol_Table *symbol_table,
                 int *imm)
 {
   Symbol_Data *symbol_data;
-  Symbol_N *symbol = find_symbol (symbol_table, token);
+  Symbol *symbol = find_symbol (symbol_table, token);
   if (symbol) {
     symbol_data = (Symbol_Data *) symbol->data;
     if (symbol_data->type == DEFINE) {
@@ -150,7 +150,7 @@ Bool is_imm (LineInfo *line, char *token, Symbol_Table *table, int *imm)
 Bool is_symbol (LineInfo *line, char *name, Symbol_Table *symbol_table,
                 Operand *operand)
 {
-  Symbol_N *symbol;
+  Symbol *symbol;
   Symbol_Data *symbol_data;
   if (!valid_identifier (line->parts, name, FALSE)) {
     return FALSE;
@@ -396,7 +396,7 @@ str_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
   return next_state;
 }
 
-Bool valid_entry_label (LineInfo *line, Symbol_N *symbol)
+Bool valid_entry_label (LineInfo *line, Symbol *symbol)
 {
   Symbol_Data *symbol_data = (Symbol_Data *) symbol->data;
 
@@ -414,7 +414,7 @@ Bool valid_entry_label (LineInfo *line, Symbol_N *symbol)
   return TRUE;
 }
 
-Bool valid_extern_label (LineInfo *line, Symbol_N *symbol)
+Bool valid_extern_label (LineInfo *line, Symbol *symbol)
 {
   Symbol_Data *symbol_data = (Symbol_Data *) symbol->data;
 
@@ -436,7 +436,7 @@ Bool valid_extern_label (LineInfo *line, Symbol_N *symbol)
   return FALSE;
 }
 
-Bool valid_define_label (LineInfo *line, Symbol_N *symbol)
+Bool valid_define_label (LineInfo *line, Symbol *symbol)
 {
   Symbol_Data *symbol_data = (Symbol_Data *) symbol->data;
 
@@ -453,7 +453,7 @@ state
 identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token, *target;
-  Symbol_N *symbol;
+  Symbol *symbol;
 
   if (IS_EMPTY(token)) { /* .define _ */
     r_error ("expected identifier after directive", line->parts, "");

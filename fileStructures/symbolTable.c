@@ -32,11 +32,11 @@ void *init_symbol_data (const void *data)
   return new_data;
 }
 
-Symbol_N *add_symbol (Symbol_Table *table, const char *label,
-                      SymbolType type, int val, EntryFlag isEntry)
+Symbol *add_symbol (Symbol_Table *table, const char *label,
+                    SymbolType type, int val, EntryFlag isEntry)
 {
   Symbol_Data symbol_data;
-  Symbol_N *new_symbol;
+  Symbol *new_symbol;
 
   symbol_data.type = type;
   symbol_data.val = val;
@@ -46,11 +46,11 @@ Symbol_N *add_symbol (Symbol_Table *table, const char *label,
   if (!new_symbol) {
     return NULL;
   }
-  appendToTail (table->database, new_symbol); /* todo sorted? */
+  appendSorted(table->database, new_symbol);
   return new_symbol;
 }
 
-Symbol_N *find_symbol (Symbol_Table *table, const char *name)
+Symbol *find_symbol (Symbol_Table *table, const char *name)
 {
   return findNode (table->database, name);
 }
@@ -115,9 +115,9 @@ void update_data_symbol_addresses (Symbol_Table *symbol_table, int IC)
     symbol = (Symbol_Data *) node->data;
     if (symbol->type == CODE) {
       symbol->val += IC_START;
-      if (symbol->type == DATA) {
-        symbol->val += IC_START + IC;
-      }
+    }
+    if (symbol->type == DATA) {
+      symbol->val += IC_START + IC;
     }
     node = node->next;
   }

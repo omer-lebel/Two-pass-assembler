@@ -21,7 +21,7 @@ void init_operand (Operand *operand, Opcode opcode, Operand_Type type,
 }
 
 /* in h */
-void init_op_analyze (op_analyze *op, Opcode opcode, char *scr_sym_buffer,
+void init_op_analyze (Op_Analyze *op, Opcode opcode, char *scr_sym_buffer,
                       char *target_sym_buffer)
 {
   op->opcode = opcode;
@@ -47,11 +47,11 @@ void print_operand (Operand *operand, FILE *stream)
       break;
     case DIRECT_ADD:
       fprintf (stream, "<symbol: %s>\t",
-               ((Symbol_N *) operand->info.symInx.symbol)->word);
+               ((Symbol *) operand->info.symInx.symbol)->word);
       break;
     case INDEX_ADD:
       fprintf (stream, "<index: %s[%d]>\t",
-               ((Symbol_N *) operand->info.symInx.symbol)->word,
+               ((Symbol *) operand->info.symInx.symbol)->word,
                operand->info.symInx.offset);
       break;
     case REG_ADD:
@@ -63,9 +63,8 @@ void print_operand (Operand *operand, FILE *stream)
   }
 }
 
-void print_op_line (const void *op_line, FILE *stream)
+void print_op_analyze(Op_Analyze *op, FILE *stream)
 {
-  op_analyze *op = ((LineInfo *) op_line)->info.op;
   fprintf (stream, "%04d\t", op->address);
   fprintf (stream, "<op: %s>\t", op_names[op->opcode]);
   fprintf (stream, "<opcode: %d>\t", op->opcode);
@@ -73,8 +72,14 @@ void print_op_line (const void *op_line, FILE *stream)
   print_operand (&(op->target), stream);
 }
 
+void print_op_line (const void *op_line, FILE *stream)
+{
+  Op_Analyze *op = ((Op_Line *) op_line)->analyze;
+  print_op_analyze(op, stream);
+}
+
 /* in h*/
-int calc_op_size (op_analyze *op)
+int calc_op_size (Op_Analyze *op)
 {
   int res = 1; /*for the first word */
   Addressing_Mode mode;
@@ -114,18 +119,18 @@ void print_line_info (LineInfo *line, char *file_name)
       break;
     case ext_l:
       printf (CYN "extern: " RESET "%s\n",
-              ((Symbol_N *) line->info.ext_ent.name)->word);
+              ((Symbol *) line->info.ext_ent.name)->word);
       break;
     case ent_l:
       printf (CYN "entry: " RESET "%s\n",
-              ((Symbol_N *) line->info.ext_ent.name)->word);
+              ((Symbol *) line->info.ext_ent.name)->word);
       break;
     case op_l:
       print_op_line(line->info.op, stdout);
       break;
     case def_l:
       printf (CYN "define:" RESET " %s=%d\n",
-              ((Symbol_N *) line->info.define.name)->word,
+              ((Symbol *) line->info.define.name)->word,
               line->info.define.val);
       break;
   }
@@ -135,11 +140,11 @@ void print_line_info (LineInfo *line, char *file_name)
 
 void *add_line_to_op_list (void *elem)
 {
-  LineInfo *line = (LineInfo *) elem;
-  op_analyze *tmp_op;
+  Op_Line *op_line = (Op_Line *) elem;
+  Op_Analyze *tmp_op;
   LinePart *tmp_part;
 
-  tmp_op = malloc (sizeof (op_analyze));
+  tmp_op = malloc (sizeof (Op_Analyze));
   if (!tmp_op) {
     return NULL;
   }
@@ -150,19 +155,19 @@ void *add_line_to_op_list (void *elem)
     return NULL;
   }
 
-  *tmp_part = *line->parts;
-  *tmp_op = *line->info.op;
-  line->info.op = tmp_op;
-  line->parts = tmp_part;
+  *tmp_part = *op_line->line_part;
+  *tmp_op = *op_line->analyze;
+  op_line->analyze = tmp_op;
+  op_line->line_part = tmp_part;
 
-  return line;
+  return op_line;
 }
 
 void free_line_in_op_list (void *elem)
 {
   Op_Line *op_line = (Op_Line *) elem;
-  free (op_line->info.op);
-  free (op_line->parts);
+  free (op_line->analyze);
+  free (op_line->line_part);
 }
 
 /* in h*/
@@ -173,14 +178,12 @@ Op_List *new_op_list (void)
 }
 
 
-Op_Line *add_to_op_list (Op_List *op_list, Op_Line *op_line){
-  return push (op_list, op_line);
-}
-
-/* todo change */
-Op_Line* get_next_op_line(Op_List *op_list){
-  static int i = 0;
-  return get(op_list, i++);
+Op_Line *add_to_op_list (Op_List *op_list, Op_Analyze *op_analyze,
+                         LinePart *line_part){
+  Op_Line op_line;
+  op_line.analyze = op_analyze;
+  op_line.line_part = line_part;
+  return push (op_list, &op_line);
 }
 
 void show_op_list(Op_List *op_list, FILE *stream){
@@ -231,7 +234,7 @@ Entry_List *new_entry_list (void)
                         free_line_in_entry_list);
 }
 
-Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol_N *symbol,
+Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol *symbol,
                                LinePart *line_part){
   Entry_line entry_line;
   entry_line.symbol = symbol;
@@ -239,14 +242,7 @@ Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol_N *symbol,
   return push (entry_list, &entry_line);
 }
 
-/* todo change */
-Entry_line* get_next_entry_line(Entry_List *entry_list){
-  static int i = 0;
-  return get(entry_list, i++);
-}
-
-void show_entry_list(Entry_List *entry_list, FILE *stream){
-  fprintf (stream, "------------------ entry list ------------------\n");
+void print_entry_list(Entry_List *entry_list, FILE *stream){
   print_vector (entry_list, print_entry_line, stream, "\n", "\n");
 }
 

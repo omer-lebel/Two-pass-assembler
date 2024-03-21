@@ -73,15 +73,15 @@ void free_data_segment (Data_Segment *data_segment)
   free_vector (data_segment);
 }
 
-void print_data_segment (Data_Segment *data_segment, int *memInx, int len,
-                         FILE *stream)
+void print_data_segment (Data_Segment *data_segment, int memInx,
+                                   int len,FILE *stream)
 {
   DsWord *word;
   int i = 0;
-  for (; *memInx < len; ++(*memInx), ++i) {
+  for (; memInx < len; ++memInx, ++i) {
     word = (DsWord *) get (data_segment, i);
-    fprintf (stream, "%04d ", *memInx);
-    print_special_base_word (word->val, (len - *memInx == 1), stream);
+    fprintf (stream, "%04d ", memInx);
+    print_special_base_word (word->val, (len - memInx == 1), stream);
   }
 }
 
@@ -92,22 +92,24 @@ void print_operand_word (Operand *operand, int *memInx, int len, FILE *stream)
 {
   unsigned short int word = 0;
   Symbol_Data *symbol;
-  int are = 0;
+  int are;
 
   switch (operand->add_mode) {
     case IMM_ADD:
       word = imm_word (operand->info.imm);
       break;
     case DIRECT_ADD:
-      symbol = (Symbol_Data *) ((Symbol_N *) operand->info.symInx.symbol)->data;
+      symbol = (Symbol_Data *) ((Symbol *) operand->info.symInx.symbol)->data;
       are = symbol->type == EXTERN ? external_b : relocatable_b;
       word = label_word (symbol->val, are);
       break;
     case INDEX_ADD:
-      symbol = (Symbol_Data *) ((Symbol_N *) operand->info.symInx.symbol)->data;
+      symbol = (Symbol_Data *) ((Symbol *) operand->info.symInx.symbol)->data;
+      are = symbol->type == EXTERN ? external_b : relocatable_b;
       word = label_word (symbol->val, are);
-      printf ("%04d\t", (*memInx)++); /* print the label */
+      fprintf (stream, "%04d ", *memInx); /* print the label */
       print_special_base_word (word, (len - *memInx == 1), stream);
+      (*memInx)++;
       word = imm_word (operand->info.symInx.offset); /* add the index */
       break;
     case REG_ADD:
@@ -119,25 +121,29 @@ void print_operand_word (Operand *operand, int *memInx, int len, FILE *stream)
     case NONE_ADD: /* never happened */
       return;
   }
-  printf ("%04d\t", (*memInx)++);
+  fprintf (stream, "%04d ", *memInx);
   print_special_base_word (word, (len - *memInx == 1), stream);
+  (*memInx)++;
 }
 
-void add_op_line_to_code_segment (op_analyze *op, int *memInx, int len, FILE *stream)
+void add_op_line_to_code_segment (Op_Analyze *op, int *memInx, int len, FILE
+*stream)
 {
   unsigned short int word, scr_code, target_code;
   /* first word */
   scr_code = (op->src.add_mode == NONE_ADD) ? 0 : op->src.add_mode;
   target_code = (op->target.add_mode == NONE_ADD) ? 0 : op->target.add_mode;
   word = first_word (op->opcode, scr_code, target_code);
-  printf ("%04d\t", (*memInx)++);
+  fprintf (stream, "%04d ", *memInx);
   print_special_base_word (word, (len - *memInx == 1), stream);
+  (*memInx)++;
 
   /*  both operand are registers, so they share the second word */
   if ((op->src.add_mode == REG_ADD) && (op->target.add_mode == REG_ADD)) {
     word = registers_word (op->src.info.reg_num, op->target.info.reg_num);
-    printf ("%04d\t", (*memInx)++);
+    fprintf (stream, "%04d ", *memInx);
     print_special_base_word (word, (len - *memInx == 1), stream);
+    (*memInx)++;
   }
 
   else {
@@ -152,26 +158,31 @@ void add_op_line_to_code_segment (op_analyze *op, int *memInx, int len, FILE *st
   }
 }
 
-void print_code_segment (Op_List *op_list, int *memInx, int len, FILE *stream)
+void print_code_segment (Op_List *op_list, int memInx, int len, FILE *stream)
 {
-  op_analyze *op;
+  Op_Line *op_line;
   int i = 0;
-  for (; *memInx < len; ++(*memInx), ++i) {
-    op = (op_analyze *) get (op_list, i);
-    add_op_line_to_code_segment (op, memInx, len, stream);
+  for (; memInx < len; ++i) {
+    op_line = (Op_Line *) get (op_list, i);
+    add_op_line_to_code_segment (op_line->analyze, &memInx, len, stream);
   }
 }
 
 void print_memory_img (Op_List *op_list, int ic, Data_Segment *data_segment,
                        int dc, FILE *stream)
 {
-  int len = ic + dc + IC_START;
-  int memInx = IC_START;
 
   fprintf (stream, "%4d %d\n", ic, dc);
 
-  print_code_segment (op_list, &memInx, len, stream);
-
-  print_data_segment (data_segment, &memInx, len, stream);
+  if (ic > 0){
+    print_code_segment (op_list, IC_START, (ic + IC_START), stream);
+    if (dc > 0){
+      fputc ('\n', stream);
+    }
+  }
+  if (dc > 0){
+    print_data_segment (data_segment, (IC_START + ic), (ic + dc + IC_START),
+                        stream);
+  }
 }
 

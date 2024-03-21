@@ -28,7 +28,7 @@ typedef struct Symbol_Data
     EntryFlag isEntry;
 } Symbol_Data;
 
-typedef Node Symbol_N;
+typedef Node Symbol;
 
 
 typedef struct Symbol_Table{
@@ -44,10 +44,10 @@ typedef struct Symbol_Table{
 
 Symbol_Table *new_symbol_table (void);
 void *init_symbol_data (const void *data);
-Symbol_N *add_symbol (Symbol_Table *table, const char *label,
-                      SymbolType type, int val, EntryFlag isEntry);
-Symbol_N* find_symbol(Symbol_Table *table, const char *name);
-Symbol_N *get_next_symbol(Symbol_Table *table);
+Symbol *add_symbol (Symbol_Table *table, const char *label,
+                    SymbolType type, int val, EntryFlag isEntry);
+Symbol* find_symbol(Symbol_Table *table, const char *name);
+Symbol *get_next_symbol(Symbol_Table *table);
 void print_symbol (const char *word, const void *data, FILE *stream);
 void show_symbol_table(Symbol_Table *table, FILE *stream);
 void free_symbol_table (Symbol_Table *table);

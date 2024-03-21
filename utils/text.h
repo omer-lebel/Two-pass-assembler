@@ -18,6 +18,7 @@
 #define RESET_STR(str) ((str)[0] = '\0')
 #define NULL_TERMINATE(str, index) ((str)[index] = '\0')
 #define REMOVE_LAST_CHAR(str) ((str)[strlen(str) - 1] = '\0')
+#define IS_LABEL(str) (str[strlen (str) - 1] == ':')
 
 
 typedef struct LinePart{

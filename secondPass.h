@@ -12,7 +12,9 @@
 #include "fileStructures/symbolTable.h"
 #include "fileStructures/memoryImg.h"
 #include "fileStructures/analyzer.h"
+#include "fileStructures/externUsages.h"
 
+exit_code secondPass (file_analyze *f);
 
 
 

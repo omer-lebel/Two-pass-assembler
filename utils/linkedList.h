@@ -15,8 +15,6 @@
 #include <string.h>
 
 
-/* todo const?? */
-
 /* Function pointer types for linked list operations */
 
 /**

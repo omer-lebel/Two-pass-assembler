@@ -4,8 +4,6 @@
 
 #include "firstPass.h"
 
-#define IS_LABEL(str) (str[strlen (str) - 1] == ':')
-
 
 
 /************************* pass helpers *************************/
@@ -76,7 +74,7 @@ exit_code process_directive_label (LineInfo *line, Symbol_Table *symbol_table,
                                    int DC)
 {
   Symbol_Data *symbol_data;
-  Symbol_N *symbol = find_symbol (symbol_table, line->label);
+  Symbol *symbol = find_symbol (symbol_table, line->label);
   if (!symbol) {
     if (!add_symbol (symbol_table, line->label, DATA, DC, NOT_ENTRY)) {
       return MEMORY_ERROR;
@@ -160,7 +158,7 @@ exit_code data_analyze (LineInfo *line, file_analyze *f)
 /************************* define *************************/
 exit_code process_define_label (LineInfo *line, Symbol_Table *symbol_table)
 {
-  Symbol_N *symbol;
+  Symbol *symbol;
   Symbol_Data *symbol_data;
 
   if (!line->info.define.found) {
@@ -173,7 +171,7 @@ exit_code process_define_label (LineInfo *line, Symbol_Table *symbol_table)
   }
   /* else, symbol already exist */
   /* only redeclaration allowed here is redeclaration of define */
-  symbol = (Symbol_N *) line->info.define.name;
+  symbol = (Symbol *) line->info.define.name;
   symbol_data = (Symbol_Data*) symbol->data;
   get_identifier_tok (line->parts, FALSE);
   if (symbol_data->val != line->info.define.val) { /* x = 1 | x = 2 */
@@ -212,13 +210,13 @@ exit_code process_entry_label (LineInfo *line, Symbol_Table *symbol_table,
                                Entry_List *entry_list)
 {
   Symbol_Data *symbol_data;
-  Symbol_N *symbol;
+  Symbol *symbol;
   LinePart *resolved_flag = NULL;
 
   if (!line->info.ext_ent.found) { /*new symbol */
     if (!(symbol = add_symbol (symbol_table, line->info.ext_ent.name,
                       UNRESOLVED_ENTRY, 0, IS_Entry))
-          || !add_to_entry_list (entry_list, symbol, resolved_flag)) {
+          || !add_to_entry_list (entry_list, symbol, line->parts)) {
       return MEMORY_ERROR;
     }
     line->info.ext_ent.name = symbol;
@@ -228,7 +226,7 @@ exit_code process_entry_label (LineInfo *line, Symbol_Table *symbol_table,
   }
 
   /* else, symbol already exist. (unresolved / entry / data / code)*/
-  symbol = (Symbol_N *) line->info.define.name;
+  symbol = (Symbol *) line->info.define.name;
   symbol_data = symbol->data;
 
   if (!symbol_data->isEntry) {
@@ -251,7 +249,7 @@ exit_code process_entry_label (LineInfo *line, Symbol_Table *symbol_table,
 exit_code process_extern_label (LineInfo *line, Symbol_Table *symbol_table)
 {
   Symbol_Data *symbol_data;
-  Symbol_N *symbol;
+  Symbol *symbol;
 
   if (!line->info.ext_ent.found) { /*new symbol */
     if (!(symbol = add_symbol (symbol_table, line->info.ext_ent.name,
@@ -264,7 +262,7 @@ exit_code process_extern_label (LineInfo *line, Symbol_Table *symbol_table)
   }
 
   /* else, label already exist. can be: extern or unresolved */
-  symbol = (Symbol_N *) line->info.define.name;
+  symbol = (Symbol *) line->info.define.name;
   symbol_data = symbol->data;
 
   if (symbol_data->type != EXTERN) { /* unresolved */
@@ -305,7 +303,6 @@ exit_code ent_analyze (LineInfo *line, Symbol_Table *symbol_table,
 exit_code ext_analyze (LineInfo *line, Symbol_Table *symbol_table)
 {
   char name[MAX_LINE_LEN] = "";
-  exit_code res;
   line->info.ext_ent.name = name;
   line->type_l = ext_l;
 
@@ -327,10 +324,10 @@ Opcode get_opcode (char *token)
   return NO_OPCODE;
 }
 
-Symbol_N *process_operand_label (Symbol_Table *symbol_table, Operand *operand)
+Symbol *process_operand_label (Symbol_Table *symbol_table, Operand *operand)
 {
-  Symbol_N *symbol = add_symbol (symbol_table, operand->info.symInx.symbol,
-                                 UNRESOLVED_USAGE, 0, NOT_ENTRY);
+  Symbol *symbol = add_symbol (symbol_table, operand->info.symInx.symbol,
+                               UNRESOLVED_USAGE, 0, NOT_ENTRY);
   operand->info.symInx.symbol = symbol;
   operand->info.symInx.found = TRUE;
   symbol_table->unresolved_usage_count++;
@@ -340,7 +337,7 @@ Symbol_N *process_operand_label (Symbol_Table *symbol_table, Operand *operand)
 Bool process_code_label (Symbol_Table *symbol_table, char *label, int address)
 {
   Symbol_Data *symbol_data;
-  Symbol_N *symbol = find_symbol (symbol_table, label);
+  Symbol *symbol = find_symbol (symbol_table, label);
   if (!symbol) {
     symbol = add_symbol (symbol_table, label, CODE, address, NOT_ENTRY);
     return (symbol != NULL);
@@ -355,7 +352,7 @@ Bool process_code_label (Symbol_Table *symbol_table, char *label, int address)
 
 Bool process_op_labels (Symbol_Table *symbol_table, LineInfo *line)
 {
-  Symbol_N *symbol;
+  Symbol *symbol;
   Operand *src = &line->info.op->src, *target = &line->info.op->target;
 
   /* process code symbol (label at the beginning of the line) */
@@ -393,7 +390,7 @@ exit_code op_handler (LineInfo *line, Opcode opcode, file_analyze *f)
 {
   char src_sym_buffer[MAX_LINE_LEN];
   char target_sym_buffer[MAX_LINE_LEN];
-  op_analyze op;
+  Op_Analyze op;
   init_op_analyze (&op, opcode, src_sym_buffer, target_sym_buffer);
   line->info.op = &op;
   line->type_l = op_l;
@@ -402,12 +399,12 @@ exit_code op_handler (LineInfo *line, Opcode opcode, file_analyze *f)
     return ERROR;
   }
 
-  line->info.op->address = f->IC + IC_START;
+  line->info.op->address = f->IC;
   if (!process_op_labels (f->symbol_table, line)) {
     return MEMORY_ERROR;
   }
 
-  if (!add_to_op_list (f->op_list, line)) {
+  if (!add_to_op_list (f->op_list, line->info.op, line->parts)) {
     return MEMORY_ERROR;
   }
 
@@ -467,7 +464,7 @@ exit_code first_process (file_analyze *f, LineInfo *line_info)
 
 exit_code label_handler (file_analyze *f, LineInfo *line, char *label)
 {
-  Symbol_N *symbol;
+  Symbol *symbol;
   Symbol_Data *symbol_data;
 
   strcpy (line->label, line->parts->token);
@@ -521,11 +518,10 @@ exit_code firstPass (FILE *input_file, file_analyze *f)
 #ifdef DEBUG
   show_op_list (f->op_list, stdout);
   show_data_segment (f->data_segment, stdout);
-  show_symbol_table (f->symbol_table, stdout);
-  show_entry_list(f->entry_list, stdout);
+//  fprintf (stdout, "------------------ before update ------------------");
+//  show_symbol_table (f->symbol_table, stdout);
 #endif
 
-  free_file_analyze1 (f);
   return res;
 }
 

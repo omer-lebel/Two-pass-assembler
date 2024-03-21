@@ -12,17 +12,17 @@ add_executable(project___mama14
         utils/vector.c utils/vector.h
         utils/machineWord.c utils/machineWord.h
 
+        fileStructures/fileStructures.h
         fileStructures/symbolTable.c fileStructures/symbolTable.h
         fileStructures/memoryImg.c fileStructures/memoryImg.h
-#        fileStructures/entryTable.c fileStructures/entryTable.h
         fileStructures/analyzer.c fileStructures/analyzer.h
-#        fileStructures/externTable.c fileStructures/externTable.h
+        fileStructures/externUsages.c fileStructures/externUsages.h
         fsm.c fsm.h
 
         preAssembler.c preAssembler.h
         firstPass.c firstPass.h
         secondPass.c secondPass.h
 
-        main.c fileStructures/fileStructures.h fileStructures/externUsages.c fileStructures/externUsages.h)
+        main.c )
 
 

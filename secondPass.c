@@ -5,13 +5,13 @@
 
 #include "secondPass.h"
 
-Symbol_N* unresolved_usages_in_operand(Operand *operand){
-  Symbol_N *symbol;
+Symbol* unresolved_usages_in_operand(Operand *operand){
+  Symbol *symbol;
   Symbol_Data *symbol_data;
   Addressing_Mode addr_mode = operand->add_mode;
 
   if (addr_mode == DIRECT_ADD || addr_mode == INDEX_ADD) {
-    symbol = (Symbol_N *) operand->info.symInx.symbol;
+    symbol = (Symbol *) operand->info.symInx.symbol;
     symbol_data = (Symbol_Data *) symbol->data;
 
     if (symbol_data->type == UNRESOLVED_ENTRY_USAGE
@@ -23,54 +23,40 @@ Symbol_N* unresolved_usages_in_operand(Operand *operand){
 }
 
 void print_usages_errors (Op_List *op_list){
-  LineInfo *line;
-  Symbol_N *src_symbol = NULL, *target_symbol = NULL;
-  while ((line = get_next_op_line(op_list))){
+  Op_Line *op_line;
+  int i = 0;
+  Symbol *src_symbol = NULL, *target_symbol = NULL;
+  while ((op_line = get(op_list, i++))){
     /* src */
-    if ((src_symbol = unresolved_usages_in_operand (&line->info.op->src))){
-      r_error ("src error", line->parts, "");
+    if ((src_symbol = unresolved_usages_in_operand (&op_line->analyze->src))){
+      r_error ("src error", op_line->line_part, "");
     }
 
     /* target */
-    if ((target_symbol = unresolved_usages_in_operand (&line->info.op->target))
+    if ((target_symbol = unresolved_usages_in_operand (&op_line->analyze->target))
         && target_symbol != src_symbol){
-      r_error ("src target", line->parts, "");
+      r_error ("target error", op_line->line_part, "");
     }
   }
 }
 
-///* todo change */
-//void print_entry_errors(Symbol_Table *symbol_table)
-//{
-//  Symbol_Data *symbol_data;
-//  Symbol_N *symbol = symbol_table->database->head;
-//  while (symbol){
-//    symbol_data = (Symbol_Data*) symbol->data;
-//    if (symbol_data->type == UNRESOLVED_ENTRY
-//        || symbol_data->type == UNRESOLVED_ENTRY_USAGE){
-//      r_error ("error in entry", NULL, "");
-//    }
-//    symbol = symbol->next;
-//  }
-//}
 
-//void print_entry_table (Symbol_Table *symbol_table, FILE *stream)
-//{
-//  Symbol_Data *symbol_data;
-//  Symbol_N *symbol = symbol_table->database->head;
-//  int i = symbol_table->entry_count - 1;
-//  while (symbol){
-//    symbol_data = (Symbol_Data*) symbol->data;
-//    if (symbol_data->isEntry){
-//      r_error ("error in entry", NULL, "");
-//      fprintf (stream, "%s\t%04u", symbol->word, symbol_data->val);
-//      if (i-- > 0) {
-//        fputc ('\n', stream);
-//      }
-//    }
-//    symbol = symbol->next;
-//  }
-//}
+void print_entry_errors(Entry_List *entry_list)
+{
+  Entry_line *entry_line;
+  Symbol *symbol;
+  Symbol_Data *symbol_data;
+  int i = 0;
+  while ((entry_line = get(entry_list, i++))){
+    symbol = entry_line->symbol;
+    symbol_data = (Symbol_Data*) symbol->data;
+    if (symbol_data->type == UNRESOLVED_ENTRY
+        || symbol_data->type == UNRESOLVED_ENTRY_USAGE){
+      r_error ("unresolved entry declaration ", entry_line->part, "");
+    }
+  }
+}
+
 
 
 exit_code write_analyze(file_analyze *f){
@@ -85,12 +71,12 @@ exit_code write_analyze(file_analyze *f){
     fclose (ob_file);
   }
 
-  if (f->symbol_table->entry_count > 0){
+  if (f->entry_list->size > 0){
     ent_file = open_file(f->file_name, ".ent", "w");
     if (!(ent_file)){
       return ERROR;
     }
-//    print_entry_table(f->symbol_table, ent_file);
+    print_entry_list (f->entry_list, ent_file);
     fclose (ent_file);
   }
 
@@ -99,15 +85,18 @@ exit_code write_analyze(file_analyze *f){
     if (!(ext_file)){
       return ERROR;
     }
-//    process_extern_table ();
+    if (!print_extern_table (f->op_list, ent_file)){
+      fclose (ext_file);
+      return MEMORY_ERROR;
+    }
     fclose (ext_file);
   }
-
   return SUCCESS;
 }
 
 exit_code secondPass (file_analyze *f)
 {
+  exit_code res = SUCCESS;
   int unresolved_entries = f->symbol_table->unresolved_entry_count;
   int unresolved_usages = f->symbol_table->unresolved_usage_count;
 
@@ -115,11 +104,11 @@ exit_code secondPass (file_analyze *f)
     print_usages_errors (f->op_list);
   }
   if (unresolved_entries > 0 && unresolved_usages == 0){
-//    print_entry_errors (f->symbol_table);
+    print_entry_errors (f->entry_list);
   }
   if (unresolved_entries > 0 && unresolved_usages > 0){
     print_usages_errors (f->op_list);
-//    print_entry_errors (f->symbol_table);
+    print_entry_errors (f->entry_list);
   }
   if (unresolved_entries == 0 && unresolved_usages == 0){
     if (f->error){
@@ -127,10 +116,14 @@ exit_code secondPass (file_analyze *f)
     }
     else{ //no errors at all
       update_data_symbol_addresses(f->symbol_table, f->IC);
-      // write ob file
-      // write extern file
-      // write entry file
+#ifdef DEBUG
+      show_symbol_table (f->symbol_table, stdout);
+      fprintf (stdout, "------------------ entry list ------------------\n");
+      print_entry_list (f->entry_list, stdout);
+      show_op_list (f->op_list, stdout);
+#endif
+      res = write_analyze(f);
     }
   }
-
+  return res;
 }

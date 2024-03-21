@@ -53,7 +53,7 @@ void *resize (vector *v)
 
 void *get (vector *v, int index)
 {
-  if (index < 0 && index >= v->size) {
+  if (index < 0 || index > v->size - 1 ) {
     return NULL; /* index out of range */
   }
   return ((char *) v->elements) + (index * v->elem_size);
