@@ -63,7 +63,7 @@ FILE *open_file (char *file_name, const char *extension, const char *mode)
   strcat (file_name, extension);
   tmp = fopen (file_name, mode);
   if (!tmp) {
-    printf ("error while opening '%s'\n", file_name);
+    printf (" *** Error while opening '%s'. Stop. \n", file_name);
     return NULL;
   }
   else {

@@ -2,11 +2,7 @@
  Created by OMER on 3/6/2024.
 */
 
-
 #include "analyzer.h"
-
-#define CYN   "\x1B[36m"
-#define RESET "\x1B[0m"
 
 /************************* op analyze ***************************/
 
@@ -32,7 +28,7 @@ void init_op_analyze (Op_Analyze *op, Opcode opcode, char *scr_sym_buffer,
 void print_data (int *arr, unsigned len)
 {
   unsigned int i;
-  printf (CYN "data: " RESET "%d", arr[0]);
+  printf ("data: " "%d", arr[0]);
   for (i = 1; i < len; ++i) {
     printf (", %d", arr[i]);
   }
@@ -112,24 +108,24 @@ void print_line_info (LineInfo *line, char *file_name)
 
   switch (line->type_l) {
     case str_l:
-      printf (CYN "string: " RESET "%s\n", line->info.str.content);
+      printf ("string: %s\n", line->info.str.content);
       break;
     case data_l:
       print_data (line->info.data.arr, line->info.data.len);
       break;
     case ext_l:
-      printf (CYN "extern: " RESET "%s\n",
+      printf ("extern: %s\n",
               ((Symbol *) line->info.ext_ent.name)->word);
       break;
     case ent_l:
-      printf (CYN "entry: " RESET "%s\n",
+      printf ("entry: %s\n",
               ((Symbol *) line->info.ext_ent.name)->word);
       break;
     case op_l:
       print_op_line(line->info.op, stdout);
       break;
     case def_l:
-      printf (CYN "define:" RESET " %s=%d\n",
+      printf ("define: %s = %d\n",
               ((Symbol *) line->info.define.name)->word,
               line->info.define.val);
       break;
@@ -142,23 +138,27 @@ void *add_line_to_op_list (void *elem)
 {
   Op_Line *op_line = (Op_Line *) elem;
   Op_Analyze *tmp_op;
-  LinePart *tmp_part;
+  LineParts *tmp_part;
 
+  /* deep copy op analyze */
   tmp_op = malloc (sizeof (Op_Analyze));
   if (!tmp_op) {
     return NULL;
   }
+  *tmp_op = *op_line->analyze;
+  op_line->analyze = tmp_op;
 
-  tmp_part = malloc (sizeof (LinePart));
+  /* deep copy line part */
+  tmp_part = malloc (sizeof (LineParts));
   if (!tmp_part) {
     free (tmp_op);
     return NULL;
   }
-
-  *tmp_part = *op_line->line_part;
-  *tmp_op = *op_line->analyze;
-  op_line->analyze = tmp_op;
-  op_line->line_part = tmp_part;
+  *tmp_part = *op_line->parts;
+  op_line->parts = tmp_part;
+  op_line->parts->prefix = NULL;
+  op_line->parts->token = NULL;
+  op_line->parts->postfix = NULL;
 
   return op_line;
 }
@@ -167,7 +167,7 @@ void free_line_in_op_list (void *elem)
 {
   Op_Line *op_line = (Op_Line *) elem;
   free (op_line->analyze);
-  free (op_line->line_part);
+  free (op_line->parts);
 }
 
 /* in h*/
@@ -179,10 +179,11 @@ Op_List *new_op_list (void)
 
 
 Op_Line *add_to_op_list (Op_List *op_list, Op_Analyze *op_analyze,
-                         LinePart *line_part){
+                         LineParts *line_part){
   Op_Line op_line;
   op_line.analyze = op_analyze;
-  op_line.line_part = line_part;
+  op_line.analyze->address += IC_START;
+  op_line.parts = line_part;
   return push (op_list, &op_line);
 }
 
@@ -201,15 +202,15 @@ void free_op_list (Op_List *op_list){
 void *add_line_to_entry_list (void *elem)
 {
   Entry_line *entry_line = (Entry_line *) elem;
-  LinePart *tmp_part;
+  LineParts *tmp_part;
 
-  if (entry_line->part) { /*symbol is unresolved yet */
-    tmp_part = malloc (sizeof (LinePart));
+  if (entry_line->parts) { /*symbol is unresolved yet */
+    tmp_part = malloc (sizeof (LineParts));
     if (!tmp_part) {
       return NULL;
     }
-    *tmp_part = *entry_line->part;
-    entry_line->part = tmp_part;
+    *tmp_part = *entry_line->parts;
+    entry_line->parts = tmp_part;
   }
   return entry_line;
 }
@@ -224,7 +225,7 @@ void print_entry_line (const void *elem, FILE *stream)
 void free_line_in_entry_list (void *elem)
 {
   Entry_line *entry_line = (Entry_line *) elem;
-  free (entry_line->part);
+  free (entry_line->parts);
 }
 
 /* in h*/
@@ -235,10 +236,10 @@ Entry_List *new_entry_list (void)
 }
 
 Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol *symbol,
-                               LinePart *line_part){
+                               LineParts *line_part){
   Entry_line entry_line;
   entry_line.symbol = symbol;
-  entry_line.part = line_part;
+  entry_line.parts = line_part;
   return push (entry_list, &entry_line);
 }
 

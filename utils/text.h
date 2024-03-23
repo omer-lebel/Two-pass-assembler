@@ -5,8 +5,6 @@
 #ifndef _TEXT_H_
 #define _TEXT_H_
 
-/*#define DELIM " \t\r\n"*/
-
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
@@ -22,32 +20,29 @@
 
 
 typedef struct LinePart{
-    char* file; /* todo delete!! */
+    char* file;
     char line[MAX_LINE_LEN];
     char *prefix;
     char *token;
     char *postfix;
     size_t num;
-}LinePart;
+}LineParts;
 
 void trim_end(char *str);
-
 Bool isSavedWord(const char *s);
 Bool isAlphaNumeric(const char *str);
-Bool valid_identifier (LinePart *line, char *name, Bool print_err);
+
 
 
 char* get_line(FILE *file, char *buffer, size_t buff_size, Bool *overflow);
-void lineTok (LinePart *line);
-void init_line_parts (LinePart *line_part, char *prefix_buf,
+void lineTok (LineParts *line);
+void init_line_parts (LineParts *line_part, char *prefix_buf,
                       char *token_buf, char *postfix_buf);
-void restart_line_parts (LinePart *line_part);
-void copy_line_part(LinePart *dst, LinePart *src);
-void lineToPostfix(LinePart *line);
-void get_identifier_tok (LinePart *line, Bool has_label);
-
-void r_error(char* msg_before, LinePart* line, char *msg_after);
-void r_warning(char* msg_before, LinePart* line, char *msg_after);
+void restart_line_parts (LineParts *line_part);
+void lineToPostfix(LineParts *line);
+void get_identifier_tok (LineParts *line, Bool has_label);
+void move_one_char_to_prefix(LineParts *line);
+void splitLine(LineParts *parts, char *wanted_tok);
 
 
 #endif /* _TEXT_H_ */

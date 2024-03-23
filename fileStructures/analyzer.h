@@ -103,7 +103,7 @@ typedef union Info
 typedef struct LineInfo
 {
     lineType type_l;    /** str / data / ext / ent / def / op */
-    LinePart *parts;    /** line, line num, postfix, prefix, postfix*/
+    LineParts *parts;    /** line, line num, postfix, prefix, postfix*/
     char *label;        /** if exist */
     Info info;          /** info according to tha type */
 
@@ -114,8 +114,8 @@ void print_line_info (LineInfo *line, char *file_name);
 /************************* op list ***************************/
 typedef struct Op_Line{
     Op_Analyze *analyze;
-    LinePart *line_part;
-}Op_Line2;
+    LineParts *parts;
+}Op_Line;
 
 
 typedef vector Op_List;
@@ -124,7 +124,7 @@ typedef vector Op_List;
 Op_List *new_op_list (void);
 
 Op_Line *add_to_op_list (Op_List *op_list, Op_Analyze *op_analyze,
-                         LinePart *line_part);
+                         LineParts *line_part);
 
 
 void show_op_list (Op_List *op_list, FILE *stream);
@@ -137,7 +137,7 @@ void free_op_list (Op_List *op_list);
 
 typedef  struct Entry_line{
     Symbol *symbol;
-    LinePart *part;   /*line will be null if the symbol resolved  in adding */
+    LineParts *parts;   /*line will be null if the symbol resolved  in adding */
 }Entry_line;
 
 typedef vector Entry_List;
@@ -145,7 +145,7 @@ typedef vector Entry_List;
 Entry_List *new_entry_list (void);
 
 Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol *symbol,
-                               LinePart *line_part);
+                               LineParts *line_part);
 
 void print_entry_list (Entry_List *entry_list, FILE *stream);
 

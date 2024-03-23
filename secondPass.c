@@ -5,6 +5,15 @@
 
 #include "secondPass.h"
 
+#include "utils/errors.h"
+#include "utils/text.h"
+#include "utils/vector.h"
+#include "fileStructures/symbolTable.h"
+#include "fileStructures/memoryImg.h"
+#include "fileStructures/analyzer.h"
+#include "fileStructures/externUsages.h"
+
+
 Symbol* unresolved_usages_in_operand(Operand *operand){
   Symbol *symbol;
   Symbol_Data *symbol_data;
@@ -22,26 +31,25 @@ Symbol* unresolved_usages_in_operand(Operand *operand){
   return NULL;
 }
 
-void print_usages_errors (Op_List *op_list){
+void print_usages_errors (Op_List *op_list, char *file_name){
   Op_Line *op_line;
   int i = 0;
   Symbol *src_symbol = NULL, *target_symbol = NULL;
   while ((op_line = get(op_list, i++))){
     /* src */
     if ((src_symbol = unresolved_usages_in_operand (&op_line->analyze->src))){
-      r_error ("src error", op_line->line_part, "");
+      second_pass_err (op_line->parts, src_symbol->word, file_name);
     }
 
     /* target */
     if ((target_symbol = unresolved_usages_in_operand (&op_line->analyze->target))
         && target_symbol != src_symbol){
-      r_error ("target error", op_line->line_part, "");
+      second_pass_err (op_line->parts, target_symbol->word, file_name);
     }
   }
 }
 
-
-void print_entry_errors(Entry_List *entry_list)
+void print_entry_errors(Entry_List *entry_list, char *file_name)
 {
   Entry_line *entry_line;
   Symbol *symbol;
@@ -52,15 +60,16 @@ void print_entry_errors(Entry_List *entry_list)
     symbol_data = (Symbol_Data*) symbol->data;
     if (symbol_data->type == UNRESOLVED_ENTRY
         || symbol_data->type == UNRESOLVED_ENTRY_USAGE){
-      r_error ("unresolved entry declaration ", entry_line->part, "");
+      second_pass_err (entry_line->parts, entry_line->symbol->word, file_name);
     }
   }
 }
 
 
 
-exit_code write_analyze(file_analyze *f){
-  FILE *ob_file, *ext_file, *ent_file;
+exit_code print_analyze(file_analyze *f){
+  FILE *ob_file, *ent_file, *ext_file;
+  exit_code res;
 
   if (f->DC > 0 || f->IC > 0){
     ob_file = open_file(f->file_name, ".ob", "w");
@@ -68,6 +77,7 @@ exit_code write_analyze(file_analyze *f){
       return ERROR;
     }
     print_memory_img(f->op_list, f->IC, f->data_segment, f->DC, ob_file);
+    printf(" - %s.ob \n", f->file_name);
     fclose (ob_file);
   }
 
@@ -77,6 +87,7 @@ exit_code write_analyze(file_analyze *f){
       return ERROR;
     }
     print_entry_list (f->entry_list, ent_file);
+    printf(" - %s.ent \n", f->file_name);
     fclose (ent_file);
   }
 
@@ -85,10 +96,12 @@ exit_code write_analyze(file_analyze *f){
     if (!(ext_file)){
       return ERROR;
     }
-    if (!print_extern_table (f->op_list, ent_file)){
+    res = print_extern_table (f->op_list, ext_file, f->file_name);
+    if (res != SUCCESS){
       fclose (ext_file);
-      return MEMORY_ERROR;
+      return res;
     }
+    printf(" - %s.ext \n", f->file_name);
     fclose (ext_file);
   }
   return SUCCESS;
@@ -96,34 +109,32 @@ exit_code write_analyze(file_analyze *f){
 
 exit_code secondPass (file_analyze *f)
 {
-  exit_code res = SUCCESS;
+  exit_code res = ERROR;
   int unresolved_entries = f->symbol_table->unresolved_entry_count;
   int unresolved_usages = f->symbol_table->unresolved_usage_count;
 
   if (unresolved_entries == 0 && unresolved_usages > 0){
-    print_usages_errors (f->op_list);
+    print_usages_errors (f->op_list, f->file_name);
   }
   if (unresolved_entries > 0 && unresolved_usages == 0){
-    print_entry_errors (f->entry_list);
+    print_entry_errors (f->entry_list, f->file_name);
   }
   if (unresolved_entries > 0 && unresolved_usages > 0){
-    print_usages_errors (f->op_list);
-    print_entry_errors (f->entry_list);
+    print_usages_errors (f->op_list, f->file_name);
+    print_entry_errors (f->entry_list, f->file_name);
   }
   if (unresolved_entries == 0 && unresolved_usages == 0){
-    if (f->error){
-      return SUCCESS;
-    }
-    else{ //no errors at all
+    if (!f->error){
       update_data_symbol_addresses(f->symbol_table, f->IC);
+      res = print_analyze (f);
 #ifdef DEBUG
       show_symbol_table (f->symbol_table, stdout);
       fprintf (stdout, "------------------ entry list ------------------\n");
       print_entry_list (f->entry_list, stdout);
       show_op_list (f->op_list, stdout);
 #endif
-      res = write_analyze(f);
     }
   }
+  free_file_analyze (f)
   return res;
 }

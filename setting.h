@@ -1,7 +1,7 @@
 /*
  Created by OMER on 1/23/2024.
 */
-#define DEBUG
+/*#define DEBUG*/
 
 
 
@@ -18,11 +18,17 @@
 #define MAX_STR_LENGTH (72)
 #define NUM_OF_OP 16
 #define MAX_CMD_NAME_LEN 3
+#define MAX_INT_MACHINE ((1 << 13) - 1)
+#define MIN_INT_MACHINE (-(1 << 13))
+#define MEMORY_IMG_SIZE (4096 - 100 - 1)
+
 
 #define MACHINE_WORD_SIZE 14
 #define IC_START 100
 
-/*todo change */
+#define RED_COLOR   "\x1B[31m"  /*error's color */
+#define RESET "\x1B[0m"   /* reset to regular color */
+
 typedef enum Bool
 {
     FALSE = 0, TRUE = 1

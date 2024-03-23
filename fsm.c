@@ -4,9 +4,7 @@
 
 
 #include "fsm.h"
-
-#define MAX_IMM (2^11 -1)
-#define MIN_IMM (-(2^11 -1))
+#include "utils/errors.h"
 
 #define IS_COMMA(s) ((s) == ',')
 #define IS_IMM_SIGN(s) ((s) == '#')
@@ -39,6 +37,7 @@ transition str_map[] = {
     {STRING_STATE, &str_handler, END_STATE},
 };
 
+/* .data */
 transition data_map[] = {
     {IMM_STATE,  &imm_handler,   COMA_STATE},
     {COMA_STATE, &comma_handler, IMM_STATE},
@@ -99,7 +98,6 @@ Bool is_reg (const char *str, int *reg_num)
 Bool is_int (char *token, int *imm)
 {
   char *end_ptr = NULL;
-  /*todo check about long*/
   *imm = (int) strtol (token, &end_ptr, 10);
   return IS_EMPTY(end_ptr);
 }
@@ -115,35 +113,43 @@ Bool is_define (LineInfo *line, char *token, Symbol_Table *symbol_table,
       *imm = symbol_data->val;
       return TRUE;
     }
-    else { /* mov r0 #STR | mov r0 LABEL[STR] */
-      /* todo maybe add the # to the prefix. print: #label*/
-      r_error ("expected numeric value or defined constant, but got label ",
-               line->parts, "");
+    else { /* mov r0, #STR | mov r0, LABEL[STR] */
+      raiseError (label_instead_of_imm_err, line->parts);
       return FALSE;
     }
   }
   /* mov r0, #zzz | mov L[zzz], r0 | .data 1,zzz (when 'zzz' in undefined) */
-  if (valid_identifier (line->parts, token, FALSE)) {
-    r_error ("", line->parts, " undeclared");
-    return FALSE;
+  if (is_valid_identifier (line->parts, token, FALSE)) {
+    raiseError (undeclared_err, line->parts);
   }
-  /* mov r0 #3!a |  mov r0 L[***] | mov r0 L[] | mov #, r0 | .data 1,2, $ */
-  r_error ("expected numeric value or defined constant, but got: ",
-           line->parts, "");
+
+    /* mov r0, L[] */
+  else if (IS_COMMA(*token) || IS_CLOSE_INDEX_SIGN(token)) {
+    raiseError (expected_int_before_bracket, line->parts);
+  }
+    /* mov r0, #3!a |  mov r0, L[***] | .data 1,2, $ */
+  else {
+    raiseError (invalid_imm_err, line->parts);
+  }
   return FALSE;
 }
 
 Bool is_imm (LineInfo *line, char *token, Symbol_Table *table, int *imm)
 {
   if (IS_EMPTY(token) && line->type_l != data_l) {
-    /*  mov r0, #_  | mov r0, L [_] */
-    /* if comes from data, assume that token isn't empty,
-    therefore it's relevant only for operators */
-    r_error ("expected numeric value or defined constant after ",
-             line->parts, "");
+    /* relevant only for # sign. exp: mov r0, #_ */
+    raiseError (expected_imm_after_sign_err, line->parts);
     return FALSE;
   }
-  return is_int (token, imm) || is_define (line, token, table, imm);
+  if (is_int (token, imm)) {
+    if (*imm >= MIN_INT_MACHINE && *imm <= MAX_INT_MACHINE) {
+      return TRUE;
+    }
+    raiseError (exceeds_integer_bounds, line->parts);
+    return FALSE;
+  }
+  /*else check if it's a define constant */
+  return is_define (line, token, table, imm);
 }
 
 /* put in symbol: the symbol name or pointer to the symbol */
@@ -152,7 +158,7 @@ Bool is_symbol (LineInfo *line, char *name, Symbol_Table *symbol_table,
 {
   Symbol *symbol;
   Symbol_Data *symbol_data;
-  if (!valid_identifier (line->parts, name, FALSE)) {
+  if (!is_valid_identifier (line->parts, name, FALSE)) {
     return FALSE;
   }
 
@@ -180,11 +186,11 @@ Bool is_closing_index_sign (LineInfo *line)
 {
   char *token = line->parts->token;
   if (IS_EMPTY(token)) { /* mov r0, L[1 */
-    r_error ("expected ']'", line->parts, "");
+    raiseError (expected_bracket_got_nothing_err, line->parts);
     return FALSE;
   }
   if (!IS_CLOSE_INDEX_SIGN(token)) { /* mov r0, L[1 k] */
-    r_error ("expected ']' before", line->parts, "");
+    raiseError (expected_bracket_before_expression_err, line->parts);
     return FALSE;
   }
   return TRUE;
@@ -209,21 +215,44 @@ Bool is_index (LineInfo *line, char *name, Symbol_Table *table,
   return is_closing_index_sign (line);
 }
 
-Bool is_str (LinePart *line)
+Bool is_str (LineParts *line)
 {
   char *str = line->token;
   size_t len = strlen (line->token);
 
   if (IS_EMPTY (str)) { /* .string _ */
-    r_error ("empty string declaration", line, "");
+    raiseError (empty_string_declaration_err, line);
     return FALSE;
   }
   if (str[0] != '"') { /* .string a" */
-    r_error ("missing opening \" character in ", line, "");
+    raiseError (missing_opening_quote_err, line);
     return FALSE;
   }
   if (len == 1 || str[len - 1] != '"') { /*.string " || .string "abc   */
-    r_error ("missing terminating \" character in ", line, "");
+    raiseError (missing_terminating_quote_err, line);
+    return FALSE;
+  }
+  return TRUE;
+}
+
+Bool is_valid_identifier (LineParts *line, char *name, Bool print_err)
+{
+  if (!isalpha(name[0])) {
+    if (print_err) {
+      raiseError (starts_with_non_alphabetic_err, line);
+    }
+    return FALSE;
+  }
+  if (!isAlphaNumeric (name)) {
+    if (print_err) {
+      raiseError (contain_non_alphanumeric, line);
+    }
+    return FALSE;
+  }
+  if (isSavedWord (name)) {
+    if (print_err) {
+      raiseError (reserved_keyword_used_err, line);
+    }
     return FALSE;
   }
   return TRUE;
@@ -254,7 +283,9 @@ addr_mode_flag get_addressing_mode (LineInfo *line, Symbol_Table *table,
   if (is_symbol (line, tmp, table, operand)) {
     return b_symbol;
   }
-  r_error ("", line->parts, " invalid operand");
+
+  /* else, the operand is invalid. exp: mov r2, $%#! */
+  raiseError (invalid_operand_err, line->parts);
   return 0;
 }
 
@@ -262,7 +293,6 @@ Bool valid_add_mode (LineInfo *line, Operand *operand, addr_mode_flag add_mode)
 {
   if (operand->param_types & add_mode) {
     switch (add_mode) {
-
       case b_imm:
         operand->add_mode = IMM_ADD;
         break;
@@ -278,8 +308,8 @@ Bool valid_add_mode (LineInfo *line, Operand *operand, addr_mode_flag add_mode)
     }
     return TRUE;
   }
-  r_error ("passing ", line->parts, " is invalid addressing mode to "
-                                    "function");
+
+  raiseError (invalid_addressing_mode_err, line->parts);
   return FALSE;
 }
 
@@ -291,13 +321,13 @@ state operand_handler (LineInfo *line, Symbol_Table *table,
 
   /* check for missing arg (exp: mov r2, _ | mov _) */
   if (IS_EMPTY(token)) {
-    r_error ("too few arguments in instruction ", line->parts, "");
+    raiseError (too_few_arguments_err, line->parts);
     return ERROR_STATE;
   }
 
   /* check for redundant comma (exp: mov, r2, r3 | mov r2,,r3) */
   if (IS_COMMA(*token)) {
-    r_error ("expected expression before ", line->parts, " token");
+    raiseError (expected_expression_before_comma_err, line->parts);
     return ERROR_STATE;
   }
 
@@ -322,7 +352,8 @@ state src_handler (LineInfo *line, Symbol_Table *table, state next_state)
                           next_state);
 }
 
-state comma_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
+state
+comma_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token;
   if (IS_COMMA(*token)) {
@@ -330,12 +361,12 @@ state comma_handler (LineInfo *line, Symbol_Table *symbol_table, state next_stat
   }
 
   if (!IS_EMPTY(token)) { /* mov r0 r3 | .data 1 2 */
-    r_error ("expected ',' before ", line->parts, "");
+    raiseError (expected_expression_before_comma_err, line->parts);
   }
   else { /* mov r2 | */
     /* if comes from data, assume that token isn't empty,
     therefore it's relevant only for operators */
-    r_error ("too few arguments in instruction", line->parts, "");
+    raiseError (too_few_arguments_err, line->parts);
   }
 
   return ERROR_STATE;
@@ -356,16 +387,16 @@ imm_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 
   if (IS_EMPTY(token)) {
     if (line->info.data.len == 0) { /* .data _ */
-      r_error ("empty data initializer", line->parts, "");
+      raiseError (empty_data_declaration_err, line->parts);
     }
     else { /* .data 1,_ */
-      r_error ("unexpected ',' after end of command", line->parts, "");
+      raiseError (unexpected_comma_after_end_err, line->parts);
     }
     return ERROR_STATE;
   }
 
-  if (IS_COMMA(*token)) {
-    r_error ("expected integer before ", line->parts, "token");
+  if (IS_COMMA(*token)) { /* .data ,1,2 | .data 1,2,,3 */
+    raiseError (expected_integer_before_comma_err, line->parts);
     return ERROR_STATE;
   }
 
@@ -401,13 +432,13 @@ Bool valid_entry_label (LineInfo *line, Symbol *symbol)
   Symbol_Data *symbol_data = (Symbol_Data *) symbol->data;
 
   if (symbol_data->type == DEFINE || symbol_data->type == EXTERN) {
-    r_error ("redeclaration of ", line->parts, "");
+    raiseError (redeclaration_err, line->parts);
     return FALSE;
   }
 
   /* else, label can be entry label (dada, code, unresolved) */
   if (symbol_data->isEntry) {
-    r_warning ("", line->parts, " has already declared in earlier line");
+    raiseWarning (duplicate_declaration_warning, line->parts);
   }
   line->info.ext_ent.name = symbol;
   line->info.ext_ent.found = TRUE;
@@ -419,20 +450,20 @@ Bool valid_extern_label (LineInfo *line, Symbol *symbol)
   Symbol_Data *symbol_data = (Symbol_Data *) symbol->data;
 
   if (symbol_data->type == EXTERN) {
-    r_warning ("", line->parts, " has already declared in earlier line");
+    raiseWarning (duplicate_declaration_warning, line->parts);
     line->info.ext_ent.name = symbol;
     line->info.ext_ent.found = TRUE;
     return TRUE;
   }
 
-   if (symbol_data->type == UNRESOLVED_USAGE) {
+  if (symbol_data->type == UNRESOLVED_USAGE) {
     line->info.ext_ent.name = symbol;
     line->info.ext_ent.found = TRUE;
     return TRUE;
   }
 
   /* else, not valid. including: code, data, entry, define, unresolved */
-  r_error ("redeclaration of ", line->parts, "");
+  raiseError (redeclaration_err, line->parts);
   return FALSE;
 }
 
@@ -445,7 +476,7 @@ Bool valid_define_label (LineInfo *line, Symbol *symbol)
     line->info.define.found = TRUE;
     return TRUE;
   }
-  r_error ("redeclaration of ", line->parts, "");
+  raiseError (redeclaration_err, line->parts);
   return FALSE;
 }
 
@@ -455,11 +486,11 @@ identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state
   char *token = line->parts->token, *target;
   Symbol *symbol;
 
-  if (IS_EMPTY(token)) { /* .define _ */
-    r_error ("expected identifier after directive", line->parts, "");
+  if (IS_EMPTY(token)) { /* .define _ | .extern _ | .entry _ */
+    raiseError (expected_identifier_err, line->parts);
     return ERROR_STATE;
   }
-  if (!valid_identifier (line->parts, token, TRUE)) {
+  if (!is_valid_identifier (line->parts, token, TRUE)) {
     /* (not saved word && not abc123 && or not new name) */
     return ERROR_STATE;
   }
@@ -472,9 +503,9 @@ identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state
     return next_state;
   }
   else { /* symbol already exist, make sure it's valid */
-    if ( (line->type_l == ext_l && !valid_extern_label(line, symbol))
+    if ((line->type_l == ext_l && !valid_extern_label (line, symbol))
         || (line->type_l == ent_l && !valid_entry_label (line, symbol))
-        || (line->type_l == def_l && !valid_define_label(line, symbol)) ){
+        || (line->type_l == def_l && !valid_define_label (line, symbol))) {
       return ERROR_STATE;
     }
   }
@@ -484,12 +515,12 @@ identifier_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state
 state
 equal_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
-  if (IS_EMPTY(line->parts->token)) {
-    r_error ("empty define declaration", line->parts, "");
+  if (IS_EMPTY(line->parts->token)) { /*.define x*/
+    raiseError (empty_define_declaration_err, line->parts);
     return ERROR_STATE;
   }
   if (strcmp (line->parts->token, "=") != 0) { /*.define x y | .define x 3 */
-    r_error ("expected '=' before numeric token, but got ", line->parts, "");
+    raiseError (expected_equals_before_expression_err, line->parts);
     return ERROR_STATE;
   }
   return next_state;
@@ -499,19 +530,22 @@ state
 int_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
 {
   char *token = line->parts->token;
+  int *val = &line->info.define.val;
 
-  if (IS_EMPTY(token)) {
-    r_error ("expected numeric expression after '='", line->parts, "");
+  if (IS_EMPTY(token)) { /* .define x = _ */
+    raiseError (expected_numeric_expression_after_equal_err, line->parts);
     return ERROR_STATE;
   }
-  if (!is_int (token, &line->info.define.val)) {
-/*    if (res > MAX_INT || res < MIN_INT) {
-      r_error ("", line, " exceeds integer bounds [-(2^13-1), 2^13-1]");
-    }*/
-    r_error ("", line->parts, " is not a valid numeric expression");
+  if (is_int (token, val)) {
+    if (*val >= MIN_INT_MACHINE && *val <= MAX_INT_MACHINE) {
+      return next_state;
+    }
+    raiseError (exceeds_integer_bounds, line->parts);
     return ERROR_STATE;
   }
-  return next_state;
+  /* else, it's invalid. exp: .define x = y | .define x = @#$#@ */
+  raiseError (invalid_numeric_expression_err, line->parts);
+  return ERROR_STATE;
 }
 
 state
@@ -519,11 +553,7 @@ extra_text_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state
 {
   char *token = line->parts->token;
   if (!IS_EMPTY(token)) {
-    /*Concatenates the entire continuation of the line for the error msg */
-    strcat (line->parts->token, line->parts->postfix);
-    NULL_TERMINATE(line->parts->postfix, 0);
-
-    r_error ("unexpected text after end of command: ", line->parts, "");
+    raiseError (extraneous_text_err, line->parts);
     return ERROR_STATE;
   }
   return next_state; /*end state*/

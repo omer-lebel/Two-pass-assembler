@@ -40,6 +40,8 @@ typedef struct transition
     state next;
 } transition;
 
+Bool is_valid_identifier (LineParts *line, char *name, Bool print_err);
+
 state str_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state);
 state imm_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state);
 

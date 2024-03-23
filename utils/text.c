@@ -5,16 +5,6 @@
 
 #include "text.h"
 
-#define RED   "\x1B[31m"
-#define GRN   "\x1B[32m"
-#define YEL   "\x1B[33m"
-#define BLU   "\x1B[34m"
-#define MAG   "\x1B[35m"
-#define CYN   "\x1B[36m"
-#define WHT   "\x1B[37m"
-#define RESET "\x1B[0m"
-#define BOLD "\033[1m"
-#define REG "\033[0m"
 
 Bool isSavedWord (const char *s)
 {
@@ -38,35 +28,14 @@ Bool isAlphaNumeric (const char *str)
   return TRUE;  /* All characters are alphanumeric */
 }
 
-Bool valid_identifier (LinePart *line, char *name, Bool print_err)
-{
-  if (!isalpha(name[0])) {
-    if (print_err) {
-      r_error ("", line, " starts with a non-alphabetic character");
-    }
-    return FALSE;
-  }
-  if (!isAlphaNumeric (name)) {
-    if (print_err) {
-      r_error ("", line, " contains non-alphanumeric characters");
-    }
-    return FALSE;
-  }
-  if (isSavedWord (name)) {
-    if (print_err) {
-      r_error ("", line, " is a reserved keyword that cannot be used as an "
-                         "identifier");
-    }
-    return FALSE;
-  }
-  return TRUE;
-}
 
 void trim_end (char *str)
 {
   int i = (int) strlen (str);
-  while (isspace(str[--i])) {}
-  NULL_TERMINATE(str, i + 1);
+  if (!IS_EMPTY(str)){
+    while (isspace(str[--i])) {}
+    NULL_TERMINATE(str, i + 1);
+  }
 }
 
 char *get_line (FILE *file, char *buffer, size_t buff_size, Bool *overflow)
@@ -94,7 +63,7 @@ char *get_line (FILE *file, char *buffer, size_t buff_size, Bool *overflow)
   return (i != 0) ? buffer : NULL;
 }
 
-void lineTok (LinePart *line)
+void lineTok (LineParts *line)
 {
   size_t i = 0, j = 0;
   char *p = line->postfix;
@@ -125,13 +94,12 @@ void lineTok (LinePart *line)
     }
     NULL_TERMINATE(line->token, i);
   }
-  /* update the postfix */
-/*  strcpy (line->postfix, p); */ /* todo debug why it's not working */
+
   for (i = 0; i <= strlen (p); ++i) {
     line->postfix[i] = p[i];
   }
 }
-void init_line_parts (LinePart *line_part, char *prefix_buffer,
+void init_line_parts (LineParts *line_part, char *prefix_buffer,
                       char *token_buffer, char *postfix_buffer)
 {
   line_part->prefix = prefix_buffer;
@@ -140,7 +108,7 @@ void init_line_parts (LinePart *line_part, char *prefix_buffer,
   line_part->num = 0;
 }
 
-void restart_line_parts (LinePart *line_part)
+void restart_line_parts (LineParts *line_part)
 {
   RESET_STR(line_part->prefix);
   RESET_STR(line_part->token);
@@ -148,15 +116,7 @@ void restart_line_parts (LinePart *line_part)
   line_part->num++;
 }
 
-void copy_line_part (LinePart *dst, LinePart *src)
-{
-  strcpy (dst->prefix, src->prefix);
-  strcpy (dst->token, src->token);
-  strcpy (dst->postfix, src->postfix);
-  dst->num = src->num;
-}
-
-void get_identifier_tok (LinePart *line, Bool has_label)
+void get_identifier_tok (LineParts *line, Bool has_label)
 {
   lineToPostfix (line);
   if (has_label) {
@@ -166,7 +126,7 @@ void get_identifier_tok (LinePart *line, Bool has_label)
   lineTok (line); /* move to identifier  */
 }
 
-void lineToPostfix (LinePart *line)
+void lineToPostfix (LineParts *line)
 {
   /* concatenate prefix, token and postfix to recreate the original line */
   strcat (line->prefix, line->token);
@@ -179,51 +139,25 @@ void lineToPostfix (LinePart *line)
   RESET_STR(line->token);
 }
 
-void r_msg (char *type, char *color, char *msg_before, LinePart *line, char
-*msg_after)
-{
-  signed i;
-  /* Print file and line number, error or warning type (fileNum:i error:) */
-  printf ("%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
-
-  /* Print message context, token, and additional message */
-  if (IS_EMPTY(line->token)) {
-    if (IS_EMPTY(msg_before)) {
-      printf ("%s\n", msg_after);
-    }
-    else {
-      printf ("%s\n", msg_before);
-    }
-  }
-  else {
-    printf ("%s" BOLD "'%s'" REG "%s\n", msg_before, line->token, msg_after);
-  }
-
-
-  /* print line number and the line with the token bolded in color
-   i | line with error cause bolted in color */
-  printf (" %-3lu | %s%s%s" RESET "%s\n",
-          line->num, line->prefix, color, line->token, line->postfix);
-
-  /* print an arrow pointing to the location of the token in the line
-       |           ^~~~~~~~~                 */
-  printf (" %-3s |", " ");
-  for (i = 0; i < (int) strlen (line->prefix); i++) {
-    printf (" ");
-  }
-  printf (" %s^", color);
-  for (i = 0; i < (int) strlen (line->token) - 1; i++) {
-    printf ("%s~", color);
-  }
-  printf (RESET "\n");
+void move_one_char_to_prefix(LineParts *line){
+  int prefix_len = (int) strlen (line->prefix);
+  line->prefix[prefix_len] = line->token[0];
+  NULL_TERMINATE(line->prefix, prefix_len + 1);
+  line->token++;
 }
 
-void r_error (char *msg_before, LinePart *line, char *msg_after)
-{
-  r_msg ("error", RED, msg_before, line, msg_after);
-}
+void splitLine(LineParts *parts, char *wanted_tok) {
 
-void r_warning (char *msg_before, LinePart *line, char *msg_after)
-{
-  r_msg ("warning", YEL, msg_before, line, msg_after);
+  // Find the position of the token within the line
+  char *tokenPos = strstr(parts->line, wanted_tok);
+
+  // Copy prefix
+  strncpy(parts->prefix, parts->line, tokenPos - parts->line);
+  parts->prefix[tokenPos - parts->line] = '\0';
+
+  // Copy token
+  strcpy(parts->token, wanted_tok);
+
+  // Copy postfix
+  strcpy(parts->postfix, tokenPos + strlen(wanted_tok));
 }

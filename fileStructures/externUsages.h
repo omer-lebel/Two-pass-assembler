@@ -10,7 +10,7 @@
 #include "../utils/linkedList.h"
 #include "analyzer.h"
 
-Bool print_extern_table(Op_List *op_list, FILE *output);
+exit_code print_extern_table(Op_List *op_list, FILE *output, char *file_name);
 
 
 

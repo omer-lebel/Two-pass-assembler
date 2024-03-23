@@ -60,14 +60,14 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output,
  * @return Returns TRUE on success, FALSE on failure.
  */
 exit_code
-p_processLine (FILE *output, LinkedList *mcr_list, LinePart *line,
+p_processLine (FILE *output, LinkedList *mcr_list, LineParts *line,
                Node **curr_mcr);
 
-exit_code mcr_handler(LinkedList *mcr_list, Node **mcr_node, LinePart *line);
+exit_code mcr_handler(LinkedList *mcr_list, Node **mcr_node, LineParts *line);
 
-exit_code endmcr_handler(Node **curr_mcr, LinePart *line);
+exit_code endmcr_handler(Node **curr_mcr, LineParts *line);
 
-exit_code write_to_am_file (FILE *am_file, LinePart *line, LinkedList
+exit_code write_to_am_file (FILE *am_file, LineParts *line, LinkedList
 *mcr_list);
 
 /**
@@ -78,7 +78,7 @@ exit_code write_to_am_file (FILE *am_file, LinePart *line, LinkedList
  * @param mcr_name The name of the macro to be added.
  * @return Returns a pointer to the added node on success, NULL on failure.
  */
-Node *addMcr (LinkedList *mcr_list, LinePart *line);
+Node *addMcr (LinkedList *mcr_list, LineParts *line);
 
 /**
  * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -92,7 +92,7 @@ Node *addMcr (LinkedList *mcr_list, LinePart *line);
  * - Cannot be a reserved word of the language. \n
  * - Can contain only letters, numbers, and '_'. \n
  */
-Bool isValidMcr (LinkedList *macro_list, LinePart *line);
+Bool isValidMcr (LinkedList *macro_list, LineParts *line);
 
 /**
  * Writes a line to the output file, handling macro expansions.

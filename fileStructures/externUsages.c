@@ -69,7 +69,7 @@ int calc_extern_location (Op_Analyze *op, Operand_Type type)
   else { /* op->src.add_mode == INDEX_ADD */
     offset = 3;
   }
-  return op->address + offset + IC_START;
+  return op->address + offset;
 }
 
 
@@ -92,17 +92,18 @@ add_new_usages (Extern_List *extern_list, char *ext_name, int line_num)
   return TRUE;
 }
 
-Bool build_extern_table (Extern_List *extern_list, Op_List *op_list)
+exit_code build_extern_table (Extern_List *extern_list, Op_List *op_list,
+                         char* file_name)
 {
   Op_Line *op_line;
-  int i = 0, memInx;
+  int i = 0, memInx = -1;
   Symbol *src_symbol = NULL, *target_symbol = NULL;
   while ((op_line = get (op_list, i++))) {
     /* src */
     if ((src_symbol = extern_usages_in_operand (&op_line->analyze->src))) {
       memInx = calc_extern_location (op_line->analyze, SRC);
       if (!add_new_usages(extern_list, src_symbol->word, memInx)){
-        return FALSE;
+        return MEMORY_ERROR;
       }
     }
     /* target */
@@ -110,31 +111,37 @@ Bool build_extern_table (Extern_List *extern_list, Op_List *op_list)
         && target_symbol != src_symbol) {
       memInx = calc_extern_location (op_line->analyze, TARGET);
       if (!add_new_usages(extern_list, target_symbol->word, memInx)){
-        return FALSE;
+        return MEMORY_ERROR;
       }
     }
   }
-  return TRUE;
+  if (memInx < 0){
+    remove_file (file_name, "ext");
+    return ERROR;
+  }
+  return SUCCESS;
 }
 
 
-Bool print_extern_table(Op_List *op_list, FILE *output)
+exit_code print_extern_table(Op_List *op_list, FILE *output, char *file_name)
 {
+  exit_code res;
   Extern_List *extern_list = createList (init_usages_list, print_usages_list,
                                    free_usages_list);
   if (!extern_list){
-    return FALSE;
+    return MEMORY_ERROR;
   }
 
-  if (!build_extern_table(extern_list, op_list)){
+  res = build_extern_table(extern_list, op_list, file_name);
+  if (res != SUCCESS){
     freeList (extern_list);
-    return FALSE;
+    return res;
   }
 
   printList (extern_list, output);
 
   freeList (extern_list);
 
-  return TRUE;
+  return SUCCESS;
 }
 

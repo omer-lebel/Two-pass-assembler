@@ -15,7 +15,6 @@ Symbol_Table *new_symbol_table (void)
     return NULL;
   }
   table->extern_count = 0;
-  table->entry_count = 0;
   table->unresolved_usage_count = 0;
   table->unresolved_entry_count = 0;
 
@@ -94,7 +93,6 @@ void print_symbol (const char *word, const void *data, FILE *stream)
 void show_symbol_table (Symbol_Table *table, FILE *stream)
 {
   fprintf (stream, "\n----------------- symbol table -----------------\n");
-  fprintf (stream, "entry: %d\n", table->entry_count);
   fprintf (stream, "extern: %d\n", table->extern_count);
   fprintf (stream, "unresolved usage: %d\n", table->unresolved_usage_count);
   fprintf (stream, "unresolved entry: %d\n", table->unresolved_entry_count);

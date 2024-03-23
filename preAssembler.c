@@ -1,4 +1,5 @@
 #include "preAssembler.h"
+#include "utils/errors.h"
 
 #define IS_COMMENT(s) ((s)[0] == ';')
 
@@ -8,42 +9,38 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output,
   Node *curr_mcr = NULL;
   exit_code res = SUCCESS;
   Bool overflow = FALSE;
-  char prefix[MAX_LINE_LEN] = "", token[MAX_LINE_LEN] = "",
-      postfix[MAX_LINE_LEN] = "";
-  LinePart line_part;
+  char prefix[MAX_LINE_LEN] = "", token[MAX_LINE_LEN] = "", postfix[MAX_LINE_LEN] = "";
+  LineParts line_part;
   LinkedList *mcr_list = createList (init_mcrData, print_mcrData, free_mcrData);
 
   if (!mcr_list) {
     return MEMORY_ERROR;
   }
   init_line_parts (&line_part, prefix, token, postfix);
-  line_part.file = file_name; /*todo delete */
+  line_part.file = file_name;
 
   while (res == SUCCESS && get_line (input, line_part.line,
                                      MAX_LINE_LEN, &overflow)) {
     restart_line_parts (&line_part);
     res = p_processLine (output, mcr_list, &line_part, &curr_mcr);
     if (overflow) {
-      r_error ("line length is more than 80 characters", &line_part, "");
+      raiseError (line_length_exceeded_err, &line_part);
       *error_flag += ERROR;
     }
   }
 
   /* check that mcr flag is off at EOF */
   if (res == SUCCESS && curr_mcr != NULL) {
-    trim_end (line_part.postfix);
-    r_error ("reached EOF in the middle of macro definition. Expected "
-             "'endmcr'",
-             &line_part, "");
+    raiseError (eof_in_macro_definition_err, &line_part);
     res = ERROR;
   }
-/*  printList (mcr_list, stdout); */
+
   freeList (mcr_list);
   return res;
 }
 
 exit_code
-p_processLine (FILE *output, LinkedList *mcr_list, LinePart *line,
+p_processLine (FILE *output, LinkedList *mcr_list, LineParts *line,
                Node **curr_mcr)
 {
   exit_code res = SUCCESS;
@@ -70,23 +67,23 @@ p_processLine (FILE *output, LinkedList *mcr_list, LinePart *line,
   return res;
 }
 
-Bool extraneous_text (LinePart *line)
+Bool extraneous_text (LineParts *line)
 {
   if (!IS_EMPTY(line->postfix)) {
     lineTok (line);
-    r_error ("extraneous text ", line, "");
+    raiseError (extraneous_text_err, line);
     return TRUE;
   }
   return FALSE;
 }
 
-exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LinePart *line)
+exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LineParts *line)
 {
   char *mcr_name;
   trim_end (line->postfix);
 
   if (*mcr_node != NULL) {
-    r_error ("", line, ": nested macro definition is not allowed ");
+    raiseError (nested_macro_definition_err, line);
     return ERROR;
   }
   lineTok (line);
@@ -106,11 +103,11 @@ exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LinePart *line)
   return SUCCESS;
 }
 
-exit_code endmcr_handler (Node **curr_mcr, LinePart *line)
+exit_code endmcr_handler (Node **curr_mcr, LineParts *line)
 {
   trim_end (line->postfix);
   if (!(*curr_mcr)) {
-    r_error ("unexpected ", line, "");
+    raiseError (unexpected_endmcr_err, line);
     return ERROR;
   }
   else if (extraneous_text (line)) {
@@ -120,7 +117,7 @@ exit_code endmcr_handler (Node **curr_mcr, LinePart *line)
   return SUCCESS;
 }
 
-exit_code write_to_am_file (FILE *am_file, LinePart *line,
+exit_code write_to_am_file (FILE *am_file, LineParts *line,
                             LinkedList *mcr_list)
 {
   mcrData *mcr_data;
@@ -142,28 +139,27 @@ exit_code write_to_am_file (FILE *am_file, LinePart *line,
   return SUCCESS;
 }
 
-Bool isValidMcr (LinkedList *macro_list, LinePart *line)
+Bool isValidMcr (LinkedList *macro_list, LineParts *line)
 {
   char *mcr_name = line->token;
   /* macro does not have a name */
   if (IS_EMPTY(mcr_name)) {
-    r_error ("", line, "empty macro declaration");
+    raiseError (empty_macro_declaration_err, line);
     return FALSE;
   }
 
   if (!isalpha(mcr_name[0])) {
-    r_error ("", line, " starts with a non-alphabetic character");
+    raiseError (starts_with_non_alphabetic_err, line);
     return FALSE;
   }
   if (isSavedWord (mcr_name)) {
-    r_error ("", line, " is a reserved keyword that cannot be used as an "
-                       "identifier");
+    raiseError (reserved_keyword_used_err, line);
     return FALSE;
   }
 
   /*already exist macro; */
   if (findNode (macro_list, mcr_name)) {
-    r_error ("redeclaration of ", line, "");
+    raiseError (redeclaration_err, line);
     return FALSE;
   }
   return TRUE;
