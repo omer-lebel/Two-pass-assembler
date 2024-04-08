@@ -1,13 +1,28 @@
-//
-// Created by OMER on 3/22/2024.
-//
+/**
+ * @file errors.h
+ * @brief This file handles printing of error, messages and warnings.
+ */
 
 #ifndef _ERRORS_H_
 #define _ERRORS_H_
 
 #include "text.h"
 
+typedef enum Msg_Code{
+    no_input_file_err,                  /* must give at least one file to process */
+    memory_err,                         /* Memory allocation failure. program stopped */
+    assembler_failed,                   /* failed */
+    ended_successfully,                 /* ended_successfully (actually not an error) */
+}Msg_Code;
+
+typedef enum Warning_Code{
+    inaccessible_data,                  /*variables may be inaccessible without label*/
+    ignored_label,                      /* label is ignored */
+    duplicate_declaration_warning,      /* has already declared in earlier line */
+}Warning_Code;
+
 typedef enum Error_Code {
+    /* ----------------- error of few stages */
     extraneous_text_err,                /* extraneous text */
     starts_with_non_alphabetic_err,     /* starts with a non-alphabetic character */
     reserved_keyword_used_err,          /* is a reserved keyword that cannot be used as an identifier */
@@ -52,17 +67,44 @@ typedef enum Error_Code {
     invalid_numeric_expression_err,     /* is not a valid numeric expression */
 } Error_Code;
 
-void second_pass_err (LineParts *line_parts, char* wanted_tok,
-                      char* file_name);
+/**
+ * @brief Raises a general message based on the message code.
+ *
+ * @param msg_code Code of the message to raise.
+ */
+void raise_general_msg (Msg_Code msg_code);
 
-typedef enum Warning_Code{
-    inaccessible_data,                  /*variables may be inaccessible without label*/
-    ignored_label,                      /* label is ignored */
-    duplicate_declaration_warning,      /* has already declared in earlier line */
-}Warning_Code;
+/**
+ * @brief Raises an open file error.
+ *
+ * @param file_name Name of the file that caused the error.
+ */
+void raise_open_file_error (char *file_name);
 
-void raiseError(Error_Code error_code, LineParts *line);
-void raiseWarning(Warning_Code warning_code, LineParts *line);
+/**
+ * @brief Raises a warning based on the warning code and line details.
+ *
+ * @param warning_code Code of the warning to raise.
+ * @param line         Pointer to the line details.
+ */
+void raise_warning(Warning_Code warning_code, LineParts *line);
 
+/**
+ * @brief Raises an error based on the error code and line details.
+ *
+ * @param error_code Code of the error to raise.
+ * @param line       Pointer to the line details.
+ */
+void raise_error(Error_Code error_code, LineParts *line);
+
+/**
+ * @brief Raises a second pass error for a specified token.
+ *
+ * @param line_parts Pointer to the line details.
+ * @param wanted_tok The token that was expected.
+ * @param file_name  Name of the file.
+ */
+void raise_second_pass_err (LineParts *line_parts, char* wanted_tok,
+                            char* file_name);
 
 #endif /*_ERRORS_H_*/

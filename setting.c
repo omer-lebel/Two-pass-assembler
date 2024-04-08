@@ -56,26 +56,4 @@ unsigned int param_types[NUM_OF_OP][3] =
   * ----------------------------------------------------------------------
   * */
 
-FILE *open_file (char *file_name, const char *extension, const char *mode)
-{
-  FILE *tmp;
-  size_t len = strlen (file_name);
-  strcat (file_name, extension);
-  tmp = fopen (file_name, mode);
-  if (!tmp) {
-    printf (" *** Error while opening '%s'. Stop. \n", file_name);
-    return NULL;
-  }
-  else {
-    file_name[len] = '\0'; /* remove extension */
-    return tmp;
-  }
-}
 
-void remove_file (char *file_name, const char *extension)
-{
-  size_t len = strlen (file_name);
-  strcat (file_name, extension);
-  remove (file_name);
-  file_name[len] = '\0'; /* remove extension */
-}

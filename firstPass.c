@@ -8,10 +8,11 @@
 #include "utils/text.h"
 #include "utils/vector.h"
 #include "fileStructures/symbolTable.h"
-#include "fileStructures/memoryImg.h"
+#include "fileStructures/dataSeg.h"
+#include "fileStructures/codeSeg.h"
+#include "fileStructures/entryLines.h"
 #include "fileStructures/analyzer.h"
 #include "fsm.h"
-
 
 /************************* pass helpers *************************/
 
@@ -22,7 +23,7 @@ exit_code init_first_pass (file_analyze *f, char *file_name,
   f->symbol_table = new_symbol_table ();
   f->data_segment = new_data_segment (&f->DC);
   f->op_list = new_op_list ();
-  f->entry_list = new_entry_list();
+  f->entry_list = new_entry_list ();
   if (!f->symbol_table || !f->data_segment || !f->op_list || !f->entry_list) {
     free_file_analyze (f);
     return MEMORY_ERROR;
@@ -61,7 +62,7 @@ update_unresolved_count (Symbol_Data *symbol_data, Symbol_Table *symbol_table)
   else if (symbol_data->type == UNRESOLVED_USAGE) {
     symbol_table->unresolved_usage_count--;
   }
-  else {
+  else { //UNRESOLVED_ENTRY_USAGE
     symbol_table->unresolved_entry_count--;
   }
 }
@@ -87,18 +88,20 @@ exit_code process_directive_label (LineInfo *line, Symbol_Table *symbol_table,
   return SUCCESS;
 }
 
-Bool directive_analyze (LineInfo *line, Symbol_Table *symbol_table)
+exit_code directive_analyze (LineInfo *line, Symbol_Table *symbol_table,
+                             int DC)
 {
   if (!run_fsm (line, symbol_table)) {
-    return FALSE;
+    return ERROR;
   }
 
   if (IS_EMPTY(line->label)) { /* .string "a" */
-    raiseWarning (inaccessible_data, line->parts);
-    return TRUE;
+    raise_warning (inaccessible_data, line->parts);
+    return SUCCESS;
   }
+  /* else, add or update symbol table */
+  return process_directive_label (line, symbol_table, DC);
 
-  return TRUE;
 }
 /************************* string *************************/
 exit_code str_analyze (LineInfo *line, file_analyze *f)
@@ -108,17 +111,15 @@ exit_code str_analyze (LineInfo *line, file_analyze *f)
   line->type_l = str_l;
   line->info.str.content = str_content;
 
-  if (!directive_analyze (line, f->symbol_table)) {
-    return ERROR;
-  }
-  /* add or update symbol table */
-  res = process_directive_label (line, f->symbol_table, f->DC);
+  res = directive_analyze (line, f->symbol_table, f->DC);
   if (res != SUCCESS) {
     return res;
   }
+
   /* add to data seg */
   if (!add_to_data_segment (f->data_segment, &(f->DC), CHAR_TYPE,
-                            line->info.str.content, line->info.str.len + 1)) {
+                            line->info.str.content,
+                            line->info.str.len + 1)) {
     return MEMORY_ERROR;
   }
 
@@ -133,11 +134,7 @@ exit_code data_analyze (LineInfo *line, file_analyze *f)
   line->type_l = data_l;
   line->info.data.arr = data_arr;
 
-  if (!directive_analyze (line, f->symbol_table)) {
-    return ERROR;
-  }
-  /* add or update symbol table */
-  res = process_directive_label (line, f->symbol_table, f->DC);
+  res = directive_analyze (line, f->symbol_table, f->DC);
   if (res != SUCCESS) {
     return res;
   }
@@ -159,7 +156,7 @@ exit_code process_define_label (LineInfo *line, Symbol_Table *symbol_table)
 
   if (!line->info.define.found) {
     if (!(symbol = add_symbol (symbol_table, line->info.define.name,
-                     DEFINE, line->info.define.val, NOT_ENTRY))) {
+                               DEFINE, line->info.define.val, NOT_ENTRY))) {
       return MEMORY_ERROR;
     }
     line->info.define.name = symbol;
@@ -168,14 +165,14 @@ exit_code process_define_label (LineInfo *line, Symbol_Table *symbol_table)
   /* else, symbol already exist */
   /* only redeclaration allowed here is redeclaration of define */
   symbol = (Symbol *) line->info.define.name;
-  symbol_data = (Symbol_Data*) symbol->data;
+  symbol_data = (Symbol_Data *) symbol->data;
   get_identifier_tok (line->parts, FALSE);
   if (symbol_data->val != line->info.define.val) { /* x = 1 | x = 2 */
-    raiseError (redeclaration_err, line->parts);
+    raise_error (redeclaration_err, line->parts);
     return ERROR;
   }
   /* .define x = 1 | .define x = 1 */
-  raiseWarning(duplicate_declaration_warning, line->parts);
+  raise_warning (duplicate_declaration_warning, line->parts);
   return SUCCESS;
 }
 
@@ -185,7 +182,7 @@ exit_code define_analyze (LineInfo *line, Symbol_Table *symbol_table)
 
   /* label and define at the same line */
   if (!IS_EMPTY(line->label)) { /* LABEL: .define x=3 */
-    raiseError (label_and_define_on_same_line_err, line->parts);
+    raise_error (label_and_define_on_same_line_err, line->parts);
     return ERROR;
   }
 
@@ -208,8 +205,8 @@ exit_code process_entry_label (LineInfo *line, Symbol_Table *symbol_table,
 
   if (!line->info.ext_ent.found) { /*new symbol */
     if (!(symbol = add_symbol (symbol_table, line->info.ext_ent.name,
-                      UNRESOLVED_ENTRY, 0, IS_Entry))
-          || !add_to_entry_list (entry_list, symbol, line->parts)) {
+                               UNRESOLVED_ENTRY, 0, IS_Entry))
+        || !add_to_entry_list (entry_list, symbol, line->parts)) {
       return MEMORY_ERROR;
     }
     line->info.ext_ent.name = symbol;
@@ -230,7 +227,7 @@ exit_code process_entry_label (LineInfo *line, Symbol_Table *symbol_table,
       resolved_flag = line->parts;
     }
 
-    if (!add_to_entry_list (entry_list, symbol, resolved_flag)){
+    if (!add_to_entry_list (entry_list, symbol, resolved_flag)) {
       return MEMORY_ERROR;
     }
   }
@@ -271,7 +268,7 @@ Bool ext_ent_analyze (LineInfo *line, Symbol_Table *symbol_table)
   }
 
   if (!IS_EMPTY(line->label)) {
-    raiseWarning (ignored_label, line->parts);
+    raise_warning (ignored_label, line->parts);
   }
   return TRUE;
 }
@@ -283,7 +280,7 @@ exit_code ent_analyze (LineInfo *line, Symbol_Table *symbol_table,
   line->info.ext_ent.name = name;
   line->type_l = ent_l;
 
-  if (!ext_ent_analyze(line, symbol_table)){
+  if (!ext_ent_analyze (line, symbol_table)) {
     return ERROR;
   }
   return process_entry_label (line, symbol_table, entry_list);
@@ -295,7 +292,7 @@ exit_code ext_analyze (LineInfo *line, Symbol_Table *symbol_table)
   line->info.ext_ent.name = name;
   line->type_l = ext_l;
 
-  if (!ext_ent_analyze(line, symbol_table)){
+  if (!ext_ent_analyze (line, symbol_table)) {
     return ERROR;
   }
   return process_extern_label (line, symbol_table);
@@ -318,13 +315,13 @@ Symbol *process_operand_label (Symbol_Table *symbol_table, Operand *operand,
 {
   Symbol *symbol;
   /* operand use the label that declare at the start of the line */
-  if (label && strcmp (operand->info.symInx.symbol, label->word) == 0){
+  if (label && strcmp (operand->info.symInx.symbol, label->word) == 0) {
     symbol = label;
   }
-  else{
+  else {
     symbol = add_symbol (symbol_table, operand->info.symInx.symbol,
                          UNRESOLVED_USAGE, 0, NOT_ENTRY);
-    if (!symbol){
+    if (!symbol) {
       return NULL;
     }
   }
@@ -334,7 +331,7 @@ Symbol *process_operand_label (Symbol_Table *symbol_table, Operand *operand,
   return symbol;
 }
 
-Symbol*
+Symbol *
 process_code_label (Symbol_Table *symbol_table, char *label, int address)
 {
   Symbol_Data *symbol_data;
@@ -358,7 +355,7 @@ Bool process_op_labels (Symbol_Table *symbol_table, LineInfo *line)
 
   /* process code symbol (label at the beginning of the line) */
   if (!IS_EMPTY(line->label)) {
-    label = process_code_label (symbol_table, line->label,line->info.op->address);
+    label = process_code_label (symbol_table, line->label, line->info.op->address);
     if (!label) {
       return FALSE;
     }
@@ -421,10 +418,10 @@ exit_code else_handler (LineInfo *line)
   /* if it's valid symbol name, but with no ':' */
   if (IS_EMPTY(line->label)
       && is_valid_identifier (line->parts, first_word, FALSE)) {
-    raiseError (expected_colon_err, line->parts);
+    raise_error (expected_colon_err, line->parts);
   }
   else {
-    raiseError (undefined_command_err, line->parts);
+    raise_error (undefined_command_err, line->parts);
   }
   return ERROR;
 }
@@ -480,7 +477,7 @@ exit_code label_handler (file_analyze *f, LineInfo *line, char *label)
     if (symbol_data->type != UNRESOLVED_USAGE
         && symbol_data->type != UNRESOLVED_ENTRY
         && symbol_data->type != UNRESOLVED_ENTRY_USAGE) {
-      raiseError (redeclaration_err, line->parts);
+      raise_error (redeclaration_err, line->parts);
       return ERROR;
     }
   }
@@ -490,9 +487,10 @@ exit_code label_handler (file_analyze *f, LineInfo *line, char *label)
 
 /****************** main function *******************/
 
-Bool check_overflow(LineParts *line, Bool overflow, int memory_size){
-  if (!overflow && (memory_size >= MEMORY_IMG_SIZE)){
-    raiseError (exceeds_available_memory, line);
+Bool check_overflow (LineParts *line, Bool overflow, int memory_size)
+{
+  if (!overflow && (memory_size >= MEMORY_IMG_SIZE)) {
+    raise_error (exceeds_available_memory, line);
     return TRUE;
   }
   return overflow;
@@ -526,16 +524,16 @@ exit_code firstPass (FILE *input_file, file_analyze *f)
     }
 
     overflow = check_overflow (&line_parts, overflow, f->IC + f->DC);
-    if (overflow){
+    if (overflow) {
       res = ERROR;
     }
     f->error += res;
   }
 #ifdef DEBUG
-  show_op_list (f->op_list, stdout);
-  show_data_segment (f->data_segment, stdout);
-//  fprintf (stdout, "------------------ before update ------------------");
-//  show_symbol_table (f->symbol_table, stdout);
+  display_op_list (f->op_list, stdout);
+  display_data_segment (f->data_segment, stdout);
+  fprintf (stdout, "------------------ before update ------------------");
+  display_symbol_table (f->symbol_table, stdout);
 #endif
 
   return res;

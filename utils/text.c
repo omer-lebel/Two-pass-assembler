@@ -1,12 +1,15 @@
-/*
- Created by OMER on 1/1/2024.
-*/
-
-
 #include "text.h"
 
+void trim_end (char *str)
+{
+  int i = (int) strlen (str);
+  if (!IS_EMPTY(str)){
+    while (isspace(str[--i])) {}
+    NULL_TERMINATE(str, i + 1);
+  }
+}
 
-Bool isSavedWord (const char *s)
+Bool is_saved_word (const char *s)
 {
   int i;
   for (i = 0; SavedWord[i][0] != '\0'; i++) {
@@ -17,7 +20,7 @@ Bool isSavedWord (const char *s)
   return FALSE;
 }
 
-Bool isAlphaNumeric (const char *str)
+Bool is_alpha_numeric (const char *str)
 {
   while (*str) {
     if (!isalnum(*str)) {
@@ -28,15 +31,6 @@ Bool isAlphaNumeric (const char *str)
   return TRUE;  /* All characters are alphanumeric */
 }
 
-
-void trim_end (char *str)
-{
-  int i = (int) strlen (str);
-  if (!IS_EMPTY(str)){
-    while (isspace(str[--i])) {}
-    NULL_TERMINATE(str, i + 1);
-  }
-}
 
 char *get_line (FILE *file, char *buffer, size_t buff_size, Bool *overflow)
 {
@@ -118,7 +112,7 @@ void restart_line_parts (LineParts *line_part)
 
 void get_identifier_tok (LineParts *line, Bool has_label)
 {
-  lineToPostfix (line);
+  line_to_postfix (line);
   if (has_label) {
     lineTok (line); /*move to first word */
   }
@@ -126,7 +120,7 @@ void get_identifier_tok (LineParts *line, Bool has_label)
   lineTok (line); /* move to identifier  */
 }
 
-void lineToPostfix (LineParts *line)
+void line_to_postfix (LineParts *line)
 {
   /* concatenate prefix, token and postfix to recreate the original line */
   strcat (line->prefix, line->token);
@@ -146,7 +140,7 @@ void move_one_char_to_prefix(LineParts *line){
   line->token++;
 }
 
-void splitLine(LineParts *parts, char *wanted_tok) {
+void split_line(LineParts *parts, char *wanted_tok) {
 
   // Find the position of the token within the line
   char *tokenPos = strstr(parts->line, wanted_tok);

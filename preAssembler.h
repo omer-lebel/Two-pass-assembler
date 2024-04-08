@@ -44,8 +44,7 @@ typedef struct mcrData
  * @param output The output file to store the preprocessed content.
  * @return Returns EXIT_SUCCESS on success, EXIT_FAILURE on failure.
  */
-exit_code preAssembler (char *file_name, FILE *input, FILE *output,
-                        Bool *error_flag);
+exit_code preAssembler (char *file_name, FILE *input, FILE *output);
 
 /**
  * !!!!!!!!!!!!!!!!!!!!!!!!!!!

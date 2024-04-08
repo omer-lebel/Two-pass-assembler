@@ -43,3 +43,6 @@ setting.o: linkedList.o vector.o
 # Clean rule
 clean:
 	rm -f *.o assembler
+
+cleanOutput:
+	rm -f *.am *.ob *ext *ent

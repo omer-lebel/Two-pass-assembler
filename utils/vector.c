@@ -1,12 +1,11 @@
-/*
- Created by OMER on 1/30/2024.
-*/
-
-
 #include "vector.h"
 #include <string.h>
-
 #define INITIAL_CAPACITY 16
+
+/* ---------------------- helper function declaration ---------------------- */
+void *resize (vector *v);
+
+/* ------------------------------------------------------------------------- */
 
 vector *create_n_vector (int n, size_t elem_size, init_elem_func init_elem,
                          free_elem_func free_elem)
@@ -39,7 +38,13 @@ vector *create_vector (size_t elem_size, init_elem_func init_elem,
   return create_n_vector(INITIAL_CAPACITY, elem_size, init_elem, free_elem);
 }
 
-
+/**
+ * @brief Resizes the capacity of the vector to accommodate more elements by
+ * reallocates memory for the vector's elements (double its capacity)
+ *
+ * @param v Pointer to the vector to be resized.
+ * @return Pointer to the resized vector elements, or NULL if memory allocation fails.
+ */
 void *resize (vector *v)
 {
   void *tmp = realloc (v->elements, (2 * v->capacity * v->elem_size));

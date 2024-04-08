@@ -8,9 +8,6 @@
 #define _FIRST_PASS_H_
 
 
-#define MAX_INT 8191
-#define MIN_INT (-8191)
-
 
 exit_code firstPass (FILE *input_file, file_analyze* f);
 

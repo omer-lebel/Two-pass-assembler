@@ -1,7 +1,9 @@
-/*
- Created by OMER on 1/24/2024.
-*/
 #include "symbolTable.h"
+
+/* ---------------------- helper function declaration ---------------------- */
+void *init_symbol_data (const void *data);
+void print_symbol (const char *word, const void *data, FILE *stream);
+/* ------------------------------------------------------------------------- */
 
 Symbol_Table *new_symbol_table (void)
 {
@@ -9,7 +11,7 @@ Symbol_Table *new_symbol_table (void)
   if (!table) {
     return NULL;
   }
-  table->database = createList (init_symbol_data, print_symbol, free);
+  table->database = create_list (init_symbol_data, print_symbol, free);
   if (!table->database) {
     free (table);
     return NULL;
@@ -21,6 +23,12 @@ Symbol_Table *new_symbol_table (void)
   return table;
 }
 
+/**
+ * Initializes symbol data.
+ *
+ * @param data Pointer to the data to initialize.
+ * @return     Pointer to the initialized data.
+ */
 void *init_symbol_data (const void *data)
 {
   Symbol_Data *new_data = malloc (sizeof (Symbol_Data));
@@ -41,19 +49,26 @@ Symbol *add_symbol (Symbol_Table *table, const char *label,
   symbol_data.val = val;
   symbol_data.isEntry = isEntry;
 
-  new_symbol = createNode (table->database, label, &symbol_data);
+  new_symbol = create_node (table->database, label, &symbol_data);
   if (!new_symbol) {
     return NULL;
   }
-  appendSorted(table->database, new_symbol);
+  append_sorted (table->database, new_symbol);
   return new_symbol;
 }
 
 Symbol *find_symbol (Symbol_Table *table, const char *name)
 {
-  return findNode (table->database, name);
+  return find_node (table->database, name);
 }
 
+/**
+ * Prints the data associated with a symbol.
+ *
+ * @param word   The label of the symbol.
+ * @param data   Pointer to the data associated with the symbol.
+ * @param stream File stream to print to.
+ */
 void print_symbol (const char *word, const void *data, FILE *stream)
 {
   Symbol_Data *symbol_data = (Symbol_Data *) data;
@@ -90,18 +105,18 @@ void print_symbol (const char *word, const void *data, FILE *stream)
 
 }
 
-void show_symbol_table (Symbol_Table *table, FILE *stream)
+void display_symbol_table (Symbol_Table *table, FILE *stream)
 {
   fprintf (stream, "\n----------------- symbol table -----------------\n");
   fprintf (stream, "extern: %d\n", table->extern_count);
   fprintf (stream, "unresolved usage: %d\n", table->unresolved_usage_count);
   fprintf (stream, "unresolved entry: %d\n", table->unresolved_entry_count);
-  printList (table->database, stream);
+  print_list (table->database, stream);
 }
 
 void free_symbol_table (Symbol_Table *table)
 {
-  freeList (table->database);
+  free_list (table->database);
   free (table);
 }
 

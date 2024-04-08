@@ -9,7 +9,9 @@
 #include "setting.h"
 #include "utils/text.h"
 #include "fileStructures/symbolTable.h"
-#include "fileStructures/memoryImg.h"
+#include "fileStructures/analyzer.h"
+#include "fileStructures/dataSeg.h"
+#include "fileStructures/codeSeg.h"
 
 /* states */
 typedef enum state

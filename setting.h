@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 #define MAX_LINE_LEN (80+2)
+#define MAX_LABEL_LEN (31) /* todo change */
 #define MAX_DATA_ARR_LENGTH (37)
 #define MAX_STR_LENGTH (72)
 #define NUM_OF_OP 16
@@ -21,13 +22,8 @@
 #define MAX_INT_MACHINE ((1 << 13) - 1)
 #define MIN_INT_MACHINE (-(1 << 13))
 #define MEMORY_IMG_SIZE (4096 - 100 - 1)
-
-
 #define MACHINE_WORD_SIZE 14
 #define IC_START 100
-
-#define RED_COLOR   "\x1B[31m"  /*error's color */
-#define RESET "\x1B[0m"   /* reset to regular color */
 
 typedef enum Bool
 {
@@ -95,9 +91,6 @@ typedef enum addr_mode_flag
 #define symbol_n_index_n_reg ((unsigned) b_symbol | b_index | b_reg)
 
 
-/* todo change place */
-FILE* open_file(char* file_name, const char *extension, const char *mode);
-void remove_file(char* file_name, const char *extension);
 
 
 extern char *SavedWord[];

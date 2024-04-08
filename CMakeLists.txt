@@ -14,7 +14,7 @@ add_executable(project___mama14
 
         fileStructures/fileStructures.h
         fileStructures/symbolTable.c fileStructures/symbolTable.h
-        fileStructures/memoryImg.c fileStructures/memoryImg.h
+        fileStructures/dataSeg.c fileStructures/dataSeg.h
         fileStructures/analyzer.c fileStructures/analyzer.h
         fileStructures/externUsages.c fileStructures/externUsages.h
         fsm.c fsm.h
@@ -23,6 +23,6 @@ add_executable(project___mama14
         firstPass.c firstPass.h
         secondPass.c secondPass.h
 
-        main.c utils/errors.c utils/errors.h)
+        assembler.c utils/errors.c utils/errors.h fileStructures/fileStructures.c assembler.c fileStructures/entryLines.c fileStructures/entryLines.h fileStructures/codeSeg.c fileStructures/codeSeg.h)
 
 

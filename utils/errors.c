@@ -1,20 +1,88 @@
-//
-// Created by OMER on 3/22/2024.
-//
-
 #include "errors.h"
 
-#define YEL   "\x1B[33m"  /*warning's color */
-#define BOLD "\033[1m"    /* bolt font (for errors & warnings */
-#define REG "\033[0m"     /* reset to regular font */
+#define RED_COLOR   "\x1B[31m"  /* error's color */
+#define YEL   "\x1B[33m"        /* warning's color */
+#define GRN   "\x1B[32m"        /* success's color */
+#define RESET "\x1B[0m"         /* reset to regular color */
 
+#define BOLD "\033[1m"          /* bolt font (for errors & warnings) */
+#define REG "\033[0m"           /* reset to regular font */
+
+
+/* ---------------------- helper function declaration ---------------------- */
+void general_msg (char *color, char *msg);
 void r_error (char *msg_before, LineParts *line, char *msg_after);
 void r_warning (char *msg_before, LineParts *line, char *msg_after);
+void line_msg (char *type, char *color, char *msg_before, LineParts *line,
+               char *msg_after);
+/* ------------------------------------------------------------------------- */
 
-void raiseError (Error_Code error_code, LineParts *line)
+void raise_general_msg (Msg_Code msg_code)
+{
+  switch (msg_code) {
+    case no_input_file_err:
+      general_msg (RED_COLOR, "Error: must give at least one file to process");
+      break;
+
+    case memory_err:
+      general_msg (RED_COLOR, "\n*** Memory allocation failure. program stopped.");
+
+    case assembler_failed:
+      general_msg (RED_COLOR, "\n *** Processing failed.");
+      break;
+
+    case ended_successfully:
+      general_msg (GRN, "Ended successfully\n");
+      break;
+  }
+}
+
+/**
+ * @brief Prints a general message with the specified color.
+ *
+ * @param color Color of the message.
+ * @param msg   Message to print.
+ */
+void general_msg (char *color, char *msg)
+{
+  printf ("%s%s\n" RESET, color, msg);
+}
+
+void raise_open_file_error (char *file_name)
+{
+  printf (RED_COLOR "*** Error while opening '%s'. Stop current process. "
+          "\n" RESET, file_name);
+}
+
+void raise_warning (Warning_Code warning_code, LineParts *line)
+{
+  switch (warning_code) {
+
+    case inaccessible_data:
+      /* .data 1,2,3 | .string "hey" */
+      line_to_postfix (line); /*get the first tok again for the error msg */
+      r_warning ("", line, "variables may be inaccessible without label");
+      break;
+
+    case ignored_label:
+      /* LABEL: .entry ENT | LABEL: .extern: EXT */
+      line_to_postfix (line); /*get the fist tok again for the error msg */
+      lineTok (line);
+      r_warning ("label ", line, " is ignored");
+      break;
+
+    case duplicate_declaration_warning:
+      /* .extern X
+       * .extern X */
+      r_warning ("", line, " has already declared in earlier line");
+      break;
+
+  }
+}
+
+void raise_error (Error_Code error_code, LineParts *line)
 {
   switch (error_code) {
-
     /* =========================== preprocessor & first pass errors: */
     case extraneous_text_err:
       /* .extern X 123 | mcr MCR extra text */
@@ -98,7 +166,7 @@ void raiseError (Error_Code error_code, LineParts *line)
 
     case label_and_define_on_same_line_err:
       /* LABEL: .define d = 3 */
-      lineToPostfix (line); /*get the fist tok again for the error msg */
+      line_to_postfix (line); /*get the fist tok again for the error msg */
       lineTok (line);
       r_error ("label ", line, " and '.define' cannot be declared on the same line");
       break;
@@ -239,12 +307,15 @@ void raiseError (Error_Code error_code, LineParts *line)
       r_error ("", line, " is not a valid numeric expression");
       break;
 
+    default:
+      break;
   }
 }
 
-void second_pass_err (LineParts *line_parts, char *wanted_tok,
-                      char *file_name)
+void raise_second_pass_err (LineParts *line_parts, char *wanted_tok,
+                            char *file_name)
 {
+  /* setting the wanted token in the token in order to print the error */
   char prefix[MAX_LINE_LEN], token[MAX_LINE_LEN];
   line_parts->prefix = prefix;
   line_parts->token = token;
@@ -252,42 +323,57 @@ void second_pass_err (LineParts *line_parts, char *wanted_tok,
   line_parts->file = file_name;
 
   trim_end (line_parts->postfix);
-  splitLine (line_parts, wanted_tok);
-  raiseError (undeclared_err, line_parts);
+  split_line (line_parts, wanted_tok);
+
+  raise_error (undeclared_err, line_parts);
 }
 
-void raiseWarning (Warning_Code warning_code, LineParts *line)
+/**
+ * @brief Helper function to print an error message with red color.
+ *
+ * @param msg_before Message before the token.
+ * @param line       Pointer to the line details.
+ * @param msg_after  Message after the token.
+ */
+void r_error (char *msg_before, LineParts *line, char *msg_after)
 {
-  switch (warning_code) {
-
-    case inaccessible_data:
-      /* .data 1,2,3 | .string "hey" */
-      lineToPostfix (line); /*get the first tok again for the error msg */
-      r_warning ("", line, "variables may be inaccessible without label");
-      break;
-
-    case ignored_label:
-      /* LABEL: .entry ENT | LABEL: .extern: EXT */
-      lineToPostfix (line); /*get the fist tok again for the error msg */
-      lineTok (line);
-      r_warning ("label ", line, " is ignored");
-      break;
-
-    case duplicate_declaration_warning:
-      /* .extern X
-       * .extern X */
-      r_warning ("", line, " has already declared in earlier line");
-      break;
-
-  }
+  line_msg ("error", RED_COLOR, msg_before, line, msg_after);
 }
 
-void r_msg (char *type, char *color, char *msg_before, LineParts *line, char
-*msg_after)
+/**
+ * @brief Helper function to print a warning message with yellow color.
+ *
+ * @param msg_before Message before the token.
+ * @param line       Pointer to the line details.
+ * @param msg_after  Message after the token.
+ */
+void r_warning (char *msg_before, LineParts *line, char *msg_after)
 {
-  signed i;
+  line_msg ("warning", YEL, msg_before, line, msg_after);
+}
+
+/**
+ * @brief Helper function to print a line message with specified type, color,
+ * message before the token, line details, and message after the token.
+ * print in a gcc style. for example:
+ *
+ * txt.am:3  error: 'EXAMPLE' undeclared
+ 3   | mov r0, EXAMPLE
+     |         ^~~~~~~
+ *
+ * @param type       Type of the message (error/warning).
+ * @param color      Color of the message.
+ * @param msg_before Message before the token.
+ * @param line       Pointer to the line details.
+ * @param msg_after  Message after the token.
+ */
+void line_msg (char *type, char *color, char *msg_before, LineParts *line,
+               char *msg_after)
+{
+  int i;
+  char c;
   /* Print file and line number, error or warning type (fileNum:i error:) */
-  printf ("%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
+  printf ("\n%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
 
   /* Print message context, token, and additional message */
   if (IS_EMPTY(line->token)) {
@@ -312,21 +398,12 @@ void r_msg (char *type, char *color, char *msg_before, LineParts *line, char
        |           ^~~~~~~~~                 */
   printf (" %-3s |", " ");
   for (i = 0; i < (int) strlen (line->prefix); i++) {
-    printf (" ");
+    c = line->prefix[i] == '\t' ? '\t' : ' ';
+    printf ("%c", c);
   }
   printf (" %s^", color);
   for (i = 0; i < (int) strlen (line->token) - 1; i++) {
     printf ("%s~", color);
   }
   printf (RESET "\n");
-}
-
-void r_error (char *msg_before, LineParts *line, char *msg_after)
-{
-  r_msg ("error", RED_COLOR, msg_before, line, msg_after);
-}
-
-void r_warning (char *msg_before, LineParts *line, char *msg_after)
-{
-  r_msg ("warning", YEL, msg_before, line, msg_after);
 }

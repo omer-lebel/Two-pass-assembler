@@ -1,17 +1,17 @@
 #include "preAssembler.h"
 #include "utils/errors.h"
+#include "fileStructures/fileStructures.h"
 
 #define IS_COMMENT(s) ((s)[0] == ';')
 
-exit_code preAssembler (char *file_name, FILE *input, FILE *output,
-                        Bool *error_flag)
+exit_code preAssembler (char *file_name, FILE *input, FILE *output)
 {
   Node *curr_mcr = NULL;
   exit_code res = SUCCESS;
   Bool overflow = FALSE;
   char prefix[MAX_LINE_LEN] = "", token[MAX_LINE_LEN] = "", postfix[MAX_LINE_LEN] = "";
   LineParts line_part;
-  LinkedList *mcr_list = createList (init_mcrData, print_mcrData, free_mcrData);
+  LinkedList *mcr_list = create_list (init_mcrData, print_mcrData, free_mcrData);
 
   if (!mcr_list) {
     return MEMORY_ERROR;
@@ -24,18 +24,25 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output,
     restart_line_parts (&line_part);
     res = p_processLine (output, mcr_list, &line_part, &curr_mcr);
     if (overflow) {
-      raiseError (line_length_exceeded_err, &line_part);
-      *error_flag += ERROR;
+      raise_error (line_length_exceeded_err, &line_part);
     }
   }
 
   /* check that mcr flag is off at EOF */
   if (res == SUCCESS && curr_mcr != NULL) {
-    raiseError (eof_in_macro_definition_err, &line_part);
+    raise_error (eof_in_macro_definition_err, &line_part);
     res = ERROR;
   }
 
-  freeList (mcr_list);
+  free_list (mcr_list);
+  if (res == ERROR) {
+    remove_file (file_name, ".am");
+  }
+  else{
+    file_name[strlen (file_name) -1] = 'm';
+    printf (" -- %s created \n", file_name);
+  }
+
   return res;
 }
 
@@ -58,7 +65,7 @@ p_processLine (FILE *output, LinkedList *mcr_list, LineParts *line,
     res = endmcr_handler (curr_mcr, line);
   }
   else if (*curr_mcr) { /* mcr content */
-    lineToPostfix (line);
+    line_to_postfix (line);
     res = add_content ((*curr_mcr)->data, line->postfix);
   }
   else { /* regular line */
@@ -71,7 +78,7 @@ Bool extraneous_text (LineParts *line)
 {
   if (!IS_EMPTY(line->postfix)) {
     lineTok (line);
-    raiseError (extraneous_text_err, line);
+    raise_error (extraneous_text_err, line);
     return TRUE;
   }
   return FALSE;
@@ -83,7 +90,7 @@ exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LineParts *line)
   trim_end (line->postfix);
 
   if (*mcr_node != NULL) {
-    raiseError (nested_macro_definition_err, line);
+    raise_error (nested_macro_definition_err, line);
     return ERROR;
   }
   lineTok (line);
@@ -95,11 +102,11 @@ exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LineParts *line)
   if (extraneous_text (line)) { /* mcr MCR xxx */
     return ERROR;
   }
-  *mcr_node = createNode (mcr_list, mcr_name, NULL);
+  *mcr_node = create_node (mcr_list, mcr_name, NULL);
   if (!(*mcr_node)) {
     return MEMORY_ERROR;
   }
-  appendSorted (mcr_list, *mcr_node);
+  append_sorted (mcr_list, *mcr_node);
   return SUCCESS;
 }
 
@@ -107,7 +114,7 @@ exit_code endmcr_handler (Node **curr_mcr, LineParts *line)
 {
   trim_end (line->postfix);
   if (!(*curr_mcr)) {
-    raiseError (unexpected_endmcr_err, line);
+    raise_error (unexpected_endmcr_err, line);
     return ERROR;
   }
   else if (extraneous_text (line)) {
@@ -122,7 +129,7 @@ exit_code write_to_am_file (FILE *am_file, LineParts *line,
 {
   mcrData *mcr_data;
   /* checks if it's a mcr, and print its content */
-  Node *mcr_node = findNode (mcr_list, line->token);
+  Node *mcr_node = find_node (mcr_list, line->token);
   if (mcr_node) {
     trim_end (line->postfix);
     if (extraneous_text (line)) {
@@ -133,7 +140,7 @@ exit_code write_to_am_file (FILE *am_file, LineParts *line,
   }
     /* if it not a mcr, print the line */
   else {
-    lineToPostfix (line);
+    line_to_postfix (line);
     fprintf (am_file, "%s", line->postfix);
   }
   return SUCCESS;
@@ -144,22 +151,22 @@ Bool isValidMcr (LinkedList *macro_list, LineParts *line)
   char *mcr_name = line->token;
   /* macro does not have a name */
   if (IS_EMPTY(mcr_name)) {
-    raiseError (empty_macro_declaration_err, line);
+    raise_error (empty_macro_declaration_err, line);
     return FALSE;
   }
 
   if (!isalpha(mcr_name[0])) {
-    raiseError (starts_with_non_alphabetic_err, line);
+    raise_error (starts_with_non_alphabetic_err, line);
     return FALSE;
   }
-  if (isSavedWord (mcr_name)) {
-    raiseError (reserved_keyword_used_err, line);
+  if (is_saved_word (mcr_name)) {
+    raise_error (reserved_keyword_used_err, line);
     return FALSE;
   }
 
   /*already exist macro; */
-  if (findNode (macro_list, mcr_name)) {
-    raiseError (redeclaration_err, line);
+  if (find_node (macro_list, mcr_name)) {
+    raise_error (redeclaration_err, line);
     return FALSE;
   }
   return TRUE;
