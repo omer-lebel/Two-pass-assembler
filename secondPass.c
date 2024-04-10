@@ -5,14 +5,6 @@
 
 #include "secondPass.h"
 
-#include "utils/errors.h"
-#include "utils/vector.h"
-#include "fileStructures/symbolTable.h"
-#include "fileStructures/codeSeg.h"
-#include "fileStructures/dataSeg.h"
-#include "fileStructures/entryLines.h"
-#include "fileStructures/externUsages.h"
-
 void print_memory_img (Op_List *op_list, int ic, Data_Segment *data_segment,
                        int dc, FILE *stream)
 {
@@ -131,7 +123,7 @@ exit_code secondPass (file_analyze *f)
 {
   exit_code res = ERROR;
   int unresolved_entries = f->symbol_table->unresolved_entry_count;
-  int unresolved_usages = f->symbol_table->unresolved_usage_count;
+  int unresolved_usages = f->symbol_table->unresolved_symbols_count;
 
   int len = (int) strlen (f->file_name);
   strcat (f->file_name, ".am");

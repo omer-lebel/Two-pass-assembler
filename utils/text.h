@@ -33,7 +33,7 @@ typedef struct LinePart
     char *prefix;             /**< Pointer to the prefix part of the line. */
     char *token;              /**< Pointer to the token part of the line. */
     char *postfix;            /**< Pointer to the postfix part of the line. */
-    size_t num;                /**< Number of the line in the file. */
+    int num;                /**< Number of the line in the file. */
 
 } LineParts;
 

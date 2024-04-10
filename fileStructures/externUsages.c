@@ -1,5 +1,5 @@
 #include "externUsages.h"
-#include "fileStructures.h"
+
 
 typedef Node Extern_Syb;
 typedef LinkedList Extern_List;
@@ -98,7 +98,7 @@ void print_usages_list (const char *ext_name, const void *data, FILE *stream)
  */
 void free_usages_list (void *usages_list)
 {
-  return free_vector (usages_list);
+  free_vector (usages_list);
 }
 
 /* ------------------ end of function for the link list */

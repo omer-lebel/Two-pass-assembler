@@ -142,16 +142,14 @@ void move_one_char_to_prefix(LineParts *line){
 
 void split_line(LineParts *parts, char *wanted_tok) {
 
-  // Find the position of the token within the line
+  /* Find the position of the token within the line*/
   char *tokenPos = strstr(parts->line, wanted_tok);
 
-  // Copy prefix
+  /* Copy prefix*/
   strncpy(parts->prefix, parts->line, tokenPos - parts->line);
   parts->prefix[tokenPos - parts->line] = '\0';
 
-  // Copy token
+  /* Copy token and postfix */
   strcpy(parts->token, wanted_tok);
-
-  // Copy postfix
   strcpy(parts->postfix, tokenPos + strlen(wanted_tok));
 }

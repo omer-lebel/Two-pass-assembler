@@ -15,7 +15,8 @@
 #include "../setting.h"
 #include "../utils/vector.h"
 #include "../utils/linkedList.h"
-#include "analyzer.h"
+#include "fileStructures.h"
+#include "codeSeg.h"
 
 /**
  * @brief Builds the table of external symbols and their usages base on the
@@ -31,4 +32,4 @@ exit_code print_extern_table(Op_List *op_list, FILE *output, char *file_name);
 
 
 
-#endif //_EXTERN_USAGES_H_
+#endif /* _EXTERN_USAGES_H_ */

@@ -22,6 +22,8 @@
 #include "setting.h"
 #include "utils/text.h"
 #include "utils/linkedList.h"
+#include "utils/errors.h"
+#include "fileStructures/fileStructures.h"
 
 /**
  * Data structure representing the content of a macro in the linked list.

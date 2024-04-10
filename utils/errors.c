@@ -1,9 +1,10 @@
 #include "errors.h"
 
 #define RED_COLOR   "\x1B[31m"  /* error's color */
-#define YEL   "\x1B[33m"        /* warning's color */
-#define GRN   "\x1B[32m"        /* success's color */
-#define RESET "\x1B[0m"         /* reset to regular color */
+#define YEL_COLOR   "\x1B[33m"        /* warning's color */
+#define GRN_COLOR   "\x1B[32m"        /* success's color */
+#define WHT_COLOR   "\x1B[37m"        /* other text color */
+#define RESET_COLOR "\x1B[0m"         /* reset to regular color */
 
 #define BOLD "\033[1m"          /* bolt font (for errors & warnings) */
 #define REG "\033[0m"           /* reset to regular font */
@@ -26,13 +27,14 @@ void raise_general_msg (Msg_Code msg_code)
 
     case memory_err:
       general_msg (RED_COLOR, "\n*** Memory allocation failure. program stopped.");
+      break;
 
     case assembler_failed:
       general_msg (RED_COLOR, "\n *** Processing failed.");
       break;
 
     case ended_successfully:
-      general_msg (GRN, "Ended successfully\n");
+      general_msg (GRN_COLOR, "Ended successfully\n");
       break;
   }
 }
@@ -45,13 +47,13 @@ void raise_general_msg (Msg_Code msg_code)
  */
 void general_msg (char *color, char *msg)
 {
-  printf ("%s%s\n" RESET, color, msg);
+  printf ("%s%s\n" RESET_COLOR, color, msg);
 }
 
 void raise_open_file_error (char *file_name)
 {
   printf (RED_COLOR "*** Error while opening '%s'. Stop current process. "
-          "\n" RESET, file_name);
+          "\n" RESET_COLOR, file_name);
 }
 
 void raise_warning (Warning_Code warning_code, LineParts *line)
@@ -128,7 +130,7 @@ void raise_error (Error_Code error_code, LineParts *line)
        *    prn #2
        *    mov r0, r2
        */
-      trim_end (line->postfix);;
+      trim_end (line->postfix);
       r_error ("reached EOF in the middle of macro definition. Expected "
                "'endmcr'", line, "");
       break;
@@ -156,13 +158,14 @@ void raise_error (Error_Code error_code, LineParts *line)
 
       /* =========================== first pass errors: */
     case exceeds_available_memory:
-      printf ("%s:%-2lu" RED_COLOR "error: " RESET "Program size exceeds "
+      printf ("%s:%-2d" RED_COLOR "error: " RESET_COLOR "Program size exceeds "
               "available memory space (4096 bytes).\n", line->file, line->num);
       break;
 
-    case contain_non_alphanumeric:
+    case contain_non_alphanumeric_err:
       /* LABEL_L: | L!! | L-A-B-E-L! */
       r_error ("", line, " contains non-alphanumeric characters");
+      break;
 
     case label_and_define_on_same_line_err:
       /* LABEL: .define d = 3 */
@@ -349,7 +352,7 @@ void r_error (char *msg_before, LineParts *line, char *msg_after)
  */
 void r_warning (char *msg_before, LineParts *line, char *msg_after)
 {
-  line_msg ("warning", YEL, msg_before, line, msg_after);
+  line_msg ("warning", YEL_COLOR, msg_before, line, msg_after);
 }
 
 /**
@@ -373,7 +376,7 @@ void line_msg (char *type, char *color, char *msg_before, LineParts *line,
   int i;
   char c;
   /* Print file and line number, error or warning type (fileNum:i error:) */
-  printf ("\n%s:%-2lu %s%s: " RESET, line->file, line->num, color, type);
+  printf ("\n%s:%-2d %s%s: " RESET_COLOR, line->file, line->num, color, type);
 
   /* Print message context, token, and additional message */
   if (IS_EMPTY(line->token)) {
@@ -391,7 +394,7 @@ void line_msg (char *type, char *color, char *msg_before, LineParts *line,
 
   /* print line number and the line with the token bolded in color
    i | line with error cause bolted in color */
-  printf (" %-3lu | %s%s%s" RESET "%s\n",
+  printf (" %-3d | %s%s%s" RESET_COLOR "%s\n",
           line->num, line->prefix, color, line->token, line->postfix);
 
   /* print an arrow pointing to the location of the token in the line
@@ -405,5 +408,5 @@ void line_msg (char *type, char *color, char *msg_before, LineParts *line,
   for (i = 0; i < (int) strlen (line->token) - 1; i++) {
     printf ("%s~", color);
   }
-  printf (RESET "\n");
+  printf (RESET_COLOR "\n");
 }

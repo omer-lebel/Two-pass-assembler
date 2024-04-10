@@ -1,16 +1,16 @@
 
 #include "codeSeg.h"
-#include "analyzer.h"
-#include "../utils/machineWord.h"
 
 /* ---------------------- helper function declaration ---------------------- */
+
 /* Helper functions for Op_Analyze */
 void init_operand (Operand *operand, Opcode opcode, Operand_Type type, char *sym_buffer);
 void display_operand_info (Operand *operand, FILE *stream);
+
 /* Helper functions for Op_List */
 void *init_line_in_op_list (void *elem);
-void display_op_line (const void *op_line, FILE *stream);
 void free_line_in_op_list (void *elem);
+
 /* Helper functions for printing code segment */
 void add_op_line_to_code_segment (Op_Analyze *op, int *memInx, int len, FILE *stream);
 void print_operand_machine_word (Operand *operand, int *memInx, int len, FILE *stream);
@@ -182,12 +182,6 @@ void display_op_list(Op_List *op_list, FILE *stream){
   print_vector (op_list, display_op_line, stream, "\n", "\n");
 }
 
-/**
- * @brief Displays the information of an operation line.
- *
- * @param op_line   Pointer to the operation line structure to display.
- * @param stream    File stream to which the information will be written.
- */
 void display_op_line (const void *op_line, FILE *stream)
 {
   Op_Analyze *op = ((Op_Line *) op_line)->analyze;

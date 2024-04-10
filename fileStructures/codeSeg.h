@@ -17,9 +17,12 @@
 #ifndef _CODE_SEG_H_
 #define _CODE_SEG_H_
 
+#include "symbolTable.h"
 #include "../setting.h"
 #include "../utils/text.h"
 #include "../utils/vector.h"
+#include "../utils/machineWord.h"
+
 
 /* ====================================================================
  *                              op analyze
@@ -31,7 +34,8 @@
  */
 typedef enum Operand_Type
 {
-    SRC, TARGET
+    SRC = 1, TARGET = 2
+    /* it 1,2 because it's the also colum the index in the param type table */
 } Operand_Type;
 
 /**
@@ -91,6 +95,14 @@ void init_op_analyze (Op_Analyze *op, Opcode opcode, char *src_sym_buffer,
  * @return The size of the operation.
  */
 int calc_op_size (Op_Analyze *op);
+
+/**
+ * @brief Displays the information of an operation line.
+ *
+ * @param op_line   Pointer to the operation line structure to display.
+ * @param stream    File stream to which the information will be written.
+ */
+void display_op_line (const void *op_line, FILE *stream);
 
 /* ====================================================================
  *                              op line
@@ -157,4 +169,4 @@ void print_code_segment (Op_List *op_list, int memInx, int len, FILE *stream);
  */
 void free_op_list (Op_List *op_list);
 
-#endif //_CODE_SEG_H_
+#endif /* _CODE_SEG_H_ */

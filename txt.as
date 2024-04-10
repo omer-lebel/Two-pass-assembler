@@ -1,6 +1,4 @@
-.data 1,2,3
+prn STR,
+jmp STR[]
+
 STR: .string "hey"
-mov STR, DATA
-prn, STR
-add STR[], DATA
-.entry LABEL

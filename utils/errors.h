@@ -12,13 +12,13 @@ typedef enum Msg_Code{
     no_input_file_err,                  /* must give at least one file to process */
     memory_err,                         /* Memory allocation failure. program stopped */
     assembler_failed,                   /* failed */
-    ended_successfully,                 /* ended_successfully (actually not an error) */
+    ended_successfully                  /* ended_successfully (actually not an error) */
 }Msg_Code;
 
 typedef enum Warning_Code{
     inaccessible_data,                  /*variables may be inaccessible without label*/
     ignored_label,                      /* label is ignored */
-    duplicate_declaration_warning,      /* has already declared in earlier line */
+    duplicate_declaration_warning       /* has already declared in earlier line */
 }Warning_Code;
 
 typedef enum Error_Code {
@@ -38,7 +38,7 @@ typedef enum Error_Code {
 
     /* First errors */
     exceeds_available_memory,           /* Program size exceeds available memory space (4096 bytes). */
-    contain_non_alphanumeric,           /* contains non-alphanumeric characters */
+    contain_non_alphanumeric_err,           /* contains non-alphanumeric characters */
     label_and_define_on_same_line_err,  /* label and '.define' cannot be declared on the same line */
     expected_colon_err,                 /* expected ':' after */
     undefined_command_err,              /* undefined: */
@@ -64,7 +64,7 @@ typedef enum Error_Code {
     empty_define_declaration_err,       /* empty define declaration */
     expected_equals_before_expression_err,       /* expected '=' before numeric token, but got */
     expected_numeric_expression_after_equal_err, /* expected numeric expression after '=' */
-    invalid_numeric_expression_err,     /* is not a valid numeric expression */
+    invalid_numeric_expression_err      /* is not a valid numeric expression */
 } Error_Code;
 
 /**

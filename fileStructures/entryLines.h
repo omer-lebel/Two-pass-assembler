@@ -15,7 +15,7 @@
  * @brief Represents a line containing a symbol declared as an entry point.
  * for exp: .entry LABEL
  */
-typedef  struct Entry_line{
+typedef struct Entry_line{
     Symbol *symbol;     /**< Pointer to the symbol declared as an entry point. */
     LineParts *parts;   /**< Pointer to the line parts, representing the entry declaration. */
 }Entry_line;
@@ -61,4 +61,4 @@ void print_entry_list (Entry_List *entry_list, FILE *stream);
  */
 void free_entry_list (vector *entry_list);
 
-#endif //_ENTRY_LINES_H_
+#endif /* _ENTRY_LINES_H_ */

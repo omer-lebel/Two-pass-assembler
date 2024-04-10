@@ -45,7 +45,7 @@ typedef struct Symbol_Table
     LinkedList *database;         /**< Linked list storing symbol data. */
     int extern_count;             /**< Count of external symbols. */
     int unresolved_entry_count;   /**< Count of unresolved entry symbols. */
-    int unresolved_usage_count;   /**< Count of unresolved usage symbols. */
+    int unresolved_symbols_count;   /**< Count of unresolved usage symbols. */
 } Symbol_Table;
 
 /**

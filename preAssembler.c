@@ -1,6 +1,4 @@
 #include "preAssembler.h"
-#include "utils/errors.h"
-#include "fileStructures/fileStructures.h"
 
 #define IS_COMMENT(s) ((s)[0] == ';')
 
