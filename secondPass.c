@@ -157,7 +157,7 @@ void print_entry_errors (EntryLinesList *entry_list, char *file_name)
 exit_code print_analyze (file_analyze *f)
 {
   FILE *ob_file, *ent_file, *ext_file;
-  exit_code res;
+  exit_code res = SUCCESS;
 
   /* --------- .ob file --------- */
   ob_file = open_file (f->file_name, ".ob", "w");
@@ -186,14 +186,12 @@ exit_code print_analyze (file_analyze *f)
       return ERROR;
     }
     res = print_extern_table (f->op_list, ext_file, f->file_name);
-    if (res != SUCCESS) {
-      fclose (ext_file);
-      return res;
+    if (res == SUCCESS) {
+      printf (" -- %s.ext created \n", f->file_name);
     }
-    printf (" -- %s.ext created \n", f->file_name);
     fclose (ext_file);
   }
-  return SUCCESS;
+  return res == MEMORY_ERROR ? MEMORY_ERROR : SUCCESS;
 }
 
 /**

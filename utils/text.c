@@ -5,11 +5,17 @@
 
 void trim_end (char *str)
 {
-  int i = (int) strlen (str);
-  if (!IS_EMPTY(str)){
-    while (isspace(str[--i])) {}
-    NULL_TERMINATE(str, i + 1);
+  int len, i;
+  if (!str || (len = (int) strlen(str)) == 0) {
+    return; 
   }
+
+  /* Find the last non-whitespace character */
+  i = len - 1;
+  while (i >= 0 && isspace(str[i])) {
+    i--;
+  }
+  NULL_TERMINATE(str, i + 1);
 }
 
 /* the function uses the global var reserved_words from setting.h */

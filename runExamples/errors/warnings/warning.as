@@ -6,11 +6,15 @@
 
 ;--------- ignored_label
 L1: .extern EXT
-L2: .entry STR
+L2: .entry ENT
 
 ;--------- duplicate_declaration_warning
 .extern EXT
-.entry STR
+.entry ENT
 
 .define d=1
 .define d=1
+
+
+
+ENT: .data 5

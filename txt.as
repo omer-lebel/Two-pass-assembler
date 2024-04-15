@@ -1,1 +1,1 @@
-LABEL:
+; *************** pre assembler test ***************

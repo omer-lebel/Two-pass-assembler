@@ -137,7 +137,7 @@ exit_code build_extern_table (Extern_List *extern_list, OpLinesList *op_list,
     }
   }
   if (memInx < 0) {
-    remove_file (file_name, "ext");
+    remove_file (file_name, ".ext");
     return ERROR;
   }
   return SUCCESS;
