@@ -24,9 +24,9 @@
 typedef struct file_analyze{
     char file_name[MAX_LEN_FILE_NAME]; /**< Name of the file being analyzed. */
     Symbol_Table *symbol_table;        /**< Symbol table of the file. */
-    Data_Segment *data_segment;        /**< Data segment for the file. */
-    Op_List *op_list;
-    Entry_List *entry_list;
+    DataSegment *data_segment;        /**< Data segment for the file. */
+    OpLinesList *op_list;
+    EntryLinesList *entry_list;
     int IC;                            /**< Instruction Counter */
     int DC;                            /**< Data Counter */
     int error;                         /**< Flag indicating if an error occurred during analysis. */
@@ -43,6 +43,19 @@ typedef struct file_analyze{
  */
 Bool init_file_analyze (file_analyze *f, char *file_name,
                              FILE **as_file, FILE **am_file);
+
+/**
+ * @brief Displays debugging information during the assembler pass.
+ *
+ * This function displays debugging information during the assembler pass.
+ * It prints the symbol table, entry lines list, operation lines list, and data
+ * segment to the specified output stream.
+ *
+ * @param f         Pointer to the file analysis structure containing assembler pass data.
+ * @param stream    Pointer to the output stream where debugging information will be printed.
+ * @param pass  String indicating the assembler pass ("first" or "second").
+ */
+void display_debug(file_analyze *f, FILE *stream, char *pass);
 
 /**
  * @brief Frees resources associated with a file analysis structure.

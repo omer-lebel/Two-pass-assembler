@@ -1,0 +1,13 @@
+
+
+
+.define x=1
+STR: .string "pre assembler test"
+L:  mov r2, r3
+
+
+    lea STR, STR
+    prn #-2
+    cmp r3, #x
+    bne L
+    inc L

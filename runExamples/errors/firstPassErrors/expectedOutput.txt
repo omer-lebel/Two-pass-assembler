@@ -1,0 +1,208 @@
+========================[ Processing | firstPassErrors.as ]========================
+ -- firstPassErrors.am created 
+
+firstPassErrors.am:8  error: unexpected text: '123'
+ 8   | .extern X 123
+     |           ^~~
+
+firstPassErrors.am:9  error: unexpected text: 'xxx'
+ 9   | prn EXT xxx
+     |         ^~~
+
+firstPassErrors.am:12 error: '1L:' starts with a non-alphabetic character
+ 12  | 1L: .data 2,3
+     | ^~~
+
+firstPassErrors.am:13 error: '$EN' starts with a non-alphabetic character
+ 13  | .entry $EN
+     |        ^~~
+
+firstPassErrors.am:14 error: '%x' starts with a non-alphabetic character
+ 14  | .define %x = 3
+     |         ^~
+
+firstPassErrors.am:17 error: 'mov:' is a reserved keyword that cannot be used as an identifier
+ 17  | mov: .string "a"
+     | ^~~~
+
+firstPassErrors.am:18 error: 'r2' is a reserved keyword that cannot be used as an identifier
+ 18  | .extern r2
+     |         ^~
+
+firstPassErrors.am:19 error: 'endmcr' is a reserved keyword that cannot be used as an identifier
+ 19  | .define endmcr = 2
+     |         ^~~~~~
+
+firstPassErrors.am:26 error: redeclaration of 'S1:'
+ 26  | S1: .string "b"
+     | ^~~
+
+firstPassErrors.am:28 error: redeclaration of 'DATA'
+ 28  | .extern DATA
+     |         ^~~~
+
+firstPassErrors.am:31 error: 'z' undeclared
+ 31  | D2: .data 1,z,2
+     |             ^
+
+firstPassErrors.am:32 error: 'z' undeclared
+ 32  | mov S2[z], r0
+     |        ^
+
+firstPassErrors.am:36 error: 'LABEL_L:' contains non-alphanumeric characters
+ 36  | LABEL_L: hlt
+     | ^~~~~~~~
+
+firstPassErrors.am:37 error: 'L-A-B-E-L!:' contains non-alphanumeric characters
+ 37  | L-A-B-E-L!: rts
+     | ^~~~~~~~~~~
+
+firstPassErrors.am:40 error: label 'L3:' and '.define' cannot be declared on the same line
+ 40  | L3: .define d2 = 5
+     | ^~~
+
+firstPassErrors.am:43 error: expected ':' after 'LABEL'
+ 43  | LABEL add r2,r3
+     | ^~~~~
+
+firstPassErrors.am:46 error: undefined: '@#$DQ'
+ 46  | @#$DQ mov r0, r3
+     | ^~~~~
+
+firstPassErrors.am:47 error: undefined: 
+ 47  | LABEL:
+     |       ^
+
+firstPassErrors.am:53 error: expected numeric value or defined constant, but got label 'STR'
+ 53  | mov r0, #STR
+     |          ^~~
+
+firstPassErrors.am:54 error: expected numeric value or defined constant, but got label 'STR'
+ 54  | add r0, LABEL[STR]
+     |               ^~~
+
+firstPassErrors.am:57 error: '500000000' exceeds integer bounds [-(2^11-1), 2^11-1]
+ 57  | cmp r0, #500000000
+     |          ^~~~~~~~~
+
+firstPassErrors.am:58 error: '-999999' exceeds integer bounds [-(2^11-1), 2^11-1]
+ 58  | .define d5 = -999999
+     |              ^~~~~~~
+
+firstPassErrors.am:59 error: '2222222' exceeds integer bounds [-(2^11-1), 2^11-1]
+ 59  | dec EXT[2222222]
+     |         ^~~~~~~
+
+firstPassErrors.am:62 error: expected numeric value or defined constant, but got: '#3!a'
+ 62  | clr #3!a
+     |     ^~~~
+
+firstPassErrors.am:63 error: expected numeric value or defined constant, but got: '***'
+ 63  | clr L[***]
+     |       ^~~
+
+firstPassErrors.am:64 error: expected numeric value or defined constant, but got: '$'
+ 64  | .data 1,2,$
+     |           ^
+
+firstPassErrors.am:67 error: expected numeric value or defined constant after '#'
+ 67  | mov r0, #
+     |         ^
+
+firstPassErrors.am:73 error: expected ']'
+ 73  | inc L[1
+     |        ^
+
+firstPassErrors.am:76 error: expected ']' before'k'
+ 76  | mov r0, L[1 k]
+     |             ^
+
+firstPassErrors.am:79 error: expected numeric value or defined constant before ']'
+ 79  | prn L[]
+     |       ^
+
+firstPassErrors.am:84 error: empty string declaration
+ 84  | .string
+     |        ^
+
+firstPassErrors.am:87 error: missing opening " character in 'a"'
+ 87  | .string a"
+     |         ^~
+
+firstPassErrors.am:90 error: missing terminating " character in '"abc'
+ 90  | .string "abc
+     |         ^~~~
+
+firstPassErrors.am:95 error: '$%#!' invalid operand
+ 95  | mov r2, $%#!
+     |         ^~~~
+
+firstPassErrors.am:98 error: passing '#2' is invalid addressing mode to function
+ 98  | jmp #2
+     |     ^~
+
+firstPassErrors.am:101 error: too few arguments in instruction 
+ 101 | jmp
+     |    ^
+
+firstPassErrors.am:102 error: too few arguments in instruction 
+ 102 | add r2
+     |       ^
+
+firstPassErrors.am:105 error: expected expression before ',' token
+ 105 | mov, r2, r3
+     |    ^
+
+firstPassErrors.am:108 error: expected ',' before 'r3'
+ 108 | cmp r0 r3
+     |        ^~
+
+firstPassErrors.am:109 error: expected ',' before '2'
+ 109 | .data 1 2
+     |         ^
+
+firstPassErrors.am:114 error: unexpected ',' after end of command
+ 114 | .data 1,
+     |         ^
+
+firstPassErrors.am:115 error: unexpected text: ','
+ 115 | not r0,
+     |       ^
+
+firstPassErrors.am:118 error: empty data declaration
+ 118 | .data
+     |      ^
+
+firstPassErrors.am:121 error: expected numeric value or defined constant before ','
+ 121 | .data 1,,2
+     |         ^
+
+firstPassErrors.am:126 error: expected identifier after directive
+ 126 | .entry
+     |       ^
+
+firstPassErrors.am:127 error: expected identifier after directive
+ 127 | .extern
+     |        ^
+
+firstPassErrors.am:131 error: empty define declaration
+ 131 | .define d6
+     |           ^
+
+firstPassErrors.am:134 error: expected '=' before numeric token, but got '7'
+ 134 | .define d7 7
+     |            ^
+
+firstPassErrors.am:137 error: expected numeric expression after '='
+ 137 | .define x =
+     |            ^
+
+firstPassErrors.am:140 error: '@#$#@' starts with a non-alphabetic character
+ 140 | .define @#$#@
+     |         ^~~~~
+
+firstPassErrors.am:141 error: 'y' is not a valid numeric expression
+ 141 | .define x = y
+     |             ^
+
+ *** Processing failed.

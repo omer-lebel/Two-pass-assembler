@@ -8,7 +8,6 @@
 #ifndef _MACHINE_WORD_H_
 #define _MACHINE_WORD_H_
 
-#include <stdio.h>
 #include "../setting.h"
 
 /**
@@ -17,7 +16,7 @@
  * @param opcode            Opcode of the instruction.
  * @param add_mode_src      Addressing mode of the source operand.
  * @param add_mode_target   Addressing mode of the target operand.
- * @return                  The constructed machine word.
+ * @return The constructed machine word.
  */
 unsigned short first_word (int opcode, int add_mode_src, int add_mode_target);
 
@@ -27,7 +26,7 @@ unsigned short first_word (int opcode, int add_mode_src, int add_mode_target);
  *
  * @param src    Source register
  * @param target Target register.
- * @return       The constructed machine word.
+ * @return The constructed machine word.
  */
 unsigned short registers_word (int src, int target);
 
@@ -36,7 +35,7 @@ unsigned short registers_word (int src, int target);
  * language.
  *
  * @param imm Immediate value.
- * @return    The constructed machine word.
+ * @return The constructed machine word.
  */
 unsigned short imm_word (int imm);
 
@@ -45,7 +44,7 @@ unsigned short imm_word (int imm);
  *
  * @param address Address of the label.
  * @param are     A,R,E bits indicating addressing mode.
- * @return        The constructed machine word.
+ * @return The constructed machine word.
  */
 unsigned short label_word (int address, int are);
 

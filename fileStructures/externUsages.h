@@ -13,9 +13,6 @@
 #define _EXTERN_USAGES_H_
 
 #include "../setting.h"
-#include "../utils/vector.h"
-#include "../utils/linkedList.h"
-#include "fileStructures.h"
 #include "codeSeg.h"
 
 /**
@@ -28,7 +25,7 @@
  * @return          - SUCCESS if ended successfully <br>
  *                  - MEMORY_ERROR if memory error cured while building the table
  */
-exit_code print_extern_table(Op_List *op_list, FILE *output, char *file_name);
+exit_code print_extern_table(OpLinesList *op_list, FILE *output, char *file_name);
 
 
 

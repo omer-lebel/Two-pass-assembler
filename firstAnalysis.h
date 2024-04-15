@@ -1,26 +1,26 @@
 /**
  * @file firstAnalysis.h
- * @brief Header file containing functions for analyzing assembly code.
+ * @brief Header file containing functions for analyzing assembly code
+ * during the first pass.
  *
- * 1) set line type and buffer in the Line_Info struct, and than call fsm,
- * for syntax analysis
- * 2) update symbol table (using the process label function)
- * 3) add the line data to suit data structures that being saved to te
- * second pass: data_segment, op_line or entry_line
+ * It includes functions for:
+ * 1) setting line type and buffer in the LineInfo struct, and than calling fsm
+ *    for syntax analysis
+ * 2) updating symbol table (adding new symbol or resolving old symbols)
+ * 3) adding the line data to suitable data structures that are saved for
+ *    the second pass: data_segment, opLinesList, or entryLinesList.
  */
 
 #ifndef _FIRST_PASS_ANALYSIS_H_
 #define _FIRST_PASS_ANALYSIS_H_
 
+/* ------------------------------- includes ------------------------------- */
 #include "setting.h"
-#include "utils/text.h"
-#include "utils/errors.h"
-#include "fileStructures/fileStructures.h"
-#include "fileStructures/symbolTable.h"
+#include "analysis.h"
 #include "fileStructures/dataSeg.h"
 #include "fileStructures/codeSeg.h"
-#include "analysis.h"
-#include "fsm.h"
+#include "fileStructures/entryLines.h"
+/* ------------------------------------------------------------------------- */
 
 /**
  * @brief Analyzes a string declaration line.
@@ -32,10 +32,10 @@
  * @param symbol_table  The symbol table to update.
  * @param data_segment  The data segment to add the string to.
  * @param DC            The data counter to update.
- * @return              exit_code Indicating the success or failure of the analysis.
+ * @return exit_code
  */
 exit_code str_analyze (LineInfo *line, Symbol_Table *symbol_table,
-                       Data_Segment *data_segment, int *DC);
+                       DataSegment *data_segment, int *DC);
 
 /**
  * @brief Analyzes a data declaration line.
@@ -43,23 +43,78 @@ exit_code str_analyze (LineInfo *line, Symbol_Table *symbol_table,
  * This function analyzes a data directive line in the assembly code,
  * updates the symbol table, and adds the data to the data segment.
  *
- * @param line The line to analyze.
- * @param symbol_table The symbol table to update.
- * @param data_segment The data segment to update.
- * @param DC The data counter to update.
- * @return exit_code Indicating the success or failure of the analysis.
+ * @param line          The line to analyze.
+ * @param symbol_table  The symbol table to update.
+ * @param data_segment  The data segment to update.
+ * @param DC            The data counter to update.
+ * @return exit_code
  */
-exit_code data_analyze    (LineInfo *line, Symbol_Table *symbol_table, Data_Segment *data_segment, int *DC);
-exit_code ent_analyze     (LineInfo *line, Symbol_Table *symbol_table, Entry_List *entry_list);
-exit_code define_analyze  (LineInfo *line, Symbol_Table *symbol_table);
+exit_code data_analyze (LineInfo *line, Symbol_Table *symbol_table,
+                        DataSegment *data_segment, int *DC);
+
+/**
+ * @brief Analyzes an instruction line.
+ *
+ * This function analyzes an instruction line in the assembly code
+ * and updates the symbol table, the instruction counter (IC) and add the
+ * line to the operator line (OpLine) list
+ *
+ * @param line          The line to analyze.
+ * @param opcode        The opcode to analyze.
+ * @param f             The file being analyzed.
+ * @return exit_code
+ */
+exit_code op_analyze (LineInfo *line, Opcode opcode, Symbol_Table *symbol_table,
+                      OpLinesList *op_list, int *IC);
+
+/**
+ * @brief Analyzes a define directive line.
+ *
+ * This function analyzes a define directive line in the assembly code
+ * and updates the symbol table accordingly.
+ *
+ * @param line          The line to analyze.
+ * @param symbol_table  The symbol table to update.
+ * @return exit_code
+ */
+exit_code define_analyze (LineInfo *line, Symbol_Table *symbol_table);
+
+/**
+ * @brief Analyzes an entry directive line.
+ *
+ * This function analyzes an entry directive line in the assembly code
+ * and updates the symbol table and entry list accordingly.
+ *
+ * @param line          The line to analyze.
+ * @param symbol_table  The symbol table to update.
+ * @param entry_list    The entry list to update.
+ * @return exit_code
+ */
+exit_code ent_analyze (LineInfo *line, Symbol_Table *symbol_table,
+                       EntryLinesList *entry_list);
+
+
+/**
+ * @brief Analyzes an extern directive line.
+ *
+ * This function analyzes an extern directive line in the assembly code
+ * and updates the symbol table accordingly.
+ *
+ * @param line          The line to analyze.
+ * @param symbol_table  The symbol table to update.
+ * @return exit_code
+ */
 exit_code ext_analyze     (LineInfo *line, Symbol_Table *symbol_table);
-exit_code op_analyze      (LineInfo *line, Opcode opcode, file_analyze *f);
+
 
 /**
  * @brief Analyzes an unrecognized line in the assembly code.
  *
- * @param line The line to analyze.
- * @return exit_code Indicating the success or failure of the analysis.
+ * This function handles analysis for lines that do not match any recognized
+ * pattern.
+ *
+ * @param line  The line to analyze.
+ * @return exit_code
  */
 exit_code else_analyze (LineInfo *line);
 

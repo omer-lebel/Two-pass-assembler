@@ -1,4 +1,8 @@
+/* ------------------------------- includes ------------------------------- */
 #include "linkedList.h"
+#include <stdlib.h>
+#include <string.h>
+/* ------------------------------------------------------------------------- */
 
 LinkedList *create_list (init_data_func init_data, print_func print,
                          free_data_func free_data)

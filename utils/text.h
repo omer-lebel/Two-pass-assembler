@@ -10,10 +10,6 @@
 #ifndef _TEXT_H_
 #define _TEXT_H_
 
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdio.h>
 #include "../setting.h"
 
 #define IS_EMPTY(s) (*s == '\0')
@@ -67,7 +63,7 @@ Bool is_alpha_numeric (const char *str);
  * @param buffer   The buffer to store the line in.
  * @param buff_size The size of the buffer.
  * @param overflow Pointer to a boolean variable indicating whether overflow occurred.
- * @return         A pointer to the buffer if a line is read, NULL otherwise.
+ * @return A pointer to the buffer if a line is read, NULL otherwise.
  */
 char *get_line (FILE *file, char *buffer, size_t buff_size, Bool *overflow);
 

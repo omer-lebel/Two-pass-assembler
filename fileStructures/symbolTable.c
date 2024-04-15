@@ -1,8 +1,8 @@
 #include "symbolTable.h"
 
 /* ---------------------- helper function declaration ---------------------- */
-void *init_symbol_data (const void *data);
-void print_symbol (const char *word, const void *data, FILE *stream);
+void*   init_symbol_data  (const void *data);
+void    print_symbol      (const char *word, const void *data, FILE *stream);
 /* ------------------------------------------------------------------------- */
 
 Symbol_Table *new_symbol_table (void)

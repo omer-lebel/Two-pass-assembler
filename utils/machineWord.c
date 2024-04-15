@@ -1,9 +1,11 @@
+/* ------------------------------- defines --------------------------------- */
 #include "machineWord.h"
-
+/* ------------------------------- includes -------------------------------- */
 #define OPCODE_SHIFT 6
 #define ADD_MOD_SRC_SHIFT 4
 #define ADD_MOD_TARGET_SHIFT 2
 #define PAIR 0x3 /* pair of bit (11) */
+/* ------------------------------------------------------------------------- */
 
 unsigned short first_word (int opcode, int add_mode_src, int add_mode_target)
 {

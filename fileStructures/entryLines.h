@@ -8,31 +8,45 @@
 
 #include "symbolTable.h"
 #include "../utils/text.h"
-#include "../utils/vector.h"
 
 /**
- * @struct Entry_line
+ * @struct EntryLine
  * @brief Represents a line containing a symbol declared as an entry point.
  * for exp: .entry LABEL
  */
-typedef struct Entry_line{
+typedef struct EntryLine{
     Symbol *symbol;     /**< Pointer to the symbol declared as an entry point. */
     LineParts *parts;   /**< Pointer to the line parts, representing the entry declaration. */
-}Entry_line;
+}EntryLine;
 /*
  * If the symbol is unresolved when added, the 'LineParts' field will hold the
  * LineParts in order to be able to print an error.
  * Otherwise the symbol is resolved, so the 'LineParts' field will be null.
  */
 
-typedef vector Entry_List;
+
+/**
+ * @typedef EntryLinesList
+ * @brief
+ *
+ */
+typedef struct EntryLinesList EntryLinesList;
 
 /**
  * @brief Creates a new entry list.
  *
  * @return Pointer to the newly created entry list, or null if memory allocation fails.
  */
-Entry_List *new_entry_list (void);
+EntryLinesList *new_entry_lines_list (void);
+
+
+/**
+ * @brief Checks if the entry lines list is empty.
+ *
+ * @param entry_list Pointer to the entry lines list to check.
+ * @return           TRUE if the entry lines list is empty, FALSE otherwise.
+ */
+Bool is_empty(EntryLinesList* entry_list);
 
 /**
  * @brief Adds a line containing a symbol declared as an entry to the entry list.
@@ -42,8 +56,19 @@ Entry_List *new_entry_list (void);
  * @param line_part Pointer to the line parts representing the entry declaration.
  * @return Pointer to the added entry line if successful, NULL otherwise.
  */
-Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol *symbol,
-                               LineParts *line_part);
+EntryLine *add_to_entry_lines_list (EntryLinesList *entry_list, Symbol *symbol,
+                                    LineParts *line_part);
+
+/**
+ * @brief Retrieves a pointer to the line at the specified index in the
+ *        entry lines list.
+ *
+ * @param op_list   Pointer to the entry lines list.
+ * @param i         Index of the line to retrieve.
+ * @return          A pointer to the line at the specified index, or NULL if
+ *                  the index is out of range.
+ */
+EntryLine * get_entry_line(EntryLinesList *entry_list, int i);
 
 /**
  * @brief Prints the entry list to a file stream (typically to .ent file)
@@ -52,13 +77,13 @@ Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol *symbol,
  * @param entry_list Pointer to the entry list.
  * @param stream File stream to print to.
  */
-void print_entry_list (Entry_List *entry_list, FILE *stream);
+void print_entry_list (EntryLinesList *entry_list, FILE *stream);
 
 /**
  * @brief Frees the memory allocated for the entry list.
  *
  * @param entry_list Pointer to the entry list to free.
  */
-void free_entry_list (vector *entry_list);
+void free_entry_lines_list (EntryLinesList *entry_list);
 
 #endif /* _ENTRY_LINES_H_ */

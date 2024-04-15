@@ -1,9 +1,9 @@
 #include "errors.h"
 
+/* -------------------------- color and font style ------------------------- */
 #define RED_COLOR   "\x1B[31m"  /* error's color */
 #define YEL_COLOR   "\x1B[33m"        /* warning's color */
 #define GRN_COLOR   "\x1B[32m"        /* success's color */
-#define WHT_COLOR   "\x1B[37m"        /* other text color */
 #define RESET_COLOR "\x1B[0m"         /* reset to regular color */
 
 #define BOLD "\033[1m"          /* bolt font (for errors & warnings) */
@@ -11,11 +11,11 @@
 
 
 /* ---------------------- helper function declaration ---------------------- */
-void general_msg (char *color, char *msg);
-void r_error (char *msg_before, LineParts *line, char *msg_after);
-void r_warning (char *msg_before, LineParts *line, char *msg_after);
-void line_msg (char *type, char *color, char *msg_before, LineParts *line,
-               char *msg_after);
+void general_msg    (char *color, char *msg);
+void r_error        (char *msg_before, LineParts *line, char *msg_after);
+void r_warning      (char *msg_before, LineParts *line, char *msg_after);
+void line_msg       (char *type, char *color, char *msg_before, LineParts *line, char *msg_after);
+
 /* ------------------------------------------------------------------------- */
 
 void raise_general_msg (Msg_Code msg_code)
@@ -186,7 +186,7 @@ void raise_error (Error_Code error_code, LineParts *line)
 
       /* --------------- imm */
     case label_instead_of_imm_err:
-      /* mov r0 #STR | mov r0 LABEL[STR] */
+      /* mov r0, #STR | mov r0, LABEL[STR] */
       if (line->token[0] == '#') {
         move_one_char_to_prefix (line);
       }
@@ -197,7 +197,7 @@ void raise_error (Error_Code error_code, LineParts *line)
       if (line->token[0] == '#') {
         move_one_char_to_prefix (line);
       }
-      r_error ("", line, " exceeds integer bounds [-(2^13-1), 2^13-1]");
+      r_error ("", line, " exceeds integer bounds [-(2^11-1), 2^11-1]");
       break;
 
     case invalid_imm_err:
@@ -280,10 +280,11 @@ void raise_error (Error_Code error_code, LineParts *line)
       break;
 
     case expected_integer_before_comma_err:
+      /* .data 1,,2 */
       r_error ("expected numeric value or defined constant before ", line, "");
       break;
 
-      /* define & extern & entry */
+      /* --------------- define & extern & entry */
     case expected_identifier_err:
       /* .define _ | .extern _ | .entry _*/
       r_error ("expected identifier after directive", line, "");

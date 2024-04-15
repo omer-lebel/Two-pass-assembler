@@ -1,8 +1,7 @@
 .PHONY: clean
 
 CC=gcc
-CFLAGS = -Wall -Wextra -ansi -pedantic -Wunused-parameter
-#HUJI = -Wextra -Wall -Wvla -std=c99
+CFLAGS = -Wall -Wextra -ansi -pedantic
 
 BASE_UTILS = setting.o text.o errors.o
 
@@ -14,7 +13,6 @@ OBJECTS =  setting.o text.o errors.o \
            preAssembler.o \
            analysis.o fsm.o firstAnalysis.o firstPass.o \
            secondPass.o
-
 
 assembler: assembler.o
 	$(CC) $(CFLAGS) *.o -o assembler

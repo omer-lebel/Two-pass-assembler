@@ -1,25 +1,29 @@
-
+/* ------------------------------- includes ------------------------------- */
 #include "codeSeg.h"
-
+#include "symbolTable.h"
+#include "../utils/vector.h"
+#include "../utils/machineWord.h"
 /* ---------------------- helper function declaration ---------------------- */
 
-/* Helper functions for Op_Analyze */
-void init_operand (Operand *operand, Opcode opcode, Operand_Type type, char *sym_buffer);
+/* Helper functions for OpAnalyze */
+void init_operand         (Operand *operand, Opcode opcode, OperandType type, char *sym_buffer);
 void display_operand_info (Operand *operand, FILE *stream);
 
-/* Helper functions for Op_List */
-void *init_line_in_op_list (void *elem);
-void free_line_in_op_list (void *elem);
+/* Helper functions for OpLinesList */
+void *clone_op_line   (void *elem);
+void free_op_line     (void *elem);
 
 /* Helper functions for printing code segment */
-void add_op_line_to_code_segment (Op_Analyze *op, int *memInx, int len, FILE *stream);
-void print_operand_machine_word (Operand *operand, int *memInx, int len, FILE *stream);
+void add_op_line_to_code_segment  (OpAnalyze *op, int *memInx, int len, FILE *stream);
+void print_operand_machine_word   (Operand *operand, int *memInx, int len, FILE *stream);
 
-/* ====================================================================
- *                              op analyze
- * ==================================================================== */
+/* ------------------------------------------------------------------------- */
 
-void init_op_analyze (Op_Analyze *op, Opcode opcode, char *scr_sym_buffer,
+/* =========================================================================
+ *                               op analyze
+ * ========================================================================= */
+
+void init_op_analyze (OpAnalyze *op, Opcode opcode, char *scr_sym_buffer,
                       char *target_sym_buffer)
 {
   op->opcode = opcode;
@@ -36,20 +40,20 @@ void init_op_analyze (Op_Analyze *op, Opcode opcode, char *scr_sym_buffer,
  * @param sym_buffer Buffer to hold the name of the symbol used in the
  *                   operand in case it is unresolved.
  */
-void init_operand (Operand *operand, Opcode opcode, Operand_Type type,
+void init_operand (Operand *operand, Opcode opcode, OperandType type,
                    char *sym_buffer)
 {
   operand->type = type;
   operand->add_mode = NONE_ADD;
-  operand->param_types = param_types[opcode][type];
+  operand->param_types = addr_mode_table[opcode][type];
   operand->info.symInx.symbol = sym_buffer;
   operand->info.symInx.found = TRUE;
 }
 
-int calc_op_size (Op_Analyze *op)
+int calc_op_size (OpAnalyze *op)
 {
   int res = 1; /*for the first word */
-  Addressing_Mode mode;
+  AddressingMode mode;
 
   /*special case of 2 registers that share the same word */
   if (op->src.add_mode == REG_ADD && op->target.add_mode == REG_ADD) {
@@ -70,10 +74,10 @@ int calc_op_size (Op_Analyze *op)
   return res;
 }
 
-void print_op_analyze(Op_Analyze *op, FILE *stream)
+void print_op_analyze(OpAnalyze *op, FILE *stream)
 {
   fprintf (stream, "%04d\t", op->address);
-  fprintf (stream, "<op: %s>\t", op_names[op->opcode]);
+  fprintf (stream, "<op: %s>\t", operation_names[op->opcode]);
   fprintf (stream, "<opcode: %d>\t", op->opcode);
   display_operand_info (&(op->src), stream);
   display_operand_info (&(op->target), stream);
@@ -109,31 +113,51 @@ void display_operand_info (Operand *operand, FILE *stream)
   }
 }
 
-/* ====================================================================
- *                                op line
- * ==================================================================== */
+/* =========================================================================
+ *                            op lines list
+ * ========================================================================= */
+/**
+ * @struct OpLinesList
+ * @brief Internal structure representing a list of operation lines using a
+ * vector
+ */
+struct OpLinesList {
+    vector *lines;
+};
 
-Op_List *new_op_list (void)
-{
-  return create_vector (sizeof (Op_Line), init_line_in_op_list,
-                        free_line_in_op_list);
+
+OpLinesList *new_op_lines_list(void) {
+  OpLinesList *op_list = (OpLinesList*)malloc(sizeof(OpLinesList));
+  if (op_list != NULL) {
+    /* Initialize the vector */
+    op_list->lines = create_vector(sizeof(OpLine), clone_op_line,
+                                   free_op_line);
+    if (!op_list->lines) {
+      free(op_list);
+      return NULL;
+    }
+  }
+  return op_list;
 }
 
 /**
- * @brief Helper function of the Op_list that init an operation line when it
- * added to the operation list, by cloning its fields.
+ * @brief Initializes an operation line by cloning its fields.
  *
- * @param elem  Pointer to the operation line element to add.
- * @return      Pointer to the added operation line.
+ * This function is a helper function of the OpLinesList and is responsible for
+ * creating a deep copy of an operation line element.
+ *
+ * @param elem Pointer to the operation line element that needs to be cloned.
+ * @return Pointer to the new operation line.
+ *         NULL if memory allocation fails.
  */
-void *init_line_in_op_list (void *elem)
+void *clone_op_line (void *elem)
 {
-  Op_Line *op_line = (Op_Line *) elem;
-  Op_Analyze *tmp_op;
+  OpLine *op_line = (OpLine *) elem;
+  OpAnalyze *tmp_op;
   LineParts *tmp_part;
 
   /* deep copy of op analyze */
-  tmp_op = malloc (sizeof (Op_Analyze));
+  tmp_op = malloc (sizeof (OpAnalyze));
   if (!tmp_op) {
     return NULL;
   }
@@ -155,53 +179,58 @@ void *init_line_in_op_list (void *elem)
   return op_line;
 }
 
+OpLine* get_op_line(OpLinesList *op_list, int i){
+  return get (op_list->lines,i);
+}
+
 /**
  * @brief Frees memory allocated for an operation line in the operation list.
  *
  * @param elem Pointer to the operation line element to free.
  */
-void free_line_in_op_list (void *elem)
+void free_op_line (void *elem)
 {
-  Op_Line *op_line = (Op_Line *) elem;
+  OpLine *op_line = (OpLine *) elem;
   free (op_line->analyze);
   free (op_line->parts);
 }
 
 
-Op_Line *add_to_op_list (Op_List *op_list, Op_Analyze *op_analyze,
-                         LineParts *line_part){
-  Op_Line op_line;
+OpLine *add_to_op_lines_list (OpLinesList *op_list, OpAnalyze *op_analyze,
+                              LineParts *line_part){
+  OpLine op_line;
   op_line.analyze = op_analyze;
   op_line.analyze->address += IC_START;
   op_line.parts = line_part;
-  return push (op_list, &op_line);
+  return push (op_list->lines, &op_line);
 }
 
-void display_op_list(Op_List *op_list, FILE *stream){
+void display_op_lines_list(OpLinesList *op_list, FILE *stream){
   fprintf (stream, "\n------------------ op list ------------------\n");
-  print_vector (op_list, display_op_line, stream, "\n", "\n");
+  print_vector (op_list->lines, display_op_line, stream, "\n", "\n");
 }
 
 void display_op_line (const void *op_line, FILE *stream)
 {
-  Op_Analyze *op = ((Op_Line *) op_line)->analyze;
+  OpAnalyze *op = ((OpLine *) op_line)->analyze;
   print_op_analyze(op, stream);
 }
 
-void free_op_list (Op_List *op_list){
-  free_vector (op_list);
+void free_op_lines_list (OpLinesList *op_list){
+  free_vector (op_list->lines);
+  free (op_list);
 }
 
-/* ====================================================================
+/* =========================================================================
  *                             code segment
- * ==================================================================== */
+ * ========================================================================= */
 
-void print_code_segment (Op_List *op_list, int memInx, int len, FILE *stream)
+void print_code_segment (OpLinesList *op_list, int memInx, int len, FILE *stream)
 {
-  Op_Line *op_line;
+  OpLine *op_line;
   int i = 0;
   for (; memInx < len; ++i) {
-    op_line = (Op_Line *) get (op_list, i);
+    op_line = (OpLine *) get (op_list->lines, i);
     add_op_line_to_code_segment (op_line->analyze, &memInx, len, stream);
   }
 }
@@ -215,7 +244,7 @@ void print_code_segment (Op_List *op_list, int memInx, int len, FILE *stream)
  * @param stream    File stream to which the code segment will be written.
  *                  (typicality .ob file)
  */
-void add_op_line_to_code_segment (Op_Analyze *op, int *memInx, int len,
+void add_op_line_to_code_segment (OpAnalyze *op, int *memInx, int len,
                                   FILE *stream)
 {
   unsigned short int word, scr_code, target_code;

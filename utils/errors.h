@@ -8,6 +8,10 @@
 
 #include "text.h"
 
+/* =======================================================================
+ *                        errors, warning and msg enums
+ * ======================================================================= */
+
 typedef enum Msg_Code{
     no_input_file_err,                  /* must give at least one file to process */
     memory_err,                         /* Memory allocation failure. program stopped */
@@ -66,6 +70,11 @@ typedef enum Error_Code {
     expected_numeric_expression_after_equal_err, /* expected numeric expression after '=' */
     invalid_numeric_expression_err      /* is not a valid numeric expression */
 } Error_Code;
+
+
+/* =======================================================================
+ *                        raising messages function
+ * ======================================================================= */
 
 /**
  * @brief Raises a general message based on the message code.

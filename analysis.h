@@ -14,21 +14,20 @@
 #ifndef _ANALYSIS_H_
 #define _ANALYSIS_H_
 
+/* ------------------------------- includes ------------------------------- */
 #include "setting.h"
 #include "utils/text.h"
 #include "utils/errors.h"
 #include "fileStructures/symbolTable.h"
-#include "fileStructures/dataSeg.h"
 #include "fileStructures/codeSeg.h"
-#include "fileStructures/entryLines.h"
-
+/* ------------------------------- defines -------------------------------- */
 #define IS_CLOSE_INDEX_SIGN(s) (strcmp (s, "]") == 0)
 #define CHAR_TO_INT(c) ((c) - '0')
 #define IN_REG_BOUND(s) ((s) >= '0' && (s) <= '7')
 #define IS_COMMA(s) ((s) == ',')
 #define IS_IMM_SIGN(s) ((s) == '#')
 #define IS_OPEN_INDEX_SIGN(s) (s == '[')
-
+/* ------------------------------------------------------------------------- */
 
 /* =======================================================================
  *                             line info
@@ -53,7 +52,7 @@ typedef enum lineType
  */
 typedef union Info
 {
-    Op_Analyze *op;    /**< operator info */
+    OpAnalyze *op;    /**< operator info */
 
     struct            /**< data info */
     {
@@ -107,14 +106,14 @@ void display_line_info (LineInfo *line);
 void restart_line_info (LineInfo *line);
 
 /* =======================================================================
- *                      Syntax analysis helpers
+ *                        Syntax analysis helpers
  * ======================================================================= */
 
 /**
  * @brief Check if a string represents a register (r0 - r7)
  * @param str       Pointer to the string to be checked.
  * @param reg_num   Pointer to an integer to store the register number if the string represents a register.
- * @return          TRUE if the string represents a register, otherwise FALSE.
+ * @return TRUE if the string represents a register, otherwise FALSE.
  */
 Bool is_reg (const char *token, int *reg_num);
 
@@ -123,11 +122,7 @@ Bool is_reg (const char *token, int *reg_num);
  * and ends with double quotes.
  *
  * @param line  The LineParts structure containing the line token to be checked.
- * @return      Returns TRUE if the line represents a valid string declaration, otherwise FALSE.
- *
- * @errors - empty_string_declaration_err
- *         - missing_opening_quote_err
- *         - missing_terminating_quote_err
+ * @return Returns TRUE if the line represents a valid string declaration, otherwise FALSE.
  */
 Bool is_str (LineParts *line);
 
@@ -147,12 +142,7 @@ Bool is_int (char *token, int *imm);
  * @param token         Pointer to the token to be checked.
  * @param symbol_table  Pointer to the symbol table.
  * @param imm           Pointer to an integer to store the value of the defined constant if the token represents a defined constant.
- * @return              TRUE if the token represents a defined constant, otherwise FALSE.
- *
- * @errors - label_instead_of_imm_err
- *         - undeclared_err
- *         - expected_int_before_bracket
- *         - invalid_imm_err
+ * @return TRUE if the token represents a defined constant, otherwise FALSE.
  */
 Bool is_define_constant (LineInfo *line, char *token, Symbol_Table *symbol_table,
                          int *imm);
@@ -164,11 +154,7 @@ Bool is_define_constant (LineInfo *line, char *token, Symbol_Table *symbol_table
  * @param token     Pointer to the token to be checked.
  * @param table     Pointer to the symbol table.
  * @param imm       Pointer to an integer to store the immediate value if the token represents an immediate value.
- * @return          TRUE if the token represents an immediate value, otherwise FALSE.
- *
- * @errors - expected_imm_after_sign_err
- *         - exceeds_integer_bounds
- *         - errors include in is_define_constant
+ * @return TRUE if the token represents an immediate value, otherwise FALSE.
  */
 Bool is_imm (LineInfo *line, char *token, Symbol_Table *table, int *imm);
 
@@ -181,11 +167,7 @@ Bool is_imm (LineInfo *line, char *token, Symbol_Table *table, int *imm);
  * @param line      Pointer to the LineParts structure containing information about the line.
  * @param name      Pointer to the name of the identifier to be checked.
  * @param print_err Flag indicating whether to print errors.
- * @return          TRUE if the string is a valid identifier, otherwise FALSE.
- *
- * @errors - starts_with_non_alphabetic_err
- *         - contain_non_alphanumeric
- *         - reserved_keyword_used_err
+ * @return TRUE if the string is a valid identifier, otherwise FALSE.
  */
 Bool is_valid_identifier (LineParts *line, char *name, Bool print_err);
 
@@ -204,9 +186,8 @@ Bool is_valid_identifier (LineParts *line, char *name, Bool print_err);
  * @param name          Pointer to the name of the symbol to be checked.
  * @param symbol_table  Pointer to the symbol table.
  * @param operand       Pointer to the Operand structure to store information about the symbol.
- * @return              TRUE if the string represents a symbol, otherwise FALSE.
- *
- * @errors - errors include in is_valid_identifier
+ * @return TRUE if the string represents a symbol, otherwise FALSE.
+
  */
 Bool is_symbol (LineInfo *line, char *name, Symbol_Table *symbol_table,
                 Operand *operand);
@@ -218,19 +199,15 @@ Bool is_symbol (LineInfo *line, char *name, Symbol_Table *symbol_table,
  * @param name      Pointer to the name of the symbol to be checked.
  * @param table     Pointer to the symbol table.
  * @param operand   Pointer to the Operand structure to store information about the index.
- * @return          TRUE if the string represents an index, otherwise FALSE.
- *
- * @errors - errors include in is_symbol and is_imm
+ * @return TRUE if the string represents an index, otherwise FALSE.
+
  */
 Bool is_index (LineInfo *line, char *name, Symbol_Table *table, Operand *operand);
 
 /**
  * @brief Check if a string represents a closing index sign ("]").
  * @param line  Pointer to the LineInfo structure containing information about the line.
- * @return      TRUE if the string represents a closing index sign, otherwise FALSE.
- *
- * @errors - expected_bracket_got_nothing_err
- *         - expected_bracket_before_expression_err
+ * @return TRUE if the string represents a closing index sign, otherwise FALSE.
  */
 Bool is_closing_index_sign (LineInfo *line);
 
@@ -244,8 +221,6 @@ Bool is_closing_index_sign (LineInfo *line);
  * @param operand   Pointer to the Operand structure to be validated.
  * @param add_mode  Addressing mode flag to be validated.
  * @return          TRUE if the addressing mode is valid, otherwise FALSE.
- *
- * @errors - invalid_addressing_mode_err
  */
 Bool valid_add_mode (LineInfo *line, Operand *operand, addr_mode_flag add_mode);
 
@@ -259,10 +234,8 @@ Bool valid_add_mode (LineInfo *line, Operand *operand, addr_mode_flag add_mode);
  *
  * @param line      Pointer to the LineInfo structure containing information about the line.
  * @param symbol    Pointer to the Symbol structure representing the entry label.
- * @return          TRUE if the entry label is valid, otherwise FALSE.
+ * @return TRUE if the entry label is valid, otherwise FALSE.
  *
- * @errors - redeclaration_err
- *         - duplicate_declaration_warning
  */
 Bool valid_entry_label (LineInfo *line, Symbol *symbol);
 
@@ -275,7 +248,7 @@ Bool valid_entry_label (LineInfo *line, Symbol *symbol);
  *
  * @param line      Pointer to the LineInfo structure containing information about the line.
  * @param symbol    Pointer to the Symbol structure representing the extern label.
- * @return          TRUE if the extern label is valid, otherwise FALSE.
+ * @return TRUE if the extern label is valid, otherwise FALSE.
  *
  * @errors - redeclaration_err
  *         - duplicate_declaration_warning
@@ -291,9 +264,7 @@ Bool valid_extern_label (LineInfo *line, Symbol *symbol);
  * - otherwise - it's considered an error.
  * @param line      Pointer to the LineInfo structure containing information about the line.
  * @param symbol    Pointer to the Symbol structure representing the define label.
- * @return          TRUE if the define label is valid, otherwise FALSE.
- *
- * @errors - redeclaration_err
+ * @return TRUE if the define label is valid, otherwise FALSE.
  */
 Bool valid_define_symbol (LineInfo *line, Symbol *symbol);
 

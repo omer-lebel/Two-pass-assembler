@@ -11,8 +11,6 @@
 #define _LINKED_LIST_H_
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 
 /* *********** Function pointer types for linked list operations */
@@ -78,7 +76,7 @@ typedef struct LinkedList
  *
  * @param print     Function to print the node.
  * @param free_data  Function to free the data when freeing the list.
- * @return          A pointer to the created linked list or NULL on failure.
+ * @return A pointer to the created linked list or NULL on failure.
  */
 LinkedList *create_list (init_data_func init_data, print_func print,
                          free_data_func free_data);
@@ -88,7 +86,7 @@ LinkedList *create_list (init_data_func init_data, print_func print,
  *
  * @param linked_list   Pointer to the linked list.
  * @param data          Data to be stored in the new node.
- * @return              A pointer to the created node or NULL on failure.
+ * @return A pointer to the created node or NULL on failure.
  */
 Node *create_node (LinkedList *linked_list, const char *word, void *data);
 
@@ -97,7 +95,7 @@ Node *create_node (LinkedList *linked_list, const char *word, void *data);
  *
  * @param linked_list   Pointer to the linked list.
  * @param word          Data to search for in the linked list.
- * @return              A pointer to the node containing the data or NULL if not found.
+ * @return A pointer to the node containing the data or NULL if not found.
  */
 Node *find_node (const LinkedList *linked_list, const char *word);
 

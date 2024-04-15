@@ -1,4 +1,7 @@
+/* ------------------------------- includes ------------------------------- */
 #include "text.h"
+#include <ctype.h>
+/* ------------------------------------------------------------------------- */
 
 void trim_end (char *str)
 {
@@ -9,11 +12,12 @@ void trim_end (char *str)
   }
 }
 
+/* the function uses the global var reserved_words from setting.h */
 Bool is_saved_word (const char *s)
 {
   int i;
-  for (i = 0; SavedWord[i][0] != '\0'; i++) {
-    if (strcmp (s, SavedWord[i]) == 0) {
+  for (i = 0; reserved_words[i][0] != '\0'; i++) {
+    if (strcmp (s, reserved_words[i]) == 0) {
       return TRUE;
     }
   }

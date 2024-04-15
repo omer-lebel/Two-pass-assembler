@@ -1,23 +1,24 @@
+/* ------------------------------- includes ------------------------------- */
 #include "externUsages.h"
-
-
+#include "../utils/vector.h"
+#include "../utils/linkedList.h"
+#include "fileStructures.h"
+/* -------------------------------- typedef -------------------------------- */
 typedef Node Extern_Syb;
 typedef LinkedList Extern_List;
 typedef vector Usages_List;
-
 /* ---------------------- helper function declaration ---------------------- */
-void *init_usages_list (const void *first_usage);
-Usages_List *new_usages_list (void);
-void print_usages_list (const char *ext_name, const void *data, FILE*stream);
-void free_usages_list (void *usages_list);
-exit_code build_extern_table (Extern_List *extern_list, Op_List *op_list, char *file_name);
-Symbol *extern_usages_in_operand (Operand *operand);
-int calc_extern_location (Op_Analyze *op, Operand_Type type);
-Bool add_new_usages (Extern_List *extern_list, char *ext_name, int line_num);
-
+void*         init_usages_list         (const void *first_usage);
+Usages_List*  new_usages_list          (void);
+void          print_usages_list        (const char *ext_name, const void *data, FILE *stream);
+void          free_usages_list         (void *usages_list);
+exit_code     build_extern_table       (Extern_List *extern_list, OpLinesList *op_list, char *file_name);
+Symbol*       extern_usages_in_operand (Operand *operand);
+int           calc_extern_location     (OpAnalyze *op, OperandType type);
+Bool          add_new_usages           (Extern_List *extern_list, char *ext_name, int line_num);
 /* ------------------------------------------------------------------------- */
 
-exit_code print_extern_table (Op_List *op_list, FILE *output, char *file_name)
+exit_code print_extern_table (OpLinesList *op_list, FILE *output, char *file_name)
 {
   exit_code res;
   Extern_List *extern_list = create_list (init_usages_list, print_usages_list,
@@ -111,13 +112,14 @@ void free_usages_list (void *usages_list)
  * @param file_name Name of the file.
  * @return The exit code indicating the success or failure of the operation.
  */
-exit_code build_extern_table (Extern_List *extern_list, Op_List *op_list,
+exit_code build_extern_table (Extern_List *extern_list, OpLinesList *op_list,
                               char *file_name)
 {
-  Op_Line *op_line;
+  OpLine *op_line;
   int i = 0, memInx = -1;
   Symbol *src_symbol = NULL, *target_symbol = NULL;
-  while ((op_line = get (op_list, i++))) {
+
+  while ((op_line = get_op_line (op_list, i++))) {
     /* src */
     if ((src_symbol = extern_usages_in_operand (&op_line->analyze->src))) {
       memInx = calc_extern_location (op_line->analyze, SRC);
@@ -151,7 +153,7 @@ Symbol *extern_usages_in_operand (Operand *operand)
 {
   Symbol *symbol;
   Symbol_Data *symbol_data;
-  Addressing_Mode addr_mode = operand->add_mode;
+  AddressingMode addr_mode = operand->add_mode;
 
   if (addr_mode == DIRECT_ADD || addr_mode == INDEX_ADD) {
     symbol = (Symbol *) operand->info.symInx.symbol;
@@ -171,7 +173,7 @@ Symbol *extern_usages_in_operand (Operand *operand)
  * @param type Type of operand (source or target).
  * @return The calculated memory location of the external symbol.
  */
-int calc_extern_location (Op_Analyze *op, Operand_Type type)
+int calc_extern_location (OpAnalyze *op, OperandType type)
 {
   int offset;
   if (type == SRC || op->src.add_mode == NONE_ADD) {

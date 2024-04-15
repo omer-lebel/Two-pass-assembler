@@ -1,22 +1,22 @@
-/*
- Created by OMER on 1/10/2024.
-*/
+/**
+ * @file assembler.c
+ * @brief Main file for the assembler program.
+ * @author OMER LEBEL
+ */
 
-
-#include <stdio.h>
-#include <stdlib.h>
-
+/* ------------------------------- includes ------------------------------- */
 #include "setting.h"
 #include "fileStructures/fileStructures.h"
 #include "preAssembler.h"
 #include "firstPass.h"
 #include "secondPass.h"
 #include "utils/errors.h"
-
+/* -------------------------------- defines -------------------------------- */
 #define INPUT_IND 1
-
+/* ---------------------- helper function declaration ---------------------- */
 Bool run_assembler (char *file_name);
-void end_handle (exit_code file_exit_code);
+void raise_end_msg (exit_code file_exit_code);
+/* ------------------------------------------------------------------------- */
 
 int main (int argc, char *argv[])
 {
@@ -35,6 +35,12 @@ int main (int argc, char *argv[])
   return flag ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
+/**
+ * @brief Runs the assembler for a given input file.
+ *
+ * @param file_name Name of the input file to be assembled.
+ * @return TRUE if assembly process is successful, FALSE otherwise.
+ */
 Bool run_assembler (char *file_name)
 {
   file_analyze f;
@@ -45,11 +51,11 @@ Bool run_assembler (char *file_name)
   printf ("========================[ Processing | %s.as ]========================\n", file_name);
 
   if (!init_file_analyze (&f, file_name, &as_file, &am_file)) {
-    return FALSE;
+    return TRUE;
   }
 
   /* -------------------- pre assembler -------------------- */
-  res = preAssembler (f.file_name, as_file, am_file);
+  res = preAssembler (f.file_name, as_file, am_file, &f.error);
   fclose (as_file);
   rewind (am_file);
 
@@ -65,11 +71,16 @@ Bool run_assembler (char *file_name)
     }
   }
 
-  end_handle (res);
+  raise_end_msg (res);
   return (res != MEMORY_ERROR) ? TRUE : FALSE;
 }
 
-void end_handle (exit_code file_exit_code)
+/**
+ * @brief Raises an end message based on the exit code of the assembly process.
+ *
+ * @param file_exit_code Exit code of the assembly process.
+ */
+void raise_end_msg (exit_code file_exit_code)
 {
   switch (file_exit_code) {
     case SUCCESS:

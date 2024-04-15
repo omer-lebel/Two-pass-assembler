@@ -64,7 +64,7 @@ typedef struct vector{
 * @param elemSize    Size of each element in bytes.
 * @param initElem    Function pointer to initialize elements (can be null).
 * @param freeElem    Function pointer to free elements (can be null).
-* @return            A pointer to the newly created vector, or null if memory allocation fails.
+* @return A pointer to the newly created vector, or null if memory allocation fails.
 */
 vector* create_n_vector(int n, size_t elem_size, init_elem_func init_elem,
                         free_elem_func free_elem);
@@ -75,7 +75,7 @@ vector* create_n_vector(int n, size_t elem_size, init_elem_func init_elem,
 * @param elemSize    Size of each element in bytes.
 * @param initElem    Function pointer to initialize elements (can be null).
 * @param freeElem    Function pointer to free elements (can be null).
-* @return            A pointer to the newly created vector, or null if memory allocation fails.
+* @return A pointer to the newly created vector, or null if memory allocation fails.
 */
 vector* create_vector(size_t elem_size, init_elem_func init_elem,
                       free_elem_func free_elem);
@@ -85,7 +85,7 @@ vector* create_vector(size_t elem_size, init_elem_func init_elem,
  *
  * @param v       Pointer to the vector.
  * @param index   Index of the element to retrieve.
- * @return        A pointer to the element at the specified index, or null if index is out of range.
+ * @return A pointer to the element at the specified index, or null if index is out of range.
  */
 void* get(vector * v, int index);
 
@@ -93,7 +93,7 @@ void* get(vector * v, int index);
  * @brief Retrieves the last element in the vector.
  *
  * @param v   Pointer to the vector.
- * @return    A pointer to the last element, or null if the vector is empty.
+ * @return A pointer to the last element, or null if the vector is empty.
 */
 void* get_tail(vector * v);
 
@@ -102,7 +102,7 @@ void* get_tail(vector * v);
  *
  * @param v     Pointer to the vector.
  * @param elem  Pointer to the element to be added (add copy of the element)
- * @return      A pointer to the added element, or null if memory allocation fails.
+ * @return A pointer to the added element, or null if memory allocation fails.
 */
 void* push(vector * v, void* element);
 

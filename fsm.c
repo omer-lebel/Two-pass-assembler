@@ -216,6 +216,9 @@ state operand_handler (LineInfo *line, Symbol_Table *table,
   return next_state;
 }
 
+/**
+ * analyze the given operand and find its addressing mode
+ */
 addr_mode_flag get_addressing_mode (LineInfo *line, Symbol_Table *table,
                                     Operand *operand)
 {
@@ -260,7 +263,7 @@ comma_handler (LineInfo *line, Symbol_Table *symbol_table, state next_state)
   }
 
   if (!IS_EMPTY(token)) { /* mov r0 r3 | .data 1 2 */
-    raise_error (expected_expression_before_comma_err, line->parts);
+    raise_error (expected_comma_before_expression_err, line->parts);
   }
   else { /* mov r2 | */
     /* if comes from data, assume that token isn't empty,

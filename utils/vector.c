@@ -4,7 +4,6 @@
 
 /* ---------------------- helper function declaration ---------------------- */
 void *resize (vector *v);
-
 /* ------------------------------------------------------------------------- */
 
 vector *create_n_vector (int n, size_t elem_size, init_elem_func init_elem,

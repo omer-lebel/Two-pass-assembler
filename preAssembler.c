@@ -1,8 +1,43 @@
+/* ------------------------------- includes ------------------------------- */
 #include "preAssembler.h"
-
+#include "utils/text.h"
+#include "utils/linkedList.h"
+#include "utils/errors.h"
+/* ------------------------------- defines -------------------------------- */
 #define IS_COMMENT(s) ((s)[0] == ';')
+/* ------------------------------- typedef -------------------------------- */
+/**
+ * @typedef mcrData
+ * Data structure representing the content of a macro in the linked list.
+ */
+typedef struct mcrData
+{
+    char *content;
+    size_t total;
+    size_t capacity;
+} mcrData;
 
-exit_code preAssembler (char *file_name, FILE *input, FILE *output)
+/* ---------------------- helper function declaration ---------------------- */
+
+/* function of the macro list */
+void *init_mcrData (const void *data);
+exit_code add_content (mcrData *macro_data, char *content);
+void print_mcrData (const char *word, const void *data, FILE *pf);
+void free_mcrData (void *data);
+
+/* function of pre process analyze */
+exit_code   pre_process_line  (FILE *output, LinkedList *mcr_list, LineParts *line, Node **curr_mcr);
+exit_code   mcr_handler       (LinkedList *mcr_list, Node **mcr_node, LineParts *line);
+exit_code   endmcr_handler    (Node **curr_mcr, LineParts *line);
+exit_code   write_to_am_file  (FILE *am_file, LineParts *line, LinkedList *mcr_list);
+exit_code   handle_end        (char *file_name, Node *curr_mcr, exit_code res,
+                                LineParts *line_part,  LinkedList *mcr_list);
+Bool        isValidMcr        (LinkedList *macro_list, LineParts *line);
+Bool        extraneous_text   (LineParts *line);
+
+/* ------------------------------------------------------------------------- */
+
+exit_code preAssembler (char *file_name, FILE *input, FILE *output, int *error)
 {
   Node *curr_mcr = NULL;
   exit_code res = SUCCESS;
@@ -20,33 +55,33 @@ exit_code preAssembler (char *file_name, FILE *input, FILE *output)
   while (res == SUCCESS && get_line (input, line_part.line,
                                      MAX_LINE_LEN, &overflow)) {
     restart_line_parts (&line_part);
-    res = p_processLine (output, mcr_list, &line_part, &curr_mcr);
     if (overflow) {
       raise_error (line_length_exceeded_err, &line_part);
+      (*error)++;
     }
+    res = pre_process_line (output, mcr_list, &line_part, &curr_mcr);
   }
 
-  /* check that mcr flag is off at EOF */
-  if (res == SUCCESS && curr_mcr != NULL) {
-    raise_error (eof_in_macro_definition_err, &line_part);
-    res = ERROR;
-  }
-
-  free_list (mcr_list);
-  if (res == ERROR) {
-    remove_file (file_name, ".am");
-  }
-  else{
-    file_name[strlen (file_name) -1] = 'm';
-    printf (" -- %s created \n", file_name);
-  }
-
-  return res;
+  return handle_end (file_name, curr_mcr, res, &line_part, mcr_list);
 }
 
-exit_code
-p_processLine (FILE *output, LinkedList *mcr_list, LineParts *line,
-               Node **curr_mcr)
+/**
+ * @brief Processes a line during the pre-processing phase of the assembler.
+ *
+ * This function processes a line of the input file during the
+ * pre-processing phase of the assembler.
+ * It determines whether the line is a macro definition, a macro end, macro
+ * content, or a regular line, and calls the appropriate handler function
+ * accordingly.
+ *
+ * @param output    The output file to store the processed content.
+ * @param mcr_list  Pointer to the linked list of macros.
+ * @param line      Pointer to the LineParts structure containing information about the line.
+ * @param curr_mcr  Pointer to current macro if inside a definition, otherwise NULL.
+ * @return exit_code
+ */
+exit_code pre_process_line (FILE *output, LinkedList *mcr_list, LineParts *line,
+                  Node **curr_mcr)
 {
   exit_code res = SUCCESS;
   char first_word[MAX_LINE_LEN];
@@ -54,8 +89,10 @@ p_processLine (FILE *output, LinkedList *mcr_list, LineParts *line,
   strcpy (first_word, line->token);
 
   if (IS_EMPTY(first_word) || IS_COMMENT (first_word)) {
-    fputc ('\n', output);
-  }
+    if (*curr_mcr == NULL){ /*not inside macro def */
+      fputc ('\n', output);
+    }
+      }
   else if (strcmp (first_word, "mcr") == 0) { /* mcr start */
     res = mcr_handler (mcr_list, curr_mcr, line);
   }
@@ -72,16 +109,17 @@ p_processLine (FILE *output, LinkedList *mcr_list, LineParts *line,
   return res;
 }
 
-Bool extraneous_text (LineParts *line)
-{
-  if (!IS_EMPTY(line->postfix)) {
-    lineTok (line);
-    raise_error (extraneous_text_err, line);
-    return TRUE;
-  }
-  return FALSE;
-}
-
+/**
+ * @brief Handles line of a macro definition.
+ *
+ * This function validating the macro name and creating a new node
+ * in the macro linked list to store the macro content.
+ *
+ * @param mcr_list  Pointer to the linked list of macros.
+ * @param mcr_node  Pointer to the current macro node.
+ * @param line      Pointer to the LineParts structure containing information about the line.
+ * @return exit_code
+ */
 exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LineParts *line)
 {
   char *mcr_name;
@@ -108,6 +146,16 @@ exit_code mcr_handler (LinkedList *mcr_list, Node **mcr_node, LineParts *line)
   return SUCCESS;
 }
 
+/**
+ * @brief Handles the line of end of a macro definition.
+ *
+ * This function handles the end of a macro definition, validating the end
+ * of the macro and resetting the current macro node pointer.
+ *
+ * @param curr_mcr  Pointer to the current macro node.
+ * @param line      Pointer to the LineParts structure containing information about the line.
+ * @return exit_code
+ */
 exit_code endmcr_handler (Node **curr_mcr, LineParts *line)
 {
   trim_end (line->postfix);
@@ -122,6 +170,18 @@ exit_code endmcr_handler (Node **curr_mcr, LineParts *line)
   return SUCCESS;
 }
 
+/**
+ * @brief Writes the line to the output file (.am file)
+ *
+ * This function writes the processed line to the output file.
+ * If the line corresponds to a macro, the macro content is written instead
+ * of the original line.
+ *
+ * @param am_file   Pointer to the output file.
+ * @param line      Pointer to the LineParts structure containing information about the line.
+ * @param mcr_list  Pointer to the linked list of macros.
+ * @return exit_code
+ */
 exit_code write_to_am_file (FILE *am_file, LineParts *line,
                             LinkedList *mcr_list)
 {
@@ -144,6 +204,19 @@ exit_code write_to_am_file (FILE *am_file, LineParts *line,
   return SUCCESS;
 }
 
+/**
+ * @brief Checks if a macro name is valid.
+ *
+ * This function checks if a macro name is valid, which means:
+ * - Must have a name (only 'mcr' is not enough). <br>
+ * - Cannot be a reserved word of the language. <br>
+ * - start with alphabetic char <br>
+ * - Can contain only letters, numbers, and .<br>
+ *
+ * @param macro_list    Pointer to the linked list of macros.
+ * @param line          Pointer to the LineParts structure containing information about the line.
+ * @return TRUE if the macro name is valid, FALSE otherwise.
+ */
 Bool isValidMcr (LinkedList *macro_list, LineParts *line)
 {
   char *mcr_name = line->token;
@@ -170,10 +243,77 @@ Bool isValidMcr (LinkedList *macro_list, LineParts *line)
   return TRUE;
 }
 
-/* *************************************************
-* ...Function to handle the macro's linked list ...
-***************************************************/
+/**
+ * @brief Checks for extraneous text
+ *
+ * This function checks for extraneous text after
+ * a macro definition (mcr MCR_NAME ___) and after end of a macro definition
+ * (endmcr ___) and raises an error if any is found.
+ *
+ * @param line  Pointer to the LineParts structure containing information about the line.
+ * @return TRUE if extraneous text is found, FALSE otherwise.
+ */
+Bool extraneous_text (LineParts *line)
+{
+  if (!IS_EMPTY(line->postfix)) {
+    lineTok (line);
+    raise_error (extraneous_text_err, line);
+    return TRUE;
+  }
+  return FALSE;
+}
 
+/**
+ * @brief Handles preprocessing completion
+ *
+ * This function checks for errors and incomplete macro definitions.
+ * If found fatal errors during the pre processor it delete the .am file
+ *
+ * @param file_name     The name of the input file.
+ * @param curr_mcr      Pointer to the current macro being processed.
+ * @param res           The preprocessing result.
+ * @param line_part     Pointer to line parts for error reporting.
+ * @param mcr_list      Pointer to the macro definitions list.
+ * @return exit code
+ */
+exit_code handle_end (char *file_name, Node *curr_mcr, exit_code res,
+                      LineParts *line_part, LinkedList *mcr_list)
+{/* check that mcr flag is off at EOF */
+  if (res == SUCCESS && curr_mcr != NULL) {
+    raise_error (eof_in_macro_definition_err, line_part);
+    res = ERROR;
+  }
+
+
+  file_name[strlen (file_name) - 1] = 'm'; /* change the file extension from .as to .am */
+  if (res == ERROR) {
+    remove (file_name);
+  }
+  else {
+    printf (" -- %s created \n", file_name);
+  }
+
+#ifdef DEBUG_PRE
+  if (res != MEMORY_ERROR){
+    print_list (mcr_list, stdout);
+  }
+#endif
+
+  free_list (mcr_list);
+  return res;
+}
+
+/* =========================================================================
+ *             Function to handle the macro's linked list
+ * ========================================================================= */
+
+
+/**
+ * @brief Initializes macro data structure.
+ *
+ * @param data  Pointer to the data to initialize.
+ * @return Pointer to the initialized macro data structure.
+ */
 void *init_mcrData (const void *data)
 {
   mcrData *new_data = (mcrData *) malloc (sizeof (mcrData));
@@ -189,10 +329,17 @@ void *init_mcrData (const void *data)
   new_data->total = 0;
   new_data->capacity = MAX_LINE_LEN;
 
-  (void) data; /* todo because I don't use the param */
+  (void) data; /* done because the param is unused  */
   return new_data;
 }
 
+/**
+ * @brief Adds content to a macro.
+ *
+ * @param macro_data    Pointer to the macro data structure.
+ * @param content       Content to add to the macro.
+ * @return exit code
+ */
 exit_code add_content (mcrData *macro_data, char *content)
 {
   char *tmp = NULL;
@@ -215,6 +362,13 @@ exit_code add_content (mcrData *macro_data, char *content)
   return SUCCESS;
 }
 
+/**
+ * @brief Prints the content of a macro.
+ *
+ * @param word  The macro name.
+ * @param data  Pointer to the macro data structure.
+ * @param pf    Pointer to the file to print to.
+ */
 void print_mcrData (const char *word, const void *data, FILE *pf)
 {
   mcrData *macro_data = (mcrData *) data;
@@ -225,6 +379,11 @@ void print_mcrData (const char *word, const void *data, FILE *pf)
 
 }
 
+/**
+ * @brief Frees memory allocated for macro data structure.
+ *
+ * @param data Pointer to the macro data structure.
+ */
 void free_mcrData (void *data)
 {
   mcrData *macro_data = (mcrData *) data;

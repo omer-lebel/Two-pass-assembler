@@ -1,19 +1,40 @@
+/* ------------------------------- includes ------------------------------- */
 #include "entryLines.h"
+#include "../utils/vector.h"
+/* ---------------------- helper function declaration ---------------------- */
+void*   clone_entry_line  (void *elem);
+void    free_entry_line   (void *elem);
+void    print_entry_line  (const void *elem, FILE *stream);
+/* ------------------------------------------------------------------------- */
 
-void *add_line_to_entry_list (void *elem);
-void free_line_in_entry_list (void *elem);
-void print_entry_line (const void *elem, FILE *stream);
-
-
-Entry_List *new_entry_list (void)
+/**
+ * @struct EntryLinesList
+ * @brief Internal structure representing the entry lines list,
+ * using a vector
+ */
+struct EntryLinesList
 {
-  return create_vector (sizeof (Entry_line), add_line_to_entry_list,
-                        free_line_in_entry_list);
+    vector *lines;
+};
+
+EntryLinesList *new_entry_lines_list (void)
+{
+  EntryLinesList *entry_list = (EntryLinesList *) malloc (sizeof (EntryLinesList));
+  if (entry_list) {
+    /* Initialize the vector */
+    entry_list->lines = create_vector (sizeof (EntryLine), clone_entry_line,
+                                       free_entry_line);
+    if (!entry_list->lines) {
+      free (entry_list);
+      return NULL;
+    }
+  }
+  return entry_list;
 }
 
-void *add_line_to_entry_list (void *elem)
+void *clone_entry_line (void *elem)
 {
-  Entry_line *entry_line = (Entry_line *) elem;
+  EntryLine *entry_line = (EntryLine *) elem;
   LineParts *tmp_part;
 
   if (entry_line->parts) { /*symbol is unresolved yet */
@@ -27,32 +48,47 @@ void *add_line_to_entry_list (void *elem)
   return entry_line;
 }
 
-void free_line_in_entry_list (void *elem)
+void free_entry_line (void *elem)
 {
-  Entry_line *entry_line = (Entry_line *) elem;
+  EntryLine *entry_line = (EntryLine *) elem;
   free (entry_line->parts);
 }
 
-Entry_line *add_to_entry_list (Entry_List *entry_list, Symbol *symbol,
-                               LineParts *line_part){
-  Entry_line entry_line;
+Bool is_empty (EntryLinesList *entry_list)
+{
+  return entry_list->lines->size == 0;
+}
+
+EntryLine *
+add_to_entry_lines_list (EntryLinesList *entry_list, Symbol *symbol,
+                         LineParts *line_part)
+{
+  EntryLine entry_line;
   entry_line.symbol = symbol;
   entry_line.parts = line_part;
   /* the push create a copy of the entry_line */
-  return push (entry_list, &entry_line);
+  return push (entry_list->lines, &entry_line);
 }
 
-void print_entry_list(Entry_List *entry_list, FILE *stream){
-  print_vector (entry_list, print_entry_line, stream, "\n", "\n");
+EntryLine *get_entry_line (EntryLinesList *entry_list, int i)
+{
+  return get (entry_list->lines, i);
+}
+
+void print_entry_list (EntryLinesList *entry_list, FILE *stream)
+{
+  print_vector (entry_list->lines, print_entry_line, stream, "\n", "\n");
 }
 
 void print_entry_line (const void *elem, FILE *stream)
 {
-  Entry_line *entry_line = (Entry_line *) elem;
+  EntryLine *entry_line = (EntryLine *) elem;
   Symbol_Data *symbol_data = entry_line->symbol->data;
   fprintf (stream, "%s\t%04u", entry_line->symbol->word, symbol_data->val);
 }
 
-void free_entry_list (Entry_List *entry_list){
-  free_vector (entry_list);
+void free_entry_lines_list (EntryLinesList *entry_list)
+{
+  free_vector (entry_list->lines);
+  free (entry_list);
 }

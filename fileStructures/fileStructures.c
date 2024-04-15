@@ -17,15 +17,26 @@ Bool init_file_analyze (file_analyze *f, char *file_name,
   }
   strcat(f->file_name, ".as");
   return TRUE;
+}
 
+void display_debug(file_analyze *f, FILE *stream, char *pass){
+  fprintf (stream, "\n======================================================\n"
+                   "                    %s pass                      \n"
+                   "======================================================\n"
+                   "", pass);
+  display_symbol_table (f->symbol_table, stream);
+  fprintf (stream, "\n------------------ entry list ------------------\n");
+  print_entry_list (f->entry_list, stream);
+  display_op_lines_list (f->op_list, stream);
+  display_data_segment (f->data_segment, stream);
 }
 
 void free_file_analyze (file_analyze *f)
 {
   free_symbol_table (f->symbol_table);
-  free_op_list (f->op_list);
+  free_op_lines_list (f->op_list);
   free_data_segment (f->data_segment);
-  free_entry_list (f->entry_list);
+  free_entry_lines_list (f->entry_list);
   memset (f, 0, sizeof (file_analyze));
 }
 
