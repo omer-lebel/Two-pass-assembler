@@ -1,3 +1,0 @@
-input:9  error: reached EOF in the middle of macro definition. Expected 'endmcr'
- 9  | 
-    | ^

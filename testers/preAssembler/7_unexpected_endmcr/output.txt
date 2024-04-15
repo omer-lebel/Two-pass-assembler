@@ -1,3 +1,0 @@
-input:9  error: unexpected 'endmcr'
- 9  | endmcr
-    | ^~~~~~

@@ -1,4 +1,0 @@
-input:9  error: extraneous text 
- 9  | endmcr
-
-    |         ^

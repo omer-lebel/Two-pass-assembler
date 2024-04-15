@@ -1,3 +1,0 @@
-input:8  error: extraneous text '//extra-text'
- 8  | mcr MAC //extra-text
-    |         ^~~~~~~~~~~~

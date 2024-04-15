@@ -1,3 +1,0 @@
-input.txt:7  error: empty macro declaration
- 7  | mcr
-    |    ^
