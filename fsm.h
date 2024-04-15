@@ -1,44 +1,48 @@
-/*
- Created by OMER on 1/23/2024.
-*/
+/**
+ * @brief Implementation of finite state machine (FSM) functions for syntax and
+ *        semantic analysis.
+ *
+ * The FSM is responsible for parsing and validating each line of the code,
+ * performing syntax analysis, and handling part of the semantic analysis, such
+ * as checking for valid addressing modes and preventing redeclaration of labels.
+ *
+ */
 
 
 #ifndef _FSM_H_
 #define _FSM_H_
 
+/* ------------------------------- includes ------------------------------- */
 #include "setting.h"
 #include "utils/text.h"
+#include "utils/errors.h"
 #include "fileStructures/symbolTable.h"
-#include "fileStructures/memoryImg.h"
+#include "fileStructures/dataSeg.h"
+#include "fileStructures/codeSeg.h"
+#include "analysis.h"
+/* ------------------------------------------------------------------------- */
 
-
-/* states */
-typedef enum state
-{
-    SRC_STATE,
-    TARGET_STATE,
-    COMA_STATE,
-    EXTRA_TEXT_STATE,
-    END_STATE,
-    ERROR_STATE
-} state;
-
-typedef state (*handler) ( op_analyze *op, file_analyze *file_analyze ,state nextState);
-
-typedef struct transition
-{
-    state from;
-    handler handler;
-    state next;
-} transition;
-
-
-state src_handler ( op_analyze *op, file_analyze *file, state nextState);
-state comma_handler ( op_analyze *op, file_analyze *file, state nextState);
-state target_handler ( op_analyze *op, file_analyze *file, state nextState);
-state extra_text_handler ( op_analyze *op, file_analyze *file ,state
-nextState);
-
-int run_fsm (op_analyze *op, file_analyze *file_analyze);
+/**
+ * @brief Runs the finite state machine (FSM) to perform syntax and
+ * semantic analysis on the provided line of assembly code.
+ *
+ * @param line          Pointer to the LineInfo structure containing information about the line.
+ * @param symbol_table  Pointer to the symbol table.
+ * @return TRUE if syntax analysis is successful, FALSE otherwise.
+ *
+ * @note
+ * Before passing a line to the FSM, ensure LineInfo is appropriately set up:
+ *
+ * - line type correctly set (with str_line / op_line / ent_ext_line /
+ *   data_line / define_line )
+ *
+ * - Place the first word after the word that determines the line's type in
+ *   the token buffer. For example:
+ *   CODE: mov STR , DATA[2]
+ *            ~~~
+ *
+ * - Make sure LineInfo contains any necessary buffers for FSM analysis.
+ */
+Bool run_fsm (LineInfo *line, Symbol_Table *symbol_table);
 
 #endif /* _FSM_H_ */

@@ -1,13 +1,13 @@
 input.am:4  warning: '.data' variables may be inaccessible without label
  4  | .data 3,-3,13
     | ^~~~~
-input.am:5  error: 'xxx' undeclared (first use in this directive)
+input.am:5  error: 'xxx' undeclared
  5  | D4: .data xxx
     |           ^~~
-input.am:6  error: 'yyy' undeclared (first use in this directive)
+input.am:6  error: 'yyy' undeclared
  6  | D5: .data 5, yyy
     |              ^~~
-input.am:8  error: label 's' is not a directive of define
+input.am:8  error: expected numeric value or defined constant, but got label 's'
  8  | D6: .data s
     |           ^
 input.am:9  error: '+7000000000' exceeds integer bounds [-(2^14-1), 2^13-1]
@@ -16,7 +16,7 @@ input.am:9  error: '+7000000000' exceeds integer bounds [-(2^14-1), 2^13-1]
 input.am:10 error: '-800000000' exceeds integer bounds [-(2^14-1), 2^13-1]
  10 | D8: .data -800000000
     |           ^~~~~~~~~~
-input.am:11 error: ' 'empty integer initializer
+input.am:11 error: ' 'empty data initializer
  11 | D9: .data 
     |          ^
 input.am:12 error: expected ',' before '11'

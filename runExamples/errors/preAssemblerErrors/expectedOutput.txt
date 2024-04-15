@@ -1,0 +1,75 @@
+========================[ Processing | 1_empty_mcr_declaration.as ]========================
+
+1_empty_mcr_declaration.as:7  error: empty macro declaration
+ 7   | mcr
+     |    ^
+
+ *** Processing failed.
+========================[ Processing | 2_mcr_start_with_non_alphabetic.as ]========================
+
+2_mcr_start_with_non_alphabetic.as:7  error: '1MAC' starts with a non-alphabetic character
+ 7   | mcr 1MAC
+     |     ^~~~
+
+ *** Processing failed.
+========================[ Processing | 3_mcr_saved_word.as ]========================
+
+3_mcr_saved_word.as:7  error: 'mov' is a reserved keyword that cannot be used as an identifier
+ 7   | mcr mov
+     |     ^~~
+
+ *** Processing failed.
+========================[ Processing | 4_redeclaration_mcr.as ]========================
+
+4_redeclaration_mcr.as:14 error: redeclaration of 'MAC'
+ 14  | mcr MAC
+     |     ^~~
+
+ *** Processing failed.
+========================[ Processing | 5_extra_txt_after_mcr.as ]========================
+
+5_extra_txt_after_mcr.as:8  error: unexpected text: '//extra-text'
+ 8   | mcr MAC //extra-text
+     |         ^~~~~~~~~~~~
+
+ *** Processing failed.
+========================[ Processing | 6_extra_txt_after_endmcr.as ]========================
+
+6_extra_txt_after_endmcr.as:10 error: unexpected text: '//extra-text'
+ 10  | endmcr //extra-text
+     |        ^~~~~~~~~~~~
+
+ *** Processing failed.
+========================[ Processing | 7_unexpected_endmcr.as ]========================
+
+7_unexpected_endmcr.as:9  error: unexpected 'endmcr'
+ 9   | endmcr
+     | ^~~~~~
+
+ *** Processing failed.
+========================[ Processing | 8_no_endmcr_before_eof.as ]========================
+
+8_no_endmcr_before_eof.as:9  error: reached EOF in the middle of macro definition. Expected 'endmcr'
+ 9   | dec r5
+     | ^
+
+ *** Processing failed.
+========================[ Processing | 9_nested_macro.as ]========================
+
+9_nested_macro.as:9  error: 'mcr': nested macro definition is not allowed 
+ 9   |     mcr MACRO2
+     |     ^~~
+
+ *** Processing failed.
+========================[ Processing | 10_too_long_line.as ]========================
+
+10_too_long_line.as:6  error: line length is more than 80 characters
+ 6   | mov r2, r3                                                                       
+     | ^
+
+10_too_long_line.as:11 error: line length is more than 80 characters
+ 11  |     sub r2, r3                                                                   
+     | ^
+ -- 10_too_long_line.am created 
+
+ *** Processing failed.

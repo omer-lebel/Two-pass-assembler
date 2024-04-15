@@ -1,19 +1,14 @@
-/*
- Created by OMER on 3/2/2024.
-*/
-
-
+/* ------------------------------- defines --------------------------------- */
 #include "machineWord.h"
-#include "../setting.h"
-
+/* ------------------------------- includes -------------------------------- */
 #define OPCODE_SHIFT 6
 #define ADD_MOD_SRC_SHIFT 4
 #define ADD_MOD_TARGET_SHIFT 2
-#define PAIR 0x3
+#define PAIR 0x3 /* pair of bit (11) */
+/* ------------------------------------------------------------------------- */
 
-
-unsigned short first_word(int opcode, int add_mode_src, int
-add_mode_target) {
+unsigned short first_word (int opcode, int add_mode_src, int add_mode_target)
+{
   /* Create the machine word using bitwise operations */
   unsigned short machineWord = 0;
 
@@ -31,7 +26,8 @@ add_mode_target) {
   return machineWord;
 }
 
-unsigned short registers_word(int src, int target) {
+unsigned short registers_word (int src, int target)
+{
   /* Create the machine word using bitwise operations */
   unsigned short machineWord = 0;
 
@@ -46,7 +42,8 @@ unsigned short registers_word(int src, int target) {
   return machineWord;
 }
 
-unsigned short imm_word(int imm) {
+unsigned short imm_word (int imm)
+{
   /* Create the machine word using bitwise operations */
   unsigned short machineWord = 0;
 
@@ -56,12 +53,13 @@ unsigned short imm_word(int imm) {
   return machineWord;
 }
 
-unsigned short label_word(unsigned int label, int are) {
+unsigned short label_word (int address, int are)
+{
   /* Create the machine word using bitwise operations */
   unsigned short machineWord = 0;
 
-  /* bits 13-2: src register */
-  machineWord |= (label << 2);
+  /* bits 13-2: label's address */
+  machineWord |= (address << 2);
 
   /* bits 1-0: A,R,E */
   machineWord |= (are);
@@ -69,20 +67,22 @@ unsigned short label_word(unsigned int label, int are) {
   return machineWord;
 }
 
-
-void print_binary_word(unsigned short word) {
+void print_binary_word (unsigned short word)
+{
   int i;
   for (i = MACHINE_WORD_SIZE - 1; i >= 0; --i) {
-    printf("%d", (word >> i) & 1);
+    printf ("%d", (word >> i) & 1);
   }
-  printf("\n");
+  printf ("\n");
 }
 
-void print_special_base_word(unsigned short binaryWord, FILE *stream) {
+void print_special_base_word (unsigned short binaryWord, Bool is_last,
+                              FILE *stream)
+{
   int i;
   char c;
   unsigned int pair;
-  for (i = MACHINE_WORD_SIZE - 2 ; i >= 0; i -= 2) {
+  for (i = MACHINE_WORD_SIZE - 2; i >= 0; i -= 2) {
     pair = (binaryWord >> i) & PAIR;
     switch (pair) {
       case 0:
@@ -102,5 +102,8 @@ void print_special_base_word(unsigned short binaryWord, FILE *stream) {
         break;
     }
     fputc (c, stream);
+  }
+  if (!is_last) {
+    fputc ('\n', stream);
   }
 }

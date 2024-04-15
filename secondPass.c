@@ -1,242 +1,225 @@
-/*
- Created by OMER on 3/5/2024.
-*/
-
-
+/* ------------------------------- includes ------------------------------- */
 #include "secondPass.h"
-
-/*
- * for each line:
- * if contain labels:
- *      1. check valid (exist and suit type)
- *      2. valid? updates address
- *      2. extern? add into extern uses
- * convert to binary
- *
- * for each entry label
- *      1. check validation (exist and not extern)
- *      2. add into entry list
- */
-
-/* todo think of better place? maybe main or setting */
-void free_file_analyze2 (file_analyze *f)
-{
-  if (f->symbol_table) {
-    freeList (f->symbol_table);
-  }
-
-  if (f->data_segment) {
-    free_vector (f->data_segment);
-  }
-
-  if (f->code_segment) {
-    free_vector (f->code_segment);
-  }
-
-  if (f->op_list) {
-    free_op_list (f->op_list);
-  }
-
-  if (f->entry_table) {
-    free_entry_table (f->entry_table);
-  }
-
-  if (f->extern_table) {
-    free_extern_table (f->extern_table);
-  }
-
-  memset (f, 0, sizeof (file_analyze));
-}
-
-size_t calc_extern_location (op_analyze *op, Operand_Type type)
-{
-  int offset;
-  if (type == SRC || op->src.add_mode == NONE_ADD) {
-    offset = 1;
-  }
-  else if (op->src.add_mode != INDEX_ADD) {
-    offset = 2;
-  }
-  else { /* op->src.add_mode == INDEX_ADD */
-    offset = 3;
-  }
-  return op->address + offset;
-}
-
-void *extern_handler_second_pass (op_analyze *op, Operand_Type type,
-                                  vector *extern_table)
-{
-  Operand *operand = (type == SRC ? &op->src : &op->target);
-  ExternSyb *extern_syb = find_extern_syb (extern_table, operand->symbol_name);
-  size_t address = calc_extern_location (op, type);
-  if (!extern_syb) {
-    return add_to_extern_table (extern_table, operand->symbol_name, address);
-  }
-  else {
-    return add_location (extern_syb, address);
-  }
-}
-
-exit_code symbol_handler_second_pass (op_analyze *op, Operand_Type type,
-                                      LinkedList *symbol_table,
-                                      vector *extern_table)
-{
-  Node *node = NULL;
-  Symbol *symbol = NULL;
-  Operand *operand = (type == SRC ? &op->src : &op->target);
-  node = findNode (symbol_table, operand->symbol_name);
-  if (!node) {
-    r_error ("undeclared symbol", op->line_part, "");
-    /* todo bolt the error token */
-    return ERROR;
-  }
-
-  symbol = (Symbol *) node->data;
-  if (symbol->are == EXTERNAL) {
-    if (!extern_handler_second_pass (op, type, extern_table)) {
-      return MEMORY_ERROR;
-    }
-  }
-  operand->symbol = node;
-  return SUCCESS;
-}
-
-exit_code second_line_process (op_analyze *op, LinkedList *symbol_table,
-                               vector *extern_table, vector *code_segment)
-{
-  exit_code res = SUCCESS;
-
-  /* src has symbol */
-  if (op->src.add_mode != NONE_ADD) {
-    if (op->src.add_mode == DIRECT_ADD || op->src.add_mode == INDEX_ADD) {
-      res = symbol_handler_second_pass (op, SRC, symbol_table, extern_table);
-    }
-  }
-  /* target has symbol */
-  if (op->target.add_mode != NONE_ADD && res == SUCCESS) {
-    if ((op->target.add_mode == DIRECT_ADD
-         || op->target.add_mode == INDEX_ADD)) {
-      res = symbol_handler_second_pass (op, TARGET, symbol_table, extern_table);
-    }
-  }
-
-  /* add to data seg */
-  if (res == SUCCESS) {
-    if (!add_to_code_seg (code_segment, op)) {
-      return MEMORY_ERROR;
-    }
-  }
-  return res;
-}
-
-/* todo change */
-exit_code init_second_pass (file_analyze *f)
-{
-  f->code_segment = init_code_seg (f->IC);
-  f->extern_table = init_extern_table ();
-
-  if (!f->code_segment || !f->extern_table) {
-    free_file_analyze2 (f);
-    return MEMORY_ERROR;
-  }
-  return SUCCESS;
-}
-
-exit_code process_entry_table (vector *entry_table, LinkedList *symbol_table)
-{
-  size_t i;
-  EntrySyb *entry_syb;
-  Node *node = NULL;
-  Symbol *symbol;
-  exit_code res = SUCCESS;
-  for (i = 0; i < entry_table->size; ++i) {
-    entry_syb = (EntrySyb *) get (entry_table, i);
-    node = findNode (symbol_table, entry_syb->name);
-
-    /* the label is not exist */
-    if (!node) {
-      r_error ("", entry_syb->line_info, " undeclared");
-      res += ERROR;
-    }
-
-      /* label is declare both as extern and as entry label */
-    else {
-      symbol = (Symbol *) node->data;
-      if (symbol->are == EXTERNAL) {
-        r_error ("", entry_syb->line_info, " declared as both external and entry");
-        res += ERROR;
-      }
-      else {
-        entry_syb->address = symbol->address;
-      }
-    }
-  }
-  return res;
-}
-
-exit_code write_analyze(file_analyze *f){
-  FILE *ob_file, *ext_file, *ent_file;
-
-  if (f->data_segment->size > 0 || f->code_segment->size > 0){
-    ob_file = open_file(f->file_name, ".ob", "w");
-    if (!(ob_file)){
-      return ERROR;
-    }
-    print_memory_img(f->code_segment, f->data_segment, ob_file);
-    fclose (ob_file);
-  }
-
-  if (f->entry_table->size > 0){
-    ent_file = open_file(f->file_name, ".ent", "w");
-    if (!(ent_file)){
-      return ERROR;
-    }
-    print_entry_table(f->entry_table, ent_file);
-    fclose (ent_file);
-  }
-
-  if (f->extern_table->size > 0){
-    ext_file = open_file(f->file_name, ".ext", "w");
-    if (!(ext_file)){
-      return ERROR;
-    }
-    print_extern_table (f->extern_table, ext_file);
-    fclose (ext_file);
-  }
-
-  return SUCCESS;
-}
+#include "utils/errors.h"
+#include "utils/vector.h"
+#include "fileStructures/symbolTable.h"
+#include "fileStructures/codeSeg.h"
+#include "fileStructures/dataSeg.h"
+#include "fileStructures/entryLines.h"
+#include "fileStructures/externUsages.h"
+/* ---------------------- helper function declaration ---------------------- */
+void        print_usages_errors   (OpLinesList *op_list, char *file_name);
+Symbol*     is_unresolved_usages  (Operand *operand);
+void        print_entry_errors    (EntryLinesList *entry_list, char *file_name);
+exit_code   print_analyze         (file_analyze *f);
+void        print_memory_img      (OpLinesList *op_list, int ic, DataSegment *data_segment, int dc, FILE *stream);
+/* ------------------------------------------------------------------------- */
 
 exit_code secondPass (file_analyze *f)
 {
-  size_t i;
-  op_analyze *op;
+  exit_code res = ERROR;
+  int unresolved_entries = f->symbol_table->unresolved_entry_count;
+  int unresolved_usages = f->symbol_table->unresolved_symbols_count;
+
+  int len = (int) strlen (f->file_name);
+  strcat (f->file_name, ".am");
+
+  /* only unresolved symbols */
+  if (unresolved_entries == 0 && unresolved_usages > 0) {
+    print_usages_errors (f->op_list, f->file_name);
+  }
+  /* only unresolved entries */
+  if (unresolved_entries > 0 && unresolved_usages == 0) {
+    print_entry_errors (f->entry_list, f->file_name);
+  }
+  /* both unresolved entries and symbols */
+  if (unresolved_entries > 0 && unresolved_usages > 0) {
+    print_usages_errors (f->op_list, f->file_name);
+    print_entry_errors (f->entry_list, f->file_name);
+  }
+
+  /* no errors at all */
+  f->file_name[len] = '\0';
+  if (unresolved_entries == 0 && unresolved_usages == 0) {
+    if (f->error == 0) {
+      update_data_symbol_addresses (f->symbol_table, f->IC);
+      res = print_analyze (f);
+    }
+  }
+
+#ifdef DEBUG_SECOND_PASS
+  if (res != MEMORY_ERROR){
+    display_debug(f, stdout, "first");
+  }
+#endif
+
+  free_file_analyze (f);
+  return res;
+}
+
+/**
+ * @brief Prints errors related to unresolved symbol usages in operands.
+ *
+ * Traverses the operator list and identifies unresolved symbol usages in
+ * operands. Prints error messages for each unresolved symbol.
+ *
+ * @param op_list       Pointer to the opcode list.
+ * @param file_name     Name of the file being analyzed.
+ */
+void print_usages_errors (OpLinesList *op_list, char *file_name)
+{
+  OpLine *op_line;
+  int i = 0;
+  Symbol *src_symbol = NULL, *target_symbol = NULL;
+  while ((op_line = get_op_line (op_list, i++))) {
+
+    /* unresolved symbol in src operand */
+    if ((src_symbol = is_unresolved_usages (&op_line->analyze->src))) {
+      raise_second_pass_err (op_line->parts, src_symbol->word, file_name);
+    }
+
+    /* unresolved symbol in target operand t*/
+    if ((target_symbol = is_unresolved_usages (&op_line->analyze->target))) {
+
+      /* print error only if target makes new error for this line  */
+      if (target_symbol != src_symbol && !src_symbol) {
+        raise_second_pass_err (op_line->parts, target_symbol->word, file_name);
+      }
+    }
+  }
+}
+
+/**
+ * @brief Check if an operand using ab unresolved symbol
+ *
+ * Checks if an operand contains an unresolved symbol usage and returns
+ * a pointer to the unresolved symbol if found.
+ *
+ * @param operand   Pointer to the operand to be checked.
+ * @return Pointer to the unresolved symbol if found, otherwise NULL.
+ */
+Symbol *is_unresolved_usages (Operand *operand)
+{
+  Symbol *symbol;
+  Symbol_Data *symbol_data;
+  AddressingMode addr_mode = operand->add_mode;
+
+  if (addr_mode == DIRECT_ADD || addr_mode == INDEX_ADD) {
+    symbol = (Symbol *) operand->info.symInx.symbol;
+    symbol_data = (Symbol_Data *) symbol->data;
+
+    if (symbol_data->type == UNRESOLVED_ENTRY_USAGE
+        || symbol_data->type == UNRESOLVED_USAGE) {
+      return symbol;
+    }
+  }
+  return NULL;
+}
+
+/**
+ * @brief Prints errors related to unresolved entry symbols.
+ *
+ * Traverses the entry list and identifies unresolved entry symbols.
+ * Prints error messages for each unresolved symbol.
+ *
+ * @param entry_list    Pointer to the entry list.
+ * @param file_name     Name of the file being analyzed.
+ */
+void print_entry_errors (EntryLinesList *entry_list, char *file_name)
+{
+  EntryLine *entry_line;
+  Symbol *symbol;
+  Symbol_Data *symbol_data;
+  int i = 0;
+
+  while ((entry_line = get_entry_line (entry_list, i++))) {
+
+    symbol = entry_line->symbol;
+    symbol_data = (Symbol_Data *) symbol->data;
+
+    if (symbol_data->type == UNRESOLVED_ENTRY
+        || symbol_data->type == UNRESOLVED_ENTRY_USAGE) {
+
+      raise_second_pass_err (entry_line->parts, entry_line->symbol->word, file_name);
+    }
+  }
+}
+
+/**
+ * @brief Prints output files of the assembler analyse
+ *
+ * Prints the memory image (file.ob), entry file (file.ent), and external
+ * file (file.ext)
+ *
+ * @param f Pointer to the file analysis structure.
+ * @return Exit code
+ */
+exit_code print_analyze (file_analyze *f)
+{
+  FILE *ob_file, *ent_file, *ext_file;
   exit_code res = SUCCESS;
 
-  update_data_symbol_addresses (f->symbol_table, f->IC);
-  printf ("\n----------------- symbol table -----------------\n"); 
-  /* todo delete */
-  printList (f->symbol_table, stdout);
-  res = init_second_pass (f);
+  /* --------- .ob file --------- */
+  ob_file = open_file (f->file_name, ".ob", "w");
+  if (!(ob_file)) {
+    return ERROR;
+  }
+  print_memory_img (f->op_list, f->IC, f->data_segment, f->DC, ob_file);
+  printf (" -- %s.ob created \n", f->file_name);
+  fclose (ob_file);
 
-  /*  1) updates labels. 2) convert to binary. 3) update extern uses */
-  for (i = 0; i < f->op_list->size && res != MEMORY_ERROR; ++i) {
-    op = (op_analyze *) get (f->op_list, i);
-    res = second_line_process (op, f->symbol_table, f->extern_table,
-                               f->code_segment);
-    f->error += res;
+  /* --------- .ent file --------- */
+  if (!is_empty (f->entry_list)) {
+    ent_file = open_file (f->file_name, ".ent", "w");
+    if (!(ent_file)) {
+      return ERROR;
+    }
+    print_entry_list (f->entry_list, ent_file);
+    printf (" -- %s.ent created \n", f->file_name);
+    fclose (ent_file);
   }
 
-  /* check that all entry symbol are valid */
-  if (res != MEMORY_ERROR) {
-    res = process_entry_table (f->entry_table, f->symbol_table);
+  /* --------- .ext file --------- */
+  if (f->symbol_table->extern_count > 0) {
+    ext_file = open_file (f->file_name, ".ext", "w");
+    if (!(ext_file)) {
+      return ERROR;
+    }
+    res = print_extern_table (f->op_list, ext_file, f->file_name);
+    if (res == SUCCESS) {
+      printf (" -- %s.ext created \n", f->file_name);
+    }
+    fclose (ext_file);
   }
+  return res == MEMORY_ERROR ? MEMORY_ERROR : SUCCESS;
+}
 
-  if (f->error == SUCCESS){
-    write_analyze (f);
+/**
+ * @brief Prints the memory image to the output stream (.ob file)
+ *
+ * Prints the memory image, including the code segment and data segment,
+ * to the specified output stream.
+ *
+ * @param op_list       Pointer to the op list that will be the code segment
+ * @param ic            Instruction count (IC).
+ * @param data_segment  Pointer to the data segment.
+ * @param dc            Data count (DC).
+ * @param stream        Pointer to the output stream (file.ob)
+ */
+void print_memory_img (OpLinesList *op_list, int ic, DataSegment *data_segment,
+                       int dc, FILE *stream)
+{
+
+  fprintf (stream, "%4d %d\n", ic, dc);
+
+  if (ic > 0) {
+    print_code_segment (op_list, IC_START, (ic + IC_START), stream);
+    if (dc > 0) {
+      fputc ('\n', stream);
+    }
   }
-
-  free_file_analyze2 (f);
-
-  return res;
+  if (dc > 0) {
+    print_data_segment (data_segment, (IC_START + ic), (ic + dc + IC_START),
+                        stream);
+  }
 }

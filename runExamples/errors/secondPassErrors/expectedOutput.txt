@@ -1,0 +1,24 @@
+========================[ Processing | secondPassErrors.as ]========================
+ -- secondPassErrors.am created 
+
+secondPassErrors.am:4  error: 'STR' undeclared
+ 4   | add r0, STR
+     |         ^~~
+
+secondPassErrors.am:5  error: 'STR' undeclared
+ 5   | sub r0, STR
+     |         ^~~
+
+secondPassErrors.am:6  error: 'DATA' undeclared
+ 6   | prn DATA[10]
+     |     ^~~~
+
+secondPassErrors.am:7  error: 'ENT' undeclared
+ 7   | mov ENT, DATA[2]
+     |     ^~~
+
+secondPassErrors.am:8  error: 'ENT' undeclared
+ 8   | .entry ENT
+     |        ^~~
+
+ *** Processing failed.

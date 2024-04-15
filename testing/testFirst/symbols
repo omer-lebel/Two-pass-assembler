@@ -1,0 +1,170 @@
+;============== symbols =================
+
+; define and than use (error)
+.define DEFvUSE = 1111
+bne DEFvUSE
+
+;extern and than use
+.extern EXTvUSE
+jsr EXTvUSE
+
+;entry and than use
+.entry ENTvUSE
+red ENTvUSE[3]
+
+DATAvUSE: .string "data use"
+clr DATAvUSE
+
+;--------------------- entry
+
+; unresolved and than ent (update to entry)
+dec USEvENT[11]
+cmp #-1, USEvENT
+add USEvENT, USEvENT
+.entry USEvENT
+
+;extern and than entry (error)
+.extern EXTvENT
+.entry EXTvENT
+
+;define and than entry (error)
+.define DEFvENT = 0033
+.entry DEFvENT
+
+; entry data and than entry (error)
+.entry ENTvDATA
+ENTvDATA: .string "entry data"
+.entry ENTvDATA
+
+;data and than entry (update)
+DATAvENT: .string "entry data"
+.entry DATAvENT
+
+;--------------------- extern
+
+; data and than ext (error)
+DATAvEXT: .data 1
+.extern DATAvEXT
+
+; define and than ext (error)
+.define DEFvEXT = 2
+.extern DEFvEXT
+
+; ext and than ext (warning)
+.extern EXTvEXT
+.extern EXTvEXT
+
+; unresolved and than ext (resolved to extern)
+not USEvEXT1
+.extern USEvEXT1
+
+mov r5, USEvEXT2[3]
+.extern USEvEXT2
+
+mov USEvEXT3, USEvEXT3
+.extern USEvEXT3
+
+;entry of resolved extern
+.entry USEvEXT3
+
+; entry and than extern
+.entry ENTvEXT
+.extern ENTvEXT
+.extern USEvENT
+
+;mov DATA[3], #zzz
+;mov DATA, CODE
+;.entry ENT
+
+;--use of define
+;.define df = 3
+;mov df, r3
+;mov r2, df[3]
+
+;--------------------- define
+;code than define (error)
+CODEvDEF: jmp USEvDEF
+.define CODEvDEF=1
+
+;use and than define (nothing. error in the use in the second pass)
+.define USEvDEF=2
+
+.entry ENTvDEF
+.define ENTvDEF=3
+
+.extern EXTvDEF
+.define EXTvDEF=4
+
+;define and than define (warning and than error)
+.define DEFvDEF = 5
+.define DEFvDEF = 5
+.define DEFvDEF = 0
+
+;--------------------- code or data
+
+; define and than code (error)
+.define DEVvCODE=1
+DEVvCODE: rts
+
+; extern and than code (error)
+.extern EXTvDATA
+EXTvDATA: .data -2
+
+; entry and than code (resolved)
+.entry ENTvCODE
+ENTvCODE: hlt
+
+; use and than data (resolved)
+sub USEvCODE, r4
+USEvCODE: prn r4
+
+
+
+txt.am:5  error: 'DEFvUSE' invalid operand
+ 5  | bne DEFvUSE
+    |     ^~~~~~~
+txt.am:28 error: redeclaration of 'EXTvENT'
+ 28 | .entry EXTvENT
+    |        ^~~~~~~
+txt.am:32 error: redeclaration of 'DEFvENT'
+ 32 | .entry DEFvENT
+    |        ^~~~~~~
+txt.am:37 warning: 'ENTvDATA' has already declared in earlier line
+ 37 | .entry ENTvDATA
+    |        ^~~~~~~~
+txt.am:47 error: redeclaration of 'DATAvEXT'
+ 47 | .extern DATAvEXT
+    |         ^~~~~~~~
+txt.am:51 error: redeclaration of 'DEFvEXT'
+ 51 | .extern DEFvEXT
+    |         ^~~~~~~
+txt.am:55 warning: 'EXTvEXT' has already declared in earlier line
+ 55 | .extern EXTvEXT
+    |         ^~~~~~~
+txt.am:68 error: redeclaration of 'USEvEXT3'
+ 68 | .entry USEvEXT3
+    |        ^~~~~~~~
+txt.am:72 error: redeclaration of 'ENTvEXT'
+ 72 | .extern ENTvEXT
+    |         ^~~~~~~
+txt.am:73 error: redeclaration of 'USEvENT'
+ 73 | .extern USEvENT
+    |         ^~~~~~~
+txt.am:86 error: redeclaration of 'CODEvDEF'
+ 86 | .define CODEvDEF=1
+    |         ^~~~~~~~
+txt.am:90 error: redeclaration of 'ENTvDEF'
+ 90 | .define ENTvDEF=3
+    |         ^~~~~~~
+txt.am:93 error: redeclaration of 'EXTvDEF'
+ 93 | .define EXTvDEF=4
+    |         ^~~~~~~
+txt.am:96 error: redeclaration of 'DEFvDEF'
+ 96 | .define DEFvDEF=5
+    |         ^~~~~~~
+txt.am:102 error: redeclaration of 'DEVvCODE:'
+ 102 | DEVvCODE: rts
+    | ^~~~~~~~~
+txt.am:106 error: redeclaration of 'EXTvDATA:'
+ 106 | EXTvDATA: .data -2
+    | ^~~~~~~~~

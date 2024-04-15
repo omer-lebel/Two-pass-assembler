@@ -1,91 +1,137 @@
-/*
- Created by OMER on 1/24/2024.
-*/
 #include "symbolTable.h"
 
+/* ---------------------- helper function declaration ---------------------- */
+void*   init_symbol_data  (const void *data);
+void    print_symbol      (const char *word, const void *data, FILE *stream);
+/* ------------------------------------------------------------------------- */
 
-LinkedList* init_symbol_table(void){
-  return createList (init_symbol, print_symbol, free);
+Symbol_Table *new_symbol_table (void)
+{
+  Symbol_Table *table = malloc (sizeof (Symbol_Table));
+  if (!table) {
+    return NULL;
+  }
+  table->database = create_list (init_symbol_data, print_symbol, free);
+  if (!table->database) {
+    free (table);
+    return NULL;
+  }
+  table->extern_count = 0;
+  table->unresolved_symbols_count = 0;
+  table->unresolved_entry_count = 0;
+
+  return table;
 }
 
-void *init_symbol (const void *data)
+/**
+ * Initializes symbol data.
+ *
+ * @param data Pointer to the data to initialize.
+ * @return     Pointer to the initialized data.
+ */
+void *init_symbol_data (const void *data)
 {
-  Symbol *symbol_data = (Symbol *) data;
-  Symbol *new_symbol = (Symbol *) malloc (sizeof (Symbol));
-  if (!new_symbol) {
-    return NULL; /* memory error */
+  Symbol_Data *new_data = malloc (sizeof (Symbol_Data));
+  if (!new_data) {
+    return NULL;
   }
-  new_symbol->address = symbol_data->address;
-  new_symbol->are = symbol_data->are;
-  new_symbol->type = symbol_data->type;
-  new_symbol->isEntry = symbol_data->isEntry;
-  new_symbol->val = symbol_data->val;
+  memcpy (new_data, data, sizeof (Symbol_Data));
+  return new_data;
+}
+
+Symbol *add_symbol (Symbol_Table *table, const char *label,
+                    SymbolType type, int val, EntryFlag isEntry)
+{
+  Symbol_Data symbol_data;
+  Symbol *new_symbol;
+
+  symbol_data.type = type;
+  symbol_data.val = val;
+  symbol_data.isEntry = isEntry;
+
+  new_symbol = create_node (table->database, label, &symbol_data);
+  if (!new_symbol) {
+    return NULL;
+  }
+  append_sorted (table->database, new_symbol);
   return new_symbol;
 }
 
-void print_symbol (const char *word, const void *data, FILE *pf)
+Symbol *find_symbol (Symbol_Table *table, const char *name)
 {
-  Symbol *symbol_data = (Symbol *) data;
+  return find_node (table->database, name);
+}
 
-  fprintf (pf, " %-15s  %-5lu ", word, symbol_data->address);
+/**
+ * Prints the data associated with a symbol.
+ *
+ * @param word   The label of the symbol.
+ * @param data   Pointer to the data associated with the symbol.
+ * @param stream File stream to print to.
+ */
+void print_symbol (const char *word, const void *data, FILE *stream)
+{
+  Symbol_Data *symbol_data = (Symbol_Data *) data;
+
+  fprintf (stream, " %-15s  %-5d ", word, symbol_data->val);
   switch (symbol_data->type) {
     case DATA:
-      fprintf (pf, " %-15s", "directive");
+      fprintf (stream, " %-15s", "directive");
       break;
-    case OPERATION:
-      fprintf (pf, " %-15s", "operation");
+    case CODE:
+      fprintf (stream, " %-15s", "code");
       break;
     case DEFINE:
-      fprintf (pf, " %-15s", "define");
+      fprintf (stream, " %-15s", "define");
       break;
-    default:
-      fprintf (pf, " %-15s", "unknown");
+    case EXTERN:
+      fprintf (stream, " %-15s", "external");
+      break;
+    case UNRESOLVED_USAGE:
+      fprintf (stream, " %-15s", "unresolved usage");
+      break;
+    case UNRESOLVED_ENTRY:
+      fprintf (stream, " %-15s", "unresolved entry");
+      break;
+    case UNRESOLVED_ENTRY_USAGE:
+      fprintf (stream, " %-15s", "unresolved entry usage");
+      break;
   }
 
-  fprintf (pf, " %-15s", (symbol_data->are == EXTERNAL ?
-                          "external" : "not external"));
+  fprintf (stream, "\t\t%-15s", (symbol_data->isEntry ?
+                                 "entry" : "not entry"));
 
-  if (symbol_data->type == DEFINE){
-    fprintf (pf, " %-5d", symbol_data->val);
-  }
-  fprintf (pf, "\n");
+  fprintf (stream, "\n");
 
 }
 
-exit_code add_symbol (LinkedList *symbol_table, const char *label,
-                      SymbolType type, size_t address, ARE are, int val)
+void display_symbol_table (Symbol_Table *table, FILE *stream)
 {
-  Symbol symbol_data;
-  Node *new_symbol;
-
-  symbol_data.address = address;
-  symbol_data.type = type;
-  symbol_data.are = are;
-  symbol_data.isEntry = FALSE;
-  symbol_data.val = val;
-
-  new_symbol = createNode (symbol_table, label, &symbol_data);
-  if (!new_symbol) {
-    return MEMORY_ERROR; /* memory error */
-  }
-  appendToTail(symbol_table, new_symbol); /* todo sorted? */
-  return SUCCESS;
+  fprintf (stream, "\n----------------- symbol table -----------------\n");
+  fprintf (stream, "extern: %d\n", table->extern_count);
+  fprintf (stream, "unresolved symbols: %d\n", table->unresolved_symbols_count);
+  fprintf (stream, "unresolved entry: %d\n", table->unresolved_entry_count);
+  print_list (table->database, stream);
 }
 
-void update_data_symbol_addresses(LinkedList *symbol_table, size_t IC)
+void free_symbol_table (Symbol_Table *table)
 {
-  Symbol *symbol;
-  Node *node = symbol_table->head;
-  while (node)
-  {
-    symbol = (Symbol*) node->data;
-    if (symbol->type != DEFINE && symbol->are != EXTERNAL){
-      symbol->address += IC_START;
-      if (symbol->type == DATA){
-        symbol->address += IC;
-      }
+  free_list (table->database);
+  free (table);
+}
+
+void update_data_symbol_addresses (Symbol_Table *symbol_table, int IC)
+{
+  Symbol_Data *symbol;
+  Node *node = symbol_table->database->head;
+  while (node) {
+    symbol = (Symbol_Data *) node->data;
+    if (symbol->type == CODE) {
+      symbol->val += IC_START;
     }
-
+    if (symbol->type == DATA) {
+      symbol->val += IC_START + IC;
+    }
     node = node->next;
   }
 }
