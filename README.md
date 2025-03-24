@@ -95,19 +95,19 @@ you may want use `make clear` to delete .o file
 
 ### Strings
  ```
- myStr: .SRTING "this is a string named myStr"
+ myStr: .string "this is a string named myStr"
  ```
 Defines a string `myStr` with the text `"this is a string named str"`.
 
 ### Integers
  ```
- .DEFINE myInt = 17
+ .define myInt = 17
  ```
 Defines a constant `myInt` with the value `17`.
 
 ### Arrays
  ```
- myArr: .DATA -1,  2 , myInt , +40 , -78
+ myArr: .data -1,  2 , myInt , +40 , -78
  ```
 Defines an array `myArr` with the elements `-1`, `2`, `myInt` (which evaluates to 17), `+40`, and `-78`.
 
